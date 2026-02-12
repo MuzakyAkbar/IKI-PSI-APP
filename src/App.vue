@@ -3,5 +3,5 @@
 </template>
 
 <script setup>
-import CustomerView from '@/views/Customer.vue'
+import CustomerView from '@/views/customer.vue'
 </script>
