@@ -70,7 +70,7 @@
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                             </button>
                             <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r,'product')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Set As Inactive
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
                             </button>
                             <button v-else class="dropdown-item dropdown-item--success" @click="confirmDelete(r,'product')">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
@@ -84,7 +84,15 @@
               </tbody>
             </table>
           </div>
-          <PaginationBar :current="currentPage" :total="totalPages" @go="goPage" />
+          <div v-if="totalPages > 1" class="pagination">
+            <button class="page-btn" :disabled="currentPage === 1" @click="goPage(currentPage - 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button v-for="p in paginationPages" :key="p" :class="['page-btn', p === currentPage ? 'page-btn--active' : '']" @click="goPage(p)">{{ p }}</button>
+            <button class="page-btn" :disabled="currentPage === totalPages" @click="goPage(currentPage + 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
 
         <!-- ══ CATEGORY TAB ══ -->
@@ -142,7 +150,7 @@
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                             </button>
                             <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r,'category')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Set As Inactive
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
                             </button>
                             <button v-else class="dropdown-item dropdown-item--success" @click="confirmDelete(r,'category')">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
@@ -156,7 +164,15 @@
               </tbody>
             </table>
           </div>
-          <PaginationBar :current="currentPage" :total="totalPages" @go="goPage" />
+          <div v-if="totalPages > 1" class="pagination">
+            <button class="page-btn" :disabled="currentPage === 1" @click="goPage(currentPage - 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button v-for="p in paginationPages" :key="p" :class="['page-btn', p === currentPage ? 'page-btn--active' : '']" @click="goPage(p)">{{ p }}</button>
+            <button class="page-btn" :disabled="currentPage === totalPages" @click="goPage(currentPage + 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
 
         <!-- ══ UOM TAB ══ -->
@@ -199,7 +215,7 @@
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                             </button>
                             <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r,'uom')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Set As Inactive
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
                             </button>
                             <button v-else class="dropdown-item dropdown-item--success" @click="confirmDelete(r,'uom')">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
@@ -213,7 +229,15 @@
               </tbody>
             </table>
           </div>
-          <PaginationBar :current="currentPage" :total="totalPages" @go="goPage" />
+          <div v-if="totalPages > 1" class="pagination">
+            <button class="page-btn" :disabled="currentPage === 1" @click="goPage(currentPage - 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button v-for="p in paginationPages" :key="p" :class="['page-btn', p === currentPage ? 'page-btn--active' : '']" @click="goPage(p)">{{ p }}</button>
+            <button class="page-btn" :disabled="currentPage === totalPages" @click="goPage(currentPage + 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -493,7 +517,7 @@
       <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show=false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3>Set As Inactive</h3>
+            <h3>Delete</h3>
             <button class="modal-close" @click="deleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
@@ -513,7 +537,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, onBeforeUnmount, defineComponent, h } from 'vue'
+import { ref, computed, onMounted, reactive, onBeforeUnmount } from 'vue'
 import {
   fetchAllProducts, fetchCategoriesPage, fetchUOMsPage,
   createProduct, updateProduct, deleteProduct,
@@ -533,29 +557,10 @@ const vClickOutside = {
 }
 
 // ── Pagination component
-const PaginationBar = defineComponent({
-  props: ['current', 'total'],
-  emits: ['go'],
-  setup(props, { emit }) {
-    const pages = computed(() => {
-      const out = [], s = Math.max(1, props.current - 2), e = Math.min(props.total, props.current + 2)
-      for (let i = s; i <= e; i++) out.push(i)
-      return out
-    })
-    return () => {
-      if (props.total <= 1) return null
-      return h('div', { class: 'pagination' }, [
-        h('button', { class: 'page-btn', disabled: props.current === 1, onClick: () => emit('go', props.current - 1) },
-          h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 },
-            h('polyline', { points: '15 18 9 12 15 6' }))),
-        ...pages.value.map(p =>
-          h('button', { key: p, class: ['page-btn', p === props.current ? 'page-btn--active' : ''], onClick: () => emit('go', p) }, String(p))),
-        h('button', { class: 'page-btn', disabled: props.current === props.total, onClick: () => emit('go', props.current + 1) },
-          h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 },
-            h('polyline', { points: '9 18 15 12 9 6' })))
-      ])
-    }
-  },
+const paginationPages = computed(() => {
+  const out = [], s = Math.max(1, currentPage.value - 2), e = Math.min(totalPages.value, currentPage.value + 2)
+  for (let i = s; i <= e; i++) out.push(i)
+  return out
 })
 
 function productTypeLabel(t) { return { I: 'Item', S: 'Service', E: 'Expense' }[t] || (t || '-') }
@@ -567,7 +572,7 @@ const loading = ref(false)
 const error = ref(null)
 const searchQuery = ref('')
 const currentPage = ref(1)
-const pageSize = 20
+const pageSize = 10
 const totalRows = ref(0)
 const openDropdown = ref(null)
 const dropdownPos = ref({ top: 0, right: 0 })
@@ -854,6 +859,7 @@ onBeforeUnmount(() => { clearTimeout(searchTimeout); clearTimeout(toastTimer) })
 </script>
 
 <style scoped>
+button { box-sizing: border-box; }
 .layout { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
 .main { flex: 1; padding: 28px 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
 .content-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
@@ -920,11 +926,11 @@ onBeforeUnmount(() => { clearTimeout(searchTimeout); clearTimeout(toastTimer) })
 .loading-dots span:nth-child(2) { animation-delay: .2s; }
 .loading-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
-.pagination { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 16px; border-top: 1px solid var(--border); }
-.page-btn { min-width: 32px; height: 32px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s; font-family: var(--font); }
-.page-btn:hover:not(:disabled) { background: var(--surface2); color: var(--text-primary); }
-.page-btn--active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.page-btn:disabled { opacity: .35; cursor: not-allowed; }
+.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
+.page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); outline: none; appearance: none; -webkit-appearance: none; box-shadow: none; }
+.page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
+.page-btn--active { background: #fff !important; color: #1e293b !important; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07); }
+.page-btn:disabled { opacity: .3; cursor: not-allowed; }
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
 .toast--success { background: #16a34a; color: #fff; }
 .toast--error { background: var(--danger); color: #fff; }
