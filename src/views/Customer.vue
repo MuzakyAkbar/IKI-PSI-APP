@@ -1,7 +1,7 @@
 <template>
   <div class="layout">
     <!-- Header -->
-    <header class="header">
+    <!-- <header class="header">
       <div class="header-inner">
         <div class="brand">
           <span class="brand-logo">N</span>
@@ -17,7 +17,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
-    </header>
+    </header> -->
 
     <!-- Main -->
     <main class="main">
@@ -86,7 +86,6 @@
                         </button>
                         <button class="action-btn action-btn--delete" @click="confirmDelete(c)">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                          Delete
                         </button>
                       </div>
                     </td>
@@ -274,26 +273,27 @@
       </div>
     </Transition>
 
-    <!-- DELETE CONFIRM MODAL -->
+    <!-- DEACTIVATE CONFIRM MODAL -->
     <Transition name="fade">
       <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3>Delete Customer</h3>
+            <h3>Deactivate Customer</h3>
             <button class="modal-close" @click="deleteModal.show = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="modal-body">
             <p class="delete-text">
-              Yakin ingin menghapus customer <strong>{{ deleteModal.customer?.name }}</strong>? Tindakan ini tidak bisa dibatalkan.
+              Yakin ingin menonaktifkan customer <strong>{{ deleteModal.customer?.name }}</strong>?
+              Customer tidak akan muncul di daftar aktif, namun data tetap tersimpan.
             </p>
           </div>
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="deleteModal.show = false" :disabled="deleteLoading">Cancel</button>
             <button class="btn btn--danger" @click="doDelete" :disabled="deleteLoading">
               <span v-if="deleteLoading" class="btn-spinner"></span>
-              {{ deleteLoading ? 'Deleting...' : 'Delete' }}
+              {{ deleteLoading ? 'Processing...' : 'Deactivate' }}
             </button>
           </div>
         </div>
@@ -466,8 +466,8 @@ async function submitForm() {
       description: form.description.trim() || null,
       creditLimit: Number(form.creditLimit) || 0,
       active: form.active,
-      ...(form.paymentTerms && { paymentTerms: form.paymentTerms }),
-      ...(form.priceList && { priceList: form.priceList }),
+      ...(form.paymentTerms  && { paymentTerms:  form.paymentTerms }),
+      ...(form.priceList     && { priceList:     form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
     }
     if (formModal.mode === 'create') {
@@ -491,7 +491,7 @@ async function submitForm() {
   }
 }
 
-// ─── Delete ───────────────────────────────────────────────────
+// ─── Deactivate ───────────────────────────────────────────────
 const deleteModal = reactive({ show: false, customer: null })
 const deleteLoading = ref(false)
 
@@ -504,14 +504,15 @@ async function doDelete() {
   deleteLoading.value = true
   try {
     await deleteCustomer(deleteModal.customer.id)
-    showToast('Customer berhasil dihapus')
+    showToast('Customer berhasil dinonaktifkan')
     deleteModal.show = false
     if (customers.value.length === 1 && currentPage.value > 1) currentPage.value--
     load()
   } catch (e) {
-    showToast('Gagal menghapus customer', 'error')
-    console.error(e)
+    const msg = e.response?.data?.response?.error?.message
+    showToast(msg ?? 'Gagal menonaktifkan customer', 'error')
     deleteModal.show = false
+    console.error(e)
   } finally {
     deleteLoading.value = false
   }

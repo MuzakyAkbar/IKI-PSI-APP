@@ -4,13 +4,13 @@ import axios from 'axios'
 // Runtime Config
 // ==============================
 const BASE_URL =
-  window.APP_CONFIG?.API_BASE_URL || 'http://110.35.83.236:8080/bhmc'
+  window.APP_CONFIG?.API_BASE_URL || '/openbravo/'
 
 // ==============================
 // Basic Auth
 // ==============================
-const USERNAME = 'api-service'
-const PASSWORD = '4dm1n@bhm2025'
+const USERNAME = 'APIService'
+const PASSWORD = 'wrt'
 const token = btoa(`${USERNAME}:${PASSWORD}`)
 
 // ==============================
@@ -28,6 +28,9 @@ const api = axios.create({
 // Constants
 // ==============================
 const BASE = '/org.openbravo.service.json.jsonrest/BusinessPartner'
+
+// Helper: wrap FK value as { id } object (Openbravo JSON REST format)
+const fkWrap = (val) => (val ? { id: val } : undefined)
 
 // ==============================
 // GET - list dengan pagination & search
@@ -53,9 +56,34 @@ export async function fetchCustomers({ startRow = 0, pageSize = 20, searchKey = 
 }
 
 // ==============================
+// Lookup: Business Partner Category by name
+// ==============================
+async function fetchCategoryIdByName(name) {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/BusinessPartnerCategory', {
+    params: {
+      _startRow: 0,
+      _endRow: 100,
+      _where: `upper(e.name) = upper('${name}')`,
+    },
+  })
+  const data = res.data?.response?.data ?? []
+  if (!data.length) throw new Error(`Kategori "${name}" tidak ditemukan di server.`)
+  return data[0].id
+}
+
+// Cache agar tidak fetch ulang setiap kali create
+let _customerCategoryId = null
+
+// ==============================
 // POST - create customer
 // ==============================
 export async function createCustomer(data) {
+  const { paymentTerms, priceList, paymentMethod, currency, ...rest } = data
+
+  if (!_customerCategoryId) {
+    _customerCategoryId = await fetchCategoryIdByName('Customer')
+  }
+
   const payload = {
     data: {
       _entityName: 'BusinessPartner',
@@ -63,8 +91,7 @@ export async function createCustomer(data) {
       customer: true,
       vendor: false,
       employee: false,
-      businessPartnerCategory: '076902564B5D41AE926FCCC3D110B7C2',
-      'businessPartnerCategory$_identifier': 'Customer',
+      businessPartnerCategory: { id: _customerCategoryId },
       language: 'en_US',
       invoiceTerms: 'I',
       creditStatus: 'O',
@@ -75,8 +102,11 @@ export async function createCustomer(data) {
       goodsShipment: true,
       purchaseInvoice: true,
       purchaseOrder: true,
-      currency: '303',
-      ...data,
+      currency: fkWrap(currency) ?? { id: '303' },
+      ...rest,
+      ...(paymentTerms  && { paymentTerms:  fkWrap(paymentTerms) }),
+      ...(priceList     && { priceList:     fkWrap(priceList) }),
+      ...(paymentMethod && { paymentMethod: fkWrap(paymentMethod) }),
     },
   }
 
@@ -88,11 +118,17 @@ export async function createCustomer(data) {
 // PUT - update customer
 // ==============================
 export async function updateCustomer(id, data) {
+  const { paymentTerms, priceList, paymentMethod, currency, ...rest } = data
+
   const payload = {
     data: {
       id,
       _entityName: 'BusinessPartner',
-      ...data,
+      ...rest,
+      ...(currency      && { currency:      fkWrap(currency) }),
+      ...(paymentTerms  && { paymentTerms:  fkWrap(paymentTerms) }),
+      ...(priceList     && { priceList:     fkWrap(priceList) }),
+      ...(paymentMethod && { paymentMethod: fkWrap(paymentMethod) }),
     },
   }
 
@@ -101,11 +137,20 @@ export async function updateCustomer(id, data) {
 }
 
 // ==============================
-// DELETE - delete customer
+// DELETE - deactivate customer
+// Openbravo tidak mengizinkan hard delete jika record sudah berelasi
+// dengan transaksi/invoice. Gunakan deactivate (active: false).
 // ==============================
 export async function deleteCustomer(id) {
-  const res = await api.delete(`${BASE}/${id}`)
-  return res.data
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartner',
+      active: false,
+    },
+  }
+  const res = await api.put(`${BASE}/${id}`, payload)
+  return res.data?.response?.data ?? res.data
 }
 
 // ==============================
@@ -115,7 +160,6 @@ export async function fetchPaymentTerms() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/PaymentTerm', {
     params: { _startRow: 0, _endRow: 100 },
   })
-
   return res.data?.response?.data ?? []
 }
 
@@ -130,7 +174,6 @@ export async function fetchPriceLists() {
       _where: `e.salesPriceList = true`,
     },
   })
-
   return res.data?.response?.data ?? []
 }
 
@@ -141,6 +184,5 @@ export async function fetchPaymentMethods() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_Payment_Method', {
     params: { _startRow: 0, _endRow: 100 },
   })
-
   return res.data?.response?.data ?? []
 }

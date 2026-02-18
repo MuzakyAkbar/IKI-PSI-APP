@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
+  base:"/customer/",
   plugins: [vue()],
   resolve: {
     alias: {
@@ -11,8 +12,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/bhmc": {
-        target: "http://110.35.83.236:8080",
+      "/openbravo": {
+        target: "http://202.59.169.83:8080",
         changeOrigin: true,
         secure: false,
       },
