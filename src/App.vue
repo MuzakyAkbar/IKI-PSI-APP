@@ -1,7 +1,7 @@
 <template>
-  <CustomerView />
+  <RouterView />
 </template>
 
 <script setup>
-import CustomerView from '@/views/customer.vue'
+import { RouterView } from 'vue-router'
 </script>
