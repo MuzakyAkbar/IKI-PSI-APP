@@ -861,7 +861,7 @@ onBeforeUnmount(() => { clearTimeout(searchTimeout); clearTimeout(toastTimer) })
 <style scoped>
 button { box-sizing: border-box; }
 .layout { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
-.main { flex: 1; padding: 28px 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
+.main { flex: 1; padding: 28px 24px; margin: 0 auto; width: 100%; }
 .content-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
 .page-header { padding: 20px 20px 0; }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
