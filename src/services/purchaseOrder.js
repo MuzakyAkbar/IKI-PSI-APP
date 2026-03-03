@@ -16,15 +16,15 @@ const api = axios.create({
 const fkWrap = (val) => (val ? { id: val } : undefined)
 
 // ════════════════════════════════════════════════════
-// ORDER (Sales Order Header)
+// ORDER (Purchase Order Header)
 // ════════════════════════════════════════════════════
 const ORDER_BASE = '/org.openbravo.service.json.jsonrest/Order'
 
-// Standard Order document type ID
-const STANDARD_ORDER_DOCTYPE_ID = '3F571AFD234A4811AFA75C22AEC72B4F'
+// Purchase Order transaction document ID
+const PURCHASE_ORDER_DOCTYPE_ID = '53F55A814CA045AE9561B7E247FF9569'
 
 export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
-  let where = `e.transactionDocument.id = '${STANDARD_ORDER_DOCTYPE_ID}'`
+  let where = `e.transactionDocument.id = '${PURCHASE_ORDER_DOCTYPE_ID}'`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`
@@ -35,7 +35,7 @@ export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = 
       _endRow: startRow + pageSize,
       _noCount: false,
       _orderBy: 'e.creationDate desc',
-      ...(where && { _where: where }),
+      _where: where,
     },
   })
   return res.data?.response ?? res.data
@@ -49,9 +49,7 @@ export async function fetchOrder(id) {
 
 export async function createOrder(data) {
   const payload = buildOrderPayload(data)
-  console.log('[createOrder] payload:', JSON.stringify({ _entityName: 'Order', ...payload }, null, 2))
   const res = await api.post(ORDER_BASE, { data: { _entityName: 'Order', ...payload } })
-  console.log('[createOrder] response:', JSON.stringify(res.data, null, 2))
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
 }
@@ -80,19 +78,15 @@ function buildOrderPayload(data) {
     organization, documentNo, priceList,
   } = data
 
-  // Only send known writable fields — no ...rest spreading to avoid sending garbage
   return {
-    // documentType (c_doctypetarget_id) wajib diisi, default "0"
     documentType: { id: '0' },
-    // currency hardcoded IDR
     currency: { id: '303' },
-    // salesTransaction = true for Sales Order
-    salesTransaction: true,
+    salesTransaction: false, // Purchase Order
     ...(documentNo            && { documentNo }),
     ...(businessPartner       && { businessPartner:      fkWrap(businessPartner) }),
     ...(partnerAddress        && { partnerAddress:       fkWrap(partnerAddress) }),
     ...(warehouse             && { warehouse:            fkWrap(warehouse) }),
-    ...(transactionDocument   && { transactionDocument:  fkWrap(transactionDocument) }),
+    transactionDocument:       fkWrap(transactionDocument || PURCHASE_ORDER_DOCTYPE_ID),
     ...(paymentTerms          && { paymentTerms:         fkWrap(paymentTerms) }),
     ...(paymentMethod         && { paymentMethod:        fkWrap(paymentMethod) }),
     ...(invoiceTerm           && { invoiceTerms:         invoiceTerm }),
@@ -174,9 +168,9 @@ export async function fetchOrganizations() {
   return res.data?.response?.data ?? []
 }
 
-// Customers only (businessPartnerCategory = "Customer")
-export async function fetchCustomers(search = '') {
-  let where = `e.businessPartnerCategory.name = 'Customer'`
+// Vendors only (businessPartnerCategory = "Vendor")
+export async function fetchVendors(search = '') {
+  let where = `e.vendor = true`
   if (search.trim()) {
     const s = search.trim().replace(/'/g, "''")
     where += ` and upper(e.name) like upper('%${s}%')`
@@ -207,13 +201,13 @@ export async function fetchWarehouses() {
   return res.data?.response?.data ?? []
 }
 
-// Document Types for Sales Order (sOSubType = SO or standard order types)
+// Purchase Order document type
 export async function fetchDocumentSequences() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/DocumentType', {
     params: {
       _startRow: 0,
       _endRow: 100,
-      _where: `e.active = true and e.id = '${STANDARD_ORDER_DOCTYPE_ID}'`,
+      _where: `e.active = true and e.id = '${PURCHASE_ORDER_DOCTYPE_ID}'`,
     },
   })
   return res.data?.response?.data ?? []
@@ -248,29 +242,17 @@ export async function fetchPaymentMethods() {
   return res.data?.response?.data ?? []
 }
 
-// Payment Terms installments (for Payment Term tab)
-export async function fetchPaymentSchedule(orderId) {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtDebtPayment', {
-    params: {
-      _where: `e.salesOrder.id = '${orderId}'`,
-      _startRow: 0,
-      _endRow: 50,
-    },
-  })
-  return res.data?.response?.data ?? []
-}
-
-// Price Lists (Sales)
+// Price Lists (Purchase)
 export async function fetchPriceLists() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/PricingPriceList', {
-    params: { _startRow: 0, _endRow: 100, _where: 'e.active = true and e.salesPriceList = true' },
+    params: { _startRow: 0, _endRow: 100, _where: 'e.active = true and e.salesPriceList = false' },
   })
   return res.data?.response?.data ?? []
 }
 
 // Products for order line
 export async function fetchProducts(search = '') {
-  let where = `e.sale = true`
+  let where = `e.purchase = true`
   if (search.trim()) {
     const s = search.trim().replace(/'/g, "''")
     where += ` and (upper(e.name) like upper('%${s}%') or upper(e.searchKey) like upper('%${s}%'))`
@@ -285,14 +267,6 @@ export async function fetchProducts(search = '') {
 export async function fetchUOMs() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/UOM', {
     params: { _startRow: 0, _endRow: 200 },
-  })
-  return res.data?.response?.data ?? []
-}
-
-// Tax Categories
-export async function fetchTaxCategories() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtTaxCategory', {
-    params: { _startRow: 0, _endRow: 100 },
   })
   return res.data?.response?.data ?? []
 }

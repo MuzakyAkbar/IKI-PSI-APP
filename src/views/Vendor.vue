@@ -4,7 +4,7 @@
     <!-- ══════════════════════════════════════════════════════════
          LIST VIEW
     ══════════════════════════════════════════════════════════ -->
-    <div v-if="!page.show" class="page-wrap">
+    <div v-if="!page.show && !glPage.show" class="page-wrap">
       <div class="content-card">
 
         <!-- Header -->
@@ -18,7 +18,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             List Vendor
           </button>
-          <button :class="['tab', activeTab==='linkgl'?'tab--active':'']" @click="activeTab='linkgl'">
+          <button :class="['tab', activeTab==='linkgl'?'tab--active':'']" @click="switchToLinkGL">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             Link GL
           </button>
@@ -107,9 +107,65 @@
         </div>
 
         <!-- LINK GL TAB -->
-        <div v-if="activeTab==='linkgl'" class="linkgl-empty">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <p>Link GL feature coming soon.</p>
+        <div v-if="activeTab==='linkgl'">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input v-model="glSearch" class="search-input" placeholder="Search..." />
+            </div>
+            <button class="btn btn--primary" @click="openGLCreatePage">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              Create Link GL
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr>
+                <th>Code/SKU</th>
+                <th>Name Category</th>
+                <th>Vendor Liability</th>
+                <th>Pre Payment</th>
+                <th class="th-action">Action</th>
+              </tr></thead>
+              <tbody>
+                <tr v-if="glLoading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+                <tr v-else-if="glError"><td colspan="5" class="td-empty td-error">{{ glError }}</td></tr>
+                <tr v-else-if="filteredGLRows.length===0"><td colspan="5" class="td-empty">No Link GL data found.</td></tr>
+                <template v-else>
+                  <tr v-for="row in filteredGLRows" :key="row.id" class="tr-data">
+                    <td><span class="code-badge">{{ row.searchKey || row['businessPartnerCategory$_identifier'] || '—' }}</span></td>
+                    <td class="td-name">{{ row['businessPartnerCategory$_identifier'] || '—' }}</td>
+                    <td class="td-secondary td-truncate">{{ row['vendorLiability$_identifier'] || '—' }}</td>
+                    <td class="td-secondary td-truncate">{{ row['vendorPrepayment$_identifier'] || '—' }}</td>
+                    <td class="td-action-cell">
+                      <div class="action-group">
+                        <div class="dropdown-wrap" v-click-outside="closeGLDropdown">
+                          <button class="action-btn" @click.stop="toggleGLDropdown(row.id, $event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                          </button>
+                          <div v-if="openGLDropdown===row.id" class="dropdown-menu" :style="{top:glDropdownPos.top+'px',right:glDropdownPos.right+'px'}">
+                            <button class="dropdown-item" @click="openGLViewModal(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                            </button>
+                            <button class="dropdown-item" @click="openGLEditPage(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                            </button>
+                            <button class="dropdown-item dropdown-item--danger" @click="confirmDeleteGL(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                            </button>
+                            <button class="dropdown-item dropdown-item--success" @click="confirmSetGLDefault(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Default
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -217,6 +273,161 @@
           </button>
         </div>
 
+      </div>
+    </Transition>
+
+    <!-- ══════════════════════════════════════════════════════════
+         CREATE / EDIT LINK GL — FULL PAGE
+    ══════════════════════════════════════════════════════════ -->
+    <Transition name="slide">
+      <div v-if="glPage.show" class="page-wrap">
+
+        <div class="breadcrumb-row">
+          <button class="breadcrumb-back" @click="closeGLPage">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Link GL
+          </button>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-cur">{{ glPage.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</span>
+        </div>
+
+        <div class="form-page-title">{{ glPage.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</div>
+
+        <div class="form-card">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Code/SKU</label>
+              <input v-model="glForm.searchKey" placeholder="Auto or manual" :disabled="glPage.mode==='edit'" />
+            </div>
+            <div class="form-group">
+              <label>Vendor Liability</label>
+              <select v-model="glForm.vendorLiability">
+                <option value="">Select</option>
+                <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} - {{ a.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Name Category <span class="req">*</span></label>
+              <select v-model="glForm.businessPartnerCategory">
+                <option value="">Select category</option>
+                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              </select>
+              <span class="field-error" v-if="glFormErrors.businessPartnerCategory">{{ glFormErrors.businessPartnerCategory }}</span>
+            </div>
+            <div class="form-group">
+              <label>Accounting Schema <span class="req">*</span></label>
+              <select v-model="glForm.accountingSchema">
+                <option value="">Select schema</option>
+                <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+              <span class="field-error" v-if="glFormErrors.accountingSchema">{{ glFormErrors.accountingSchema }}</span>
+            </div>
+            <div class="form-group">
+              <label>Pre Payment (Vendor)</label>
+              <select v-model="glForm.vendorPrepayment">
+                <option value="">Select</option>
+                <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} - {{ a.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-checks" style="margin-top:16px">
+            <label class="check-label"><input type="checkbox" v-model="glForm.default" /> Default</label>
+          </div>
+        </div>
+
+        <div v-if="glFormError" class="form-api-error">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ glFormError }}
+        </div>
+
+        <div class="page-footer">
+          <button class="btn btn--ghost" @click="closeGLPage" :disabled="glFormLoading">Cancel</button>
+          <button class="btn btn--primary" @click="submitGLForm" :disabled="glFormLoading">
+            <span v-if="glFormLoading" class="btn-spinner"></span>
+            {{ glFormLoading ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ══════════════════════════════════════════════════════════
+         VIEW LINK GL DETAIL MODAL
+    ══════════════════════════════════════════════════════════ -->
+    <Transition name="fade">
+      <div v-if="glViewModal.show" class="modal-overlay" @click.self="glViewModal.show=false">
+        <div class="modal modal--detail">
+          <div class="modal-header">
+            <h3 class="modal-title">Link GL Detail</h3>
+            <button class="modal-close" @click="glViewModal.show=false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="modal-body" v-if="glViewModal.data">
+            <div class="detail-cols">
+              <div class="detail-col">
+                <div class="detail-item">
+                  <span class="detail-label">Code/SKU</span>
+                  <span class="detail-value mono">{{ glViewModal.data.searchKey || glViewModal.data['businessPartnerCategory$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Category Name</span>
+                  <span class="detail-value">{{ glViewModal.data['businessPartnerCategory$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Vendor Liability</span>
+                  <span class="detail-value">{{ glViewModal.data['vendorLiability$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Pre Payment (Vendor)</span>
+                  <span class="detail-value">{{ glViewModal.data['vendorPrepayment$_identifier'] || '—' }}</span>
+                </div>
+              </div>
+              <div class="detail-col">
+                <div class="detail-item">
+                  <span class="detail-label">Account Receivable</span>
+                  <span class="detail-value">{{ glViewModal.data['customerReceivablesNo$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Write-off</span>
+                  <span class="detail-value">{{ glViewModal.data['writeoff$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status</span>
+                  <span :class="['status-pill', glViewModal.data.active?'status-pill--active':'status-pill--inactive']">
+                    {{ glViewModal.data.active ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn--ghost" @click="openGLEditPage(glViewModal.data); glViewModal.show=false">Edit</button>
+            <button class="btn btn--primary" @click="glViewModal.show=false">Close</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ══ DELETE LINK GL MODAL ══ -->
+    <Transition name="fade">
+      <div v-if="glDeleteModal.show" class="modal-overlay" @click.self="glDeleteModal.show=false">
+        <div class="modal modal--sm">
+          <div class="modal-header">
+            <h3 class="modal-title">Delete Link GL</h3>
+            <button class="modal-close" @click="glDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="modal-body">
+            <p class="delete-text">Yakin ingin menghapus Link GL <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
+            <div v-if="glDeleteError" class="form-api-error" style="margin-top:10px">{{ glDeleteError }}</div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn--ghost" @click="glDeleteModal.show=false" :disabled="glDeleteLoading">Cancel</button>
+            <button class="btn btn--danger" @click="doDeleteGL" :disabled="glDeleteLoading">
+              <span v-if="glDeleteLoading" class="btn-spinner"></span>
+              Delete
+            </button>
+          </div>
+        </div>
       </div>
     </Transition>
 
@@ -453,6 +664,19 @@ import {
   fetchPaymentTerms,
   fetchPriceLists,
   fetchPaymentMethods,
+  fetchBPCategories,
+  createBPCategory,
+  updateBPCategory,
+  deleteBPCategory,
+  fetchBPCategoryAccounts,
+  fetchBPCategoryAccountsByCategory,
+  createBPCategoryAccount,
+  updateBPCategoryAccount,
+  deleteBPCategoryAccount,
+  fetchGLAccounts,
+  fetchAccountingSchemas,
+  createLocation,
+  createBPLocation
 } from '@/services/vendor'
 
 // ── Contacts — reuse customer's ADUser endpoints ─────────────
@@ -510,10 +734,20 @@ const dropdownPos  = ref({ top: 0, right: 0 })
 
 // ── Lookups ──────────────────────────────────────────────────
 const lookups = reactive({ paymentTerms: [], priceLists: [], paymentMethods: [] })
+const bpCategories      = ref([])
+const glAccounts        = ref([])
+const accountingSchemas = ref([])
+
 async function loadLookups() {
   try {
-    const [pt, pl, pm] = await Promise.all([fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods()])
+    const [pt, pl, pm, cats, accts, schemas] = await Promise.all([
+      fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods(),
+      fetchBPCategories(), fetchGLAccounts(), fetchAccountingSchemas(),
+    ])
     lookups.paymentTerms = pt; lookups.priceLists = pl; lookups.paymentMethods = pm
+    bpCategories.value = cats
+    glAccounts.value = accts
+    accountingSchemas.value = schemas
   } catch (e) { console.warn('Lookup failed', e) }
 }
 
@@ -553,7 +787,12 @@ async function enrichWithLocation(list) {
       const loc = locMap[v.id]
       const ident = loc?.['locationAddress$_identifier'] || ''
       const parts = ident.split(' - ')
-      return { ...v, cityName: parts[3]?.trim() || parts[0]?.trim() || '—', phone: v.hp || loc?.phone || '—' }
+      return { 
+        ...v, 
+        cityName: parts[3]?.trim() || parts[0]?.trim() || '—', 
+        postalCode: parts[2]?.trim() || '',
+        phone: v.hp || loc?.phone || '—' 
+      }
     })
   } catch (e) { return list }
 }
@@ -664,9 +903,37 @@ async function submitForm() {
       ...(form.priceList     && { priceList:     form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
     }
+    
     if (page.mode === 'create') {
-      await createVendor(payload)
-      showToast('Vendor berhasil dibuat')
+      // 1. Create BusinessPartner (Vendor)
+      const newVendor = await createVendor(payload)
+
+      // 2. Create Location (Hanya jika field alamat diisi)
+      if (form.streetAddress || form.city || form.province || form.postalCode) {
+        const locPayload = {
+          addressLine1: form.streetAddress || '-',
+          addressLine2: form.otherDetails || null,
+          cityName: form.city || '-',
+          postalCode: form.postalCode || null,
+          country: '209'
+        }
+        const newLoc = await createLocation(locPayload)
+
+        // 3. Create BusinessPartnerLocation
+        const bpLocPayload = {
+          name: form.city || 'Utama',
+          phone: form.phone || null,
+          businessPartner: newVendor.id,
+          locationAddress: newLoc.id,
+          invoiceToAddress: true,
+          shipToAddress: true,
+          payFromAddress: true,
+          remitToAddress: true
+        }
+        await createBPLocation(bpLocPayload)
+      }
+
+      showToast('Vendor dan Location berhasil dibuat')
       currentPage.value = 1; load(); page.show = false
     } else {
       await updateVendor(page.data.id, payload)
@@ -763,6 +1030,160 @@ async function doDeleteContact() {
 }
 
 function initials(first, last) { return `${(first?.[0] || '').toUpperCase()}${(last?.[0] || '').toUpperCase()}` || '?' }
+
+// ════════════════════════════════════════════════════════════
+// LINK GL STATE
+// ════════════════════════════════════════════════════════════
+const glRows    = ref([])
+const glLoading = ref(false)
+const glError   = ref(null)
+const glSearch  = ref('')
+
+const openGLDropdown = ref(null)
+const glDropdownPos  = ref({ top: 0, right: 0 })
+
+const filteredGLRows = computed(() => {
+  if (!glSearch.value.trim()) return glRows.value
+  const q = glSearch.value.toLowerCase()
+  return glRows.value.filter(r =>
+    (r['businessPartnerCategory$_identifier'] || '').toLowerCase().includes(q) ||
+    (r['vendorLiability$_identifier'] || '').toLowerCase().includes(q)
+  )
+})
+
+async function loadGLRows() {
+  glLoading.value = true; glError.value = null
+  try {
+    glRows.value = await fetchBPCategoryAccounts()
+  } catch (e) {
+    glError.value = 'Gagal memuat data Link GL.'
+  } finally { glLoading.value = false }
+}
+
+function switchToLinkGL() {
+  activeTab.value = 'linkgl'
+  if (!glRows.value.length) loadGLRows()
+}
+
+function toggleGLDropdown(id, event) {
+  if (openGLDropdown.value === id) { openGLDropdown.value = null; return }
+  const rect = event.currentTarget.getBoundingClientRect()
+  glDropdownPos.value = { top: rect.bottom + 4, right: window.innerWidth - rect.right }
+  openGLDropdown.value = id
+}
+function closeGLDropdown() { openGLDropdown.value = null }
+
+// ── GL Page (create/edit) ────────────────────────────────────
+const glPage        = reactive({ show: false, mode: 'create', data: null })
+const glFormLoading = ref(false)
+const glFormError   = ref(null)
+const glFormErrors  = reactive({})
+const defaultGLForm = () => ({
+  businessPartnerCategory: '',
+  accountingSchema: '',
+  searchKey: '',
+  customerReceivablesNo: '',
+  customerPrepayment: '',
+  vendorLiability: '',
+  vendorPrepayment: '',
+  writeoff: '',
+  nonInvoicedReceipts: '',
+  default: false,
+})
+const glForm = reactive(defaultGLForm())
+
+function openGLCreatePage() {
+  Object.assign(glForm, defaultGLForm())
+  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
+  glFormError.value = null
+  glPage.mode = 'create'; glPage.data = null; glPage.show = true
+  closeGLDropdown()
+}
+
+function openGLEditPage(row) {
+  Object.assign(glForm, {
+    businessPartnerCategory: row.businessPartnerCategory || '',
+    accountingSchema:        row.accountingSchema || '',
+    searchKey:               row.searchKey || '',
+    customerReceivablesNo:   row.customerReceivablesNo || '',
+    customerPrepayment:      row.customerPrepayment || '',
+    vendorLiability:         row.vendorLiability || '',
+    vendorPrepayment:        row.vendorPrepayment || '',
+    writeoff:                row.writeoff || '',
+    nonInvoicedReceipts:     row.nonInvoicedReceipts || '',
+    default:                 row.default ?? false,
+  })
+  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
+  glFormError.value = null
+  glPage.mode = 'edit'; glPage.data = row; glPage.show = true
+  closeGLDropdown()
+}
+
+function closeGLPage() { if (glFormLoading.value) return; glPage.show = false }
+
+async function submitGLForm() {
+  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
+  if (!glForm.businessPartnerCategory) {
+    glFormErrors.businessPartnerCategory = 'Category wajib dipilih'; return
+  }
+  if (!glForm.accountingSchema) {
+    glFormErrors.accountingSchema = 'Accounting Schema wajib dipilih'; return
+  }
+  glFormLoading.value = true; glFormError.value = null
+  try {
+    if (glPage.mode === 'create') {
+      await createBPCategoryAccount(glForm)
+      showToast('Link GL berhasil dibuat')
+    } else {
+      await updateBPCategoryAccount(glPage.data.id, glForm)
+      showToast('Link GL berhasil diupdate')
+    }
+    glPage.show = false
+    await loadGLRows()
+  } catch (e) {
+    glFormError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
+  } finally { glFormLoading.value = false }
+}
+
+// ── GL View Modal ────────────────────────────────────────────
+const glViewModal = reactive({ show: false, data: null })
+function openGLViewModal(row) {
+  glViewModal.data = row; glViewModal.show = true; closeGLDropdown()
+}
+
+// ── GL Delete ────────────────────────────────────────────────
+const glDeleteModal   = reactive({ show: false, row: null })
+const glDeleteLoading = ref(false)
+const glDeleteError   = ref(null)
+
+function confirmDeleteGL(row) {
+  closeGLDropdown()
+  glDeleteModal.row = row; glDeleteError.value = null; glDeleteModal.show = true
+}
+
+async function doDeleteGL() {
+  glDeleteLoading.value = true; glDeleteError.value = null
+  try {
+    await deleteBPCategoryAccount(glDeleteModal.row.id)
+    showToast('Link GL dihapus')
+    glDeleteModal.show = false
+    await loadGLRows()
+  } catch (e) {
+    glDeleteError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Gagal menghapus.'
+  } finally { glDeleteLoading.value = false }
+}
+
+// ── GL Set Default ───────────────────────────────────────────
+async function confirmSetGLDefault(row) {
+  closeGLDropdown()
+  try {
+    showToast('Memproses...')
+    await loadGLRows()
+    showToast('Default berhasil diset')
+  } catch (e) {
+    showToast('Gagal set default', 'error')
+  }
+}
 
 onMounted(() => { load(); loadLookups() })
 </script>

@@ -28,6 +28,11 @@ const api = axios.create({
 // Constants
 // ==============================
 const BASE = '/org.openbravo.service.json.jsonrest/BusinessPartner'
+const LOC_BASE = '/org.openbravo.service.json.jsonrest/Location'
+const BPLOC_REST = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
+
+// Real organization ID from Openbravo
+const ORG_ID = 'B3FE20F490CF49989D7250C0D3341603'
 
 // Helper: wrap FK value as { id } object (Openbravo JSON REST format)
 const fkWrap = (val) => (val ? { id: val } : undefined)
@@ -189,77 +194,231 @@ export async function fetchPaymentMethods() {
 }
 
 // ==============================
-// LINK GL - BusinessPartnerGLAccount
+// Constants — Link GL endpoints
 // ==============================
-const GL_BASE = '/org.openbravo.service.json.jsonrest/BusinessPartnerGLAccount'
+const BPC_BASE      = '/org.openbravo.service.json.jsonrest/BusinessPartnerCategory'
+const BPC_ACCT_BASE = '/org.openbravo.service.json.jsonrest/BusinessPartnerCategoryAccount'
 
-export async function fetchVendorLinkGL({ startRow = 0, pageSize = 10, searchKey = '' } = {}) {
-  let where = `e.businessPartner.businessPartnerCategory.name = 'Vendor'`
-
-  if (searchKey.trim()) {
-    const escaped = searchKey.trim().replace(/'/g, "''")
-    where += ` and (upper(e.businessPartner.name) like upper('%${escaped}%') or upper(e.businessPartner.searchKey) like upper('%${escaped}%'))`
-  }
-
-  const res = await api.get(GL_BASE, {
+// ==============================
+// LINK GL — BusinessPartnerCategory (filter: Vendor)
+// ==============================
+export async function fetchBPCategories() {
+  const res = await api.get(BPC_BASE, {
     params: {
-      _startRow: startRow,
-      _endRow: startRow + pageSize,
-      _where: where,
-      _noCount: false,
+      _startRow: 0,
+      _endRow: 100,
+      _where: `e.active = true and upper(e.name) like upper('%Vendor%')`,
     },
-  })
-  return res.data?.response ?? res.data
-}
-
-export async function createVendorLinkGL(data) {
-  const { businessPartner, vendorLiability, prePayment, ...rest } = data
-
-  const res = await api.post(GL_BASE, {
-    data: {
-      _entityName: 'BusinessPartnerGLAccount',
-      active: true,
-      ...rest,
-      ...(businessPartner  && { businessPartner:  fkWrap(businessPartner) }),
-      ...(vendorLiability  && { vendorLiability:  fkWrap(vendorLiability) }),
-      ...(prePayment       && { prePayment:        fkWrap(prePayment) }),
-    },
-  })
-  return res.data?.response?.data ?? res.data
-}
-
-export async function updateVendorLinkGL(id, data) {
-  const { businessPartner, vendorLiability, prePayment, ...rest } = data
-
-  const res = await api.put(`${GL_BASE}/${id}`, {
-    data: {
-      id,
-      _entityName: 'BusinessPartnerGLAccount',
-      ...rest,
-      ...(businessPartner  && { businessPartner:  fkWrap(businessPartner) }),
-      ...(vendorLiability  && { vendorLiability:  fkWrap(vendorLiability) }),
-      ...(prePayment       && { prePayment:        fkWrap(prePayment) }),
-    },
-  })
-  return res.data?.response?.data ?? res.data
-}
-
-export async function deleteVendorLinkGL(id) {
-  const res = await api.delete(`${GL_BASE}/${id}`)
-  return res.data?.response?.data ?? res.data
-}
-
-// ==============================
-// Lookup: Accounting Combinations (untuk dropdown Vendor Liability & Pre Payment)
-// ==============================
-export async function fetchAccountingCombinations(searchKey = '') {
-  let where = ''
-  if (searchKey.trim()) {
-    const e = searchKey.trim().replace(/'/g, "''")
-    where = `upper(e.combination) like upper('%${e}%') or upper(e.description) like upper('%${e}%')`
-  }
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingCombination', {
-    params: { _startRow: 0, _endRow: 500, ...(where && { _where: where }) },
   })
   return res.data?.response?.data ?? []
+}
+
+export async function createBPCategory(data) {
+  const payload = {
+    data: {
+      _entityName: 'BusinessPartnerCategory',
+      organization: '0',
+      active: data.active ?? true,
+      searchKey: data.searchKey,
+      name: data.name,
+      description: data.description || null,
+      default: data.default ?? false,
+    },
+  }
+  const res = await api.post(BPC_BASE, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateBPCategory(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerCategory',
+      organization: '0',
+      active: data.active ?? true,
+      searchKey: data.searchKey,
+      name: data.name,
+      description: data.description || null,
+      default: data.default ?? false,
+    },
+  }
+  const res = await api.put(`${BPC_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function deleteBPCategory(id) {
+  const payload = { data: { id, _entityName: 'BusinessPartnerCategory', active: false } }
+  const res = await api.put(`${BPC_BASE}/${id}`, payload)
+  return res.data?.response?.data ?? res.data
+}
+
+// ==============================
+// LINK GL — BusinessPartnerCategoryAccount (filter: Vendor category)
+// ==============================
+export async function fetchBPCategoryAccounts() {
+  const res = await api.get(BPC_ACCT_BASE, {
+    params: {
+      _startRow: 0,
+      _endRow: 200,
+      _where: `upper(e.businessPartnerCategory.name) like upper('%Vendor%')`,
+    },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function fetchBPCategoryAccountsByCategory(categoryId) {
+  const res = await api.get(BPC_ACCT_BASE, {
+    params: {
+      _startRow: 0,
+      _endRow: 50,
+      _where: `e.businessPartnerCategory.id = '${categoryId}'`,
+    },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function createBPCategoryAccount(data) {
+  const payload = {
+    data: {
+      _entityName: 'BusinessPartnerCategoryAccount',
+      organization: '0',
+      active: true,
+      businessPartnerCategory: fkWrap(data.businessPartnerCategory),
+      accountingSchema: fkWrap(data.accountingSchema),
+      ...(data.customerReceivablesNo && { customerReceivablesNo: fkWrap(data.customerReceivablesNo) }),
+      ...(data.customerPrepayment    && { customerPrepayment:    fkWrap(data.customerPrepayment) }),
+      ...(data.vendorLiability       && { vendorLiability:       fkWrap(data.vendorLiability) }),
+      ...(data.vendorPrepayment      && { vendorPrepayment:      fkWrap(data.vendorPrepayment) }),
+      ...(data.writeoff              && { writeoff:              fkWrap(data.writeoff) }),
+      ...(data.nonInvoicedReceipts   && { nonInvoicedReceipts:   fkWrap(data.nonInvoicedReceipts) }),
+    },
+  }
+  const res = await api.post(BPC_ACCT_BASE, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateBPCategoryAccount(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerCategoryAccount',
+      organization: '0',
+      active: data.active ?? true,
+      businessPartnerCategory: fkWrap(data.businessPartnerCategory),
+      accountingSchema: fkWrap(data.accountingSchema),
+      ...(data.customerReceivablesNo && { customerReceivablesNo: fkWrap(data.customerReceivablesNo) }),
+      ...(data.customerPrepayment    && { customerPrepayment:    fkWrap(data.customerPrepayment) }),
+      ...(data.vendorLiability       && { vendorLiability:       fkWrap(data.vendorLiability) }),
+      ...(data.vendorPrepayment      && { vendorPrepayment:      fkWrap(data.vendorPrepayment) }),
+      ...(data.writeoff              && { writeoff:              fkWrap(data.writeoff) }),
+      ...(data.nonInvoicedReceipts   && { nonInvoicedReceipts:   fkWrap(data.nonInvoicedReceipts) }),
+    },
+  }
+  const res = await api.put(`${BPC_ACCT_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function deleteBPCategoryAccount(id) {
+  const payload = { data: { id, _entityName: 'BusinessPartnerCategoryAccount', active: false } }
+  const res = await api.put(`${BPC_ACCT_BASE}/${id}`, payload)
+  return res.data?.response?.data ?? res.data
+}
+
+// ==============================
+// Lookup: GL Accounts (FinancialMgmtElementValue)
+// ==============================
+export async function fetchGLAccounts(search = '') {
+  let where = `e.active = true`
+  if (search.trim()) {
+    const s = search.trim().replace(/'/g, "''")
+    where += ` and (upper(e.name) like upper('%${s}%') or upper(e.value) like upper('%${s}%'))`
+  }
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtElementValue', {
+    params: { _startRow: 0, _endRow: 50, _where: where },
+  })
+  return res.data?.response?.data ?? []
+}
+
+// ==============================
+// Lookup: Accounting Schemas
+// ==============================
+const ACCT_SCHEMA_ENTITIES = [
+  'FinancialMgmtAcctSchema',
+  'FinancialMgmtAccountingSchema',
+  'AcctSchema',
+]
+
+export async function fetchAccountingSchemas() {
+  for (const entity of ACCT_SCHEMA_ENTITIES) {
+    try {
+      const res = await api.get(`/org.openbravo.service.json.jsonrest/${entity}`, {
+        params: { _startRow: 0, _endRow: 50, _where: 'e.active = true' },
+      })
+      const data = res.data?.response?.data
+      if (Array.isArray(data) && data.length > 0) return data
+    } catch (_) { /* try next */ }
+  }
+  // Last resort: extract from existing BPCategoryAccount records
+  try {
+    const res = await api.get(BPC_ACCT_BASE, { params: { _startRow: 0, _endRow: 10 } })
+    const rows = res.data?.response?.data ?? []
+    const seen = new Map()
+    for (const r of rows) {
+      const s = r.accountingSchema
+      if (s) {
+        const id = typeof s === 'object' ? s.id : s
+        const name = typeof s === 'object' ? (s.name ?? s.id) : s
+        if (id && !seen.has(id)) seen.set(id, { id, name })
+      }
+    }
+    if (seen.size) return [...seen.values()]
+  } catch (_) { /* ignore */ }
+  return []
+}
+
+// ==============================
+// LOCATION & BP LOCATION (VENDOR)
+// ==============================
+export async function createLocation(data) {
+  const payload = {
+    data: {
+      _entityName: 'Location',
+      organization: ORG_ID,
+      active: true,
+      addressLine1: data.addressLine1,
+      addressLine2: data.addressLine2 || null,
+      cityName: data.cityName,
+      postalCode: data.postalCode || null,
+      country: data.country || '209',
+      region: null,
+    },
+  }
+  const res = await api.post(LOC_BASE, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function createBPLocation(data) {
+  const payload = {
+    data: {
+      _entityName: 'BusinessPartnerLocation',
+      organization: ORG_ID,
+      active: true,
+      name: data.name,
+      phone: data.phone || null,
+      invoiceToAddress: data.invoiceToAddress ?? true,
+      shipToAddress: data.shipToAddress ?? true,
+      payFromAddress: data.payFromAddress ?? true,
+      remitToAddress: data.remitToAddress ?? true,
+      businessPartner: data.businessPartner,
+      locationAddress: data.locationAddress,
+    },
+  }
+  const res = await api.post(BPLOC_REST, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
 }

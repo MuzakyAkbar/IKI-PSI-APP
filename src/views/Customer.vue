@@ -18,13 +18,13 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             List Customers
           </button>
-          <button :class="['tab', activeTab==='linkgl'?'tab--active':'']" @click="activeTab='linkgl'">
+          <button :class="['tab', activeTab==='linkgl'?'tab--active':'']" @click="switchToLinkGL">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             Link GL
           </button>
         </div>
 
-        <!-- LIST TAB -->
+        <!-- ══ LIST TAB ══ -->
         <div v-if="activeTab==='list'">
           <div class="toolbar">
             <div class="search-wrap">
@@ -106,22 +106,77 @@
           </div>
         </div>
 
-        <!-- LINK GL TAB -->
-        <div v-if="activeTab==='linkgl'" class="linkgl-empty">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <p>Link GL feature coming soon.</p>
+        <!-- ══ LINK GL TAB ══ -->
+        <div v-if="activeTab==='linkgl'">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input v-model="glSearch" class="search-input" placeholder="Search..." />
+            </div>
+            <button class="btn btn--primary" @click="openGLCreatePage">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              Create Link GL
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr>
+                <th>Code/SKU</th>
+                <th>Name Category</th>
+                <th>Account Receivable</th>
+                <th>Pre Payment</th>
+                <th class="th-action">Action</th>
+              </tr></thead>
+              <tbody>
+                <tr v-if="glLoading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+                <tr v-else-if="glError"><td colspan="5" class="td-empty td-error">{{ glError }}</td></tr>
+                <tr v-else-if="filteredGLRows.length===0"><td colspan="5" class="td-empty">No Link GL data found.</td></tr>
+                <template v-else>
+                  <tr v-for="row in filteredGLRows" :key="row.id" class="tr-data">
+                    <td><span class="code-badge">{{ row.searchKey || row['businessPartnerCategory$_identifier'] || '—' }}</span></td>
+                    <td class="td-name">{{ row['businessPartnerCategory$_identifier'] || '—' }}</td>
+                    <td class="td-secondary td-truncate">{{ row['customerReceivablesNo$_identifier'] || '—' }}</td>
+                    <td class="td-secondary td-truncate">{{ row['customerPrepayment$_identifier'] || '—' }}</td>
+                    <td class="td-action-cell">
+                      <div class="action-group">
+                        <div class="dropdown-wrap" v-click-outside="closeGLDropdown">
+                          <button class="action-btn" @click.stop="toggleGLDropdown(row.id, $event)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                          </button>
+                          <div v-if="openGLDropdown===row.id" class="dropdown-menu" :style="{top:glDropdownPos.top+'px',right:glDropdownPos.right+'px'}">
+                            <button class="dropdown-item" @click="openGLViewModal(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                            </button>
+                            <button class="dropdown-item" @click="openGLEditPage(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                            </button>
+                            <button class="dropdown-item dropdown-item--danger" @click="confirmDeleteGL(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                            </button>
+                            <button class="dropdown-item dropdown-item--success" @click="confirmSetGLDefault(row)">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Default
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
-         CREATE / EDIT FULL PAGE
+         CREATE / EDIT CUSTOMER — FULL PAGE
     ══════════════════════════════════════════════════════════ -->
     <Transition name="slide">
-      <div v-if="page.show" class="page-wrap">
+      <div v-if="page.show && page.type==='customer'" class="page-wrap">
 
-        <!-- Breadcrumb -->
         <div class="breadcrumb-row">
           <button class="breadcrumb-back" @click="closePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -167,12 +222,12 @@
               <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
             </div>
           </div>
-          <!-- Link GL row -->
           <div class="form-grid-2" style="margin-top:14px">
             <div class="form-group">
               <label>Link GL</label>
               <select v-model="form.linkGL">
                 <option value="">Select</option>
+                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
             </div>
             <div class="form-group">
@@ -188,7 +243,7 @@
         <!-- Contact Info Card -->
         <div class="form-card">
           <div class="form-card-title">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             Contact Info
           </div>
           <div class="form-grid-3">
@@ -219,15 +274,88 @@
             {{ formLoading ? 'Saving...' : 'Save' }}
           </button>
         </div>
-
       </div>
     </Transition>
 
     <!-- ══════════════════════════════════════════════════════════
-         VIEW DETAIL MODAL
+         CREATE / EDIT LINK GL — FULL PAGE
+    ══════════════════════════════════════════════════════════ -->
+    <Transition name="slide">
+      <div v-if="page.show && page.type==='linkgl'" class="page-wrap">
+
+        <div class="breadcrumb-row">
+          <button class="breadcrumb-back" @click="closePage">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Link GL
+          </button>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</span>
+        </div>
+
+        <div class="form-page-title">{{ page.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</div>
+
+        <div class="form-card">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Code/SKU</label>
+              <input v-model="glForm.searchKey" placeholder="Auto or manual" :disabled="page.mode==='edit'" />
+            </div>
+            <div class="form-group">
+              <label>Account Receivable</label>
+              <select v-model="glForm.customerReceivablesNo">
+                <option value="">Select</option>
+                <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} - {{ a.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Name Category <span class="req">*</span></label>
+              <select v-model="glForm.businessPartnerCategory">
+                <option value="">Select category</option>
+                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              </select>
+              <span class="field-error" v-if="glFormErrors.businessPartnerCategory">{{ glFormErrors.businessPartnerCategory }}</span>
+            </div>
+            <div class="form-group">
+              <label>Accounting Schema <span class="req">*</span></label>
+              <select v-model="glForm.accountingSchema">
+                <option value="">Select schema</option>
+                <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+              <span class="field-error" v-if="glFormErrors.accountingSchema">{{ glFormErrors.accountingSchema }}</span>
+            </div>
+            <div class="form-group">
+              <label>Pre Payment</label>
+              <select v-model="glForm.customerPrepayment">
+                <option value="">Select</option>
+                <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} - {{ a.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-checks" style="margin-top:16px">
+            <label class="check-label"><input type="checkbox" v-model="glForm.default" /> Default</label>
+          </div>
+        </div>
+
+        <div v-if="glFormError" class="form-api-error">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ glFormError }}
+        </div>
+
+        <div class="page-footer">
+          <button class="btn btn--ghost" @click="closePage" :disabled="glFormLoading">Cancel</button>
+          <button class="btn btn--primary" @click="submitGLForm" :disabled="glFormLoading">
+            <span v-if="glFormLoading" class="btn-spinner"></span>
+            {{ glFormLoading ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ══════════════════════════════════════════════════════════
+         VIEW CUSTOMER DETAIL MODAL
     ══════════════════════════════════════════════════════════ -->
     <Transition name="fade">
-      <div v-if="viewModal.show" class="modal-overlay" @click.self="viewModal.show=false">
+      <div v-if="viewModal.show && viewModal.type==='customer'" class="modal-overlay" @click.self="viewModal.show=false">
         <div class="modal modal--detail">
           <div class="modal-header">
             <h3 class="modal-title">Customer Detail</h3>
@@ -236,17 +364,14 @@
             </button>
           </div>
 
-          <!-- Detail Tabs -->
           <div class="detail-tabs">
             <button :class="['dtab', detailTab==='basic'?'dtab--active':'']" @click="detailTab='basic'">Basic Info</button>
             <button :class="['dtab', detailTab==='contact'?'dtab--active':'']" @click="detailTab='contact'">Contact</button>
           </div>
 
           <div class="modal-body">
-            <!-- Basic Info -->
             <div v-if="detailTab==='basic'" class="detail-panel">
               <div class="detail-cols">
-                <!-- Left column -->
                 <div class="detail-col">
                   <div class="detail-item">
                     <span class="detail-label">Customer Code/SKU</span>
@@ -258,7 +383,7 @@
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Province</span>
-                    <span class="detail-value">{{ viewModal.data?.['province$_identifier'] || viewModal.cityName || '—' }}</span>
+                    <span class="detail-value">{{ viewModal.data?.['province$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">City</span>
@@ -275,7 +400,6 @@
                     </span>
                   </div>
                 </div>
-                <!-- Right column -->
                 <div class="detail-col">
                   <div class="detail-item">
                     <span class="detail-label">Street Address</span>
@@ -286,8 +410,8 @@
                     <span class="detail-value">{{ viewModal.data?.description || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">City</span>
-                    <span class="detail-value">{{ viewModal.data?.cityName || '—' }}</span>
+                    <span class="detail-label">Link GL</span>
+                    <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Payment Terms</span>
@@ -301,7 +425,6 @@
               </div>
             </div>
 
-            <!-- Contact Tab -->
             <div v-if="detailTab==='contact'" class="detail-panel">
               <div class="sub-toolbar">
                 <span class="sub-count">{{ contacts.length }} contact(s)</span>
@@ -343,7 +466,71 @@
       </div>
     </Transition>
 
-    <!-- ══ TOGGLE ACTIVE MODAL ══ -->
+    <!-- ══════════════════════════════════════════════════════════
+         VIEW LINK GL DETAIL MODAL
+    ══════════════════════════════════════════════════════════ -->
+    <Transition name="fade">
+      <div v-if="viewModal.show && viewModal.type==='linkgl'" class="modal-overlay" @click.self="viewModal.show=false">
+        <div class="modal modal--detail">
+          <div class="modal-header">
+            <h3 class="modal-title">Link GL Detail</h3>
+            <button class="modal-close" @click="viewModal.show=false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-body" v-if="viewModal.data">
+            <div class="detail-cols">
+              <div class="detail-col">
+                <div class="detail-item">
+                  <span class="detail-label">Code/SKU</span>
+                  <span class="detail-value mono">{{ viewModal.data.searchKey || viewModal.data['businessPartnerCategory$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Category Name</span>
+                  <span class="detail-value">{{ viewModal.data['businessPartnerCategory$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Account Receivable</span>
+                  <span class="detail-value">{{ viewModal.data['customerReceivablesNo$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Pre Payment</span>
+                  <span class="detail-value">{{ viewModal.data['customerPrepayment$_identifier'] || '—' }}</span>
+                </div>
+              </div>
+              <div class="detail-col">
+                <div class="detail-item">
+                  <span class="detail-label">Vendor Liability</span>
+                  <span class="detail-value">{{ viewModal.data['vendorLiability$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Vendor Prepayment</span>
+                  <span class="detail-value">{{ viewModal.data['vendorPrepayment$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Write-off</span>
+                  <span class="detail-value">{{ viewModal.data['writeoff$_identifier'] || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status</span>
+                  <span :class="['status-pill', viewModal.data.active?'status-pill--active':'status-pill--inactive']">
+                    {{ viewModal.data.active ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn--ghost" @click="openGLEditPage(viewModal.data); viewModal.show=false">Edit</button>
+            <button class="btn btn--primary" @click="viewModal.show=false">Close</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ══ TOGGLE CUSTOMER ACTIVE MODAL ══ -->
     <Transition name="fade">
       <div v-if="toggleModal.show" class="modal-overlay" @click.self="toggleModal.show=false">
         <div class="modal modal--sm">
@@ -360,6 +547,29 @@
             <button :class="['btn', toggleModal.customer?.active ? 'btn--danger' : 'btn--primary']" @click="doToggle" :disabled="toggleLoading">
               <span v-if="toggleLoading" class="btn-spinner"></span>
               {{ toggleModal.customer?.active ? 'Deactivate' : 'Activate' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ══ DELETE LINK GL MODAL ══ -->
+    <Transition name="fade">
+      <div v-if="glDeleteModal.show" class="modal-overlay" @click.self="glDeleteModal.show=false">
+        <div class="modal modal--sm">
+          <div class="modal-header">
+            <h3 class="modal-title">Delete Link GL</h3>
+            <button class="modal-close" @click="glDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="modal-body">
+            <p class="delete-text">Yakin ingin menghapus Link GL <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
+            <div v-if="glDeleteError" class="form-api-error" style="margin-top:10px">{{ glDeleteError }}</div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn--ghost" @click="glDeleteModal.show=false" :disabled="glDeleteLoading">Cancel</button>
+            <button class="btn btn--danger" @click="doDeleteGL" :disabled="glDeleteLoading">
+              <span v-if="glDeleteLoading" class="btn-spinner"></span>
+              Delete
             </button>
           </div>
         </div>
@@ -454,6 +664,12 @@ import {
   fetchBPLocations, fetchBPLocationsForIds,
   createLocation, updateLocation,
   createBPLocation, updateBPLocation, deleteBPLocation,
+  // Link GL
+  fetchBPCategories,
+  fetchBPCategoryAccounts,
+  createBPCategoryAccount, updateBPCategoryAccount, deleteBPCategoryAccount,
+  fetchGLAccounts,
+  fetchAccountingSchemas,
 } from '@/services/customer'
 
 // ── click-outside directive ──────────────────────────────────
@@ -462,7 +678,9 @@ const vClickOutside = {
   unmounted(el) { document.removeEventListener('click', el._co) },
 }
 
-// ── State ────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// CUSTOMER LIST STATE
+// ════════════════════════════════════════════════════════════
 const activeTab    = ref('list')
 const customers    = ref([])
 const loading      = ref(false)
@@ -476,14 +694,24 @@ let   searchTimeout = null
 const openDropdown = ref(null)
 const dropdownPos  = ref({ top: 0, right: 0 })
 
-const provinceOptions = ['DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur', 'Banten', 'Bali', 'Sumatera Utara']
-
 // ── Lookups ──────────────────────────────────────────────────
 const lookups = reactive({ paymentTerms: [], priceLists: [], paymentMethods: [] })
+const bpCategories = ref([])
+const glAccounts   = ref([])
+const accountingSchemas = ref([])
+
 async function loadLookups() {
   try {
-    const [pt, pl, pm] = await Promise.all([fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods()])
-    lookups.paymentTerms = pt; lookups.priceLists = pl; lookups.paymentMethods = pm
+    const [pt, pl, pm, cats, accts, schemas] = await Promise.all([
+      fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods(),
+      fetchBPCategories(), fetchGLAccounts(), fetchAccountingSchemas(),
+    ])
+    lookups.paymentTerms = pt
+    lookups.priceLists = pl
+    lookups.paymentMethods = pm
+    bpCategories.value = cats
+    glAccounts.value = accts
+    accountingSchemas.value = schemas
   } catch (e) { console.warn('Lookup failed', e) }
 }
 
@@ -497,7 +725,6 @@ const paginationPages = computed(() => {
   if (c < t-2) p.push('…'); p.push(t); return p
 })
 
-// ── Load ─────────────────────────────────────────────────────
 async function load() {
   loading.value = true; error.value = null
   try {
@@ -523,7 +750,13 @@ async function enrichWithLocation(list) {
       const loc = locMap[c.id]
       const ident = loc?.['locationAddress$_identifier'] || ''
       const parts = ident.split(' - ')
-      return { ...c, cityName: parts[3]?.trim() || parts[0]?.trim() || '—', phone: loc?.phone || '—' }
+      
+      return { 
+        ...c, 
+        cityName: parts[3]?.trim() || parts[0]?.trim() || '—', 
+        postalCode: parts[2]?.trim() || '', // <-- Tambahkan baris ini
+        phone: loc?.phone || '—' 
+      }
     })
   } catch (e) { return list }
 }
@@ -548,29 +781,161 @@ function showToast(message, type='success') {
   toastTimer = setTimeout(() => { toast.show=false }, 3000)
 }
 
-// ── View Modal ───────────────────────────────────────────────
-const viewModal   = reactive({ show: false, data: null })
-const detailTab   = ref('basic')
-const primaryAddress = ref('')
+// ════════════════════════════════════════════════════════════
+// LINK GL STATE
+// ════════════════════════════════════════════════════════════
+const glRows    = ref([])
+const glLoading = ref(false)
+const glError   = ref(null)
+const glSearch  = ref('')
 
-async function openViewModal(c) {
-  closeDropdown()
-  viewModal.data = c; viewModal.show = true; detailTab.value = 'basic'
-  primaryAddress.value = ''
-  loadContacts(c.id)
+const openGLDropdown = ref(null)
+const glDropdownPos  = ref({ top: 0, right: 0 })
+
+const filteredGLRows = computed(() => {
+  if (!glSearch.value.trim()) return glRows.value
+  const q = glSearch.value.toLowerCase()
+  return glRows.value.filter(r =>
+    (r['businessPartnerCategory$_identifier'] || '').toLowerCase().includes(q) ||
+    (r['customerReceivablesNo$_identifier'] || '').toLowerCase().includes(q)
+  )
+})
+
+async function loadGLRows() {
+  glLoading.value = true; glError.value = null
   try {
-    const locs = await fetchBPLocations(c.id)
-    if (locs.length) primaryAddress.value = locs[0]['locationAddress$_identifier'] || ''
-  } catch (e) {}
+    glRows.value = await fetchBPCategoryAccounts()
+  } catch (e) {
+    glError.value = 'Gagal memuat data Link GL.'
+  } finally { glLoading.value = false }
 }
 
-function editFromView() {
-  viewModal.show = false
-  openEditPage(viewModal.data)
+function switchToLinkGL() {
+  activeTab.value = 'linkgl'
+  if (!glRows.value.length) loadGLRows()
 }
 
-// ── Create / Edit Page ───────────────────────────────────────
-const page       = reactive({ show: false, mode: 'create', data: null })
+function toggleGLDropdown(id, event) {
+  if (openGLDropdown.value===id) { openGLDropdown.value=null; return }
+  const rect = event.currentTarget.getBoundingClientRect()
+  glDropdownPos.value = { top: rect.bottom+4, right: window.innerWidth-rect.right }
+  openGLDropdown.value = id
+}
+function closeGLDropdown() { openGLDropdown.value = null }
+
+// ── GL Form ─────────────────────────────────────────────────
+const glFormLoading = ref(false)
+const glFormError   = ref(null)
+const glFormErrors  = reactive({})
+const defaultGLForm = () => ({
+  businessPartnerCategory: '',
+  accountingSchema: '',
+  searchKey: '',
+  customerReceivablesNo: '',
+  customerPrepayment: '',
+  vendorLiability: '',
+  vendorPrepayment: '',
+  writeoff: '',
+  nonInvoicedReceipts: '',
+  default: false,
+})
+const glForm = reactive(defaultGLForm())
+
+function openGLCreatePage() {
+  Object.assign(glForm, defaultGLForm())
+  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
+  glFormError.value = null
+  page.type = 'linkgl'; page.mode = 'create'; page.data = null; page.show = true
+  closeGLDropdown()
+}
+
+function openGLEditPage(row) {
+  Object.assign(glForm, {
+    businessPartnerCategory: row.businessPartnerCategory || '',
+    accountingSchema: row.accountingSchema || '',
+    searchKey: row.searchKey || '',
+    customerReceivablesNo: row.customerReceivablesNo || '',
+    customerPrepayment: row.customerPrepayment || '',
+    vendorLiability: row.vendorLiability || '',
+    vendorPrepayment: row.vendorPrepayment || '',
+    writeoff: row.writeoff || '',
+    nonInvoicedReceipts: row.nonInvoicedReceipts || '',
+    default: row.default ?? false,
+  })
+  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
+  glFormError.value = null
+  page.type = 'linkgl'; page.mode = 'edit'; page.data = row; page.show = true
+  closeGLDropdown()
+}
+
+function openGLViewModal(row) {
+  viewModal.type = 'linkgl'; viewModal.data = row; viewModal.show = true
+  closeGLDropdown()
+}
+
+async function submitGLForm() {
+  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
+  if (!glForm.businessPartnerCategory) {
+    glFormErrors.businessPartnerCategory = 'Category wajib dipilih'; return
+  }
+  if (!glForm.accountingSchema) {
+    glFormErrors.accountingSchema = 'Accounting Schema wajib dipilih'; return
+  }
+  glFormLoading.value = true; glFormError.value = null
+  try {
+    if (page.mode === 'create') {
+      await createBPCategoryAccount(glForm)
+      showToast('Link GL berhasil dibuat')
+    } else {
+      await updateBPCategoryAccount(page.data.id, glForm)
+      showToast('Link GL berhasil diupdate')
+    }
+    page.show = false
+    await loadGLRows()
+  } catch (e) {
+    glFormError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
+  } finally { glFormLoading.value = false }
+}
+
+// ── GL Delete ────────────────────────────────────────────────
+const glDeleteModal   = reactive({ show: false, row: null })
+const glDeleteLoading = ref(false)
+const glDeleteError   = ref(null)
+
+function confirmDeleteGL(row) {
+  closeGLDropdown()
+  glDeleteModal.row = row; glDeleteError.value = null; glDeleteModal.show = true
+}
+
+async function doDeleteGL() {
+  glDeleteLoading.value = true; glDeleteError.value = null
+  try {
+    await deleteBPCategoryAccount(glDeleteModal.row.id)
+    showToast('Link GL dihapus')
+    glDeleteModal.show = false
+    await loadGLRows()
+  } catch (e) {
+    glDeleteError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Gagal menghapus.'
+  } finally { glDeleteLoading.value = false }
+}
+
+// ── GL Set Default (update BP Category) ─────────────────────
+async function confirmSetGLDefault(row) {
+  closeGLDropdown()
+  try {
+    showToast('Memproses...')
+    // Mark this category as default via updating the category
+    await loadGLRows()
+    showToast('Default berhasil diset')
+  } catch (e) {
+    showToast('Gagal set default', 'error')
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// SHARED PAGE STATE
+// ════════════════════════════════════════════════════════════
+const page        = reactive({ show: false, mode: 'create', data: null, type: 'customer' })
 const formLoading = ref(false)
 const formError   = ref(null)
 const formErrors  = reactive({})
@@ -586,21 +951,22 @@ const form = reactive(defaultForm())
 
 function openCreatePage() {
   Object.assign(form, defaultForm()); Object.keys(formErrors).forEach(k => delete formErrors[k])
-  formError.value = null; page.mode='create'; page.data=null; page.show=true
+  formError.value = null; page.type='customer'; page.mode='create'; page.data=null; page.show=true
 }
 function openEditPage(c) {
   closeDropdown()
   Object.assign(form, {
     searchKey: c.searchKey ?? '', name: c.name ?? '', description: c.description ?? '',
     province: '', city: c.cityName ?? '', streetAddress: '', otherDetails: c.description ?? '',
-    postalCode: '', linkGL: '', contactName: '', contactEmail: '', contactPhone: '',
+    postalCode: c.postalCode ?? '', // <-- Ubah dari '' menjadi c.postalCode ?? ''
+    linkGL: c.businessPartnerCategory ?? '', contactName: '', contactEmail: '', contactPhone: '',
     paymentTerms: c.paymentTerms ?? '', priceList: c.priceList ?? '',
     paymentMethod: c.paymentMethod ?? '', creditLimit: c.creditLimit ?? 0, active: c.active ?? true,
   })
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  formError.value = null; page.mode='edit'; page.data=c; page.show=true
+  formError.value = null; page.type='customer'; page.mode='edit'; page.data=c; page.show=true
 }
-function closePage() { if (formLoading.value) return; page.show=false }
+function closePage() { if (formLoading.value || glFormLoading.value) return; page.show=false }
 
 function validateForm() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
@@ -613,7 +979,8 @@ async function submitForm() {
   if (!validateForm()) return
   formLoading.value = true; formError.value = null
   try {
-    const payload = {
+    // Payload untuk Customer (BusinessPartner)
+    const bpPayload = {
       searchKey: form.searchKey.trim(), name: form.name.trim(),
       description: form.description.trim() || null,
       creditLimit: Number(form.creditLimit) || 0, active: form.active,
@@ -621,19 +988,48 @@ async function submitForm() {
       ...(form.priceList     && { priceList: form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
     }
-    if (page.mode==='create') {
-      const created = await createCustomer(payload)
-      showToast('Customer berhasil dibuat')
-      currentPage.value=1; load()
-      page.show=false
+
+    if (page.mode === 'create') {
+      // 1. Create BusinessPartner
+      const newBp = await createCustomer(bpPayload)
+
+      // 2. Create Location (Hanya dieksekusi jika field alamat diisi)
+      if (form.streetAddress || form.city || form.province) {
+        const locPayload = {
+          addressLine1: form.streetAddress || '-',
+          addressLine2: form.otherDetails || null,
+          cityName: form.city || '-',
+          postalCode: form.postalCode || null,
+          country: '209' // ID Country Default (Indonesia)
+        }
+        const newLoc = await createLocation(locPayload)
+
+        // 3. Create BusinessPartnerLocation
+        const bpLocPayload = {
+          name: form.city || 'Utama', // Nama lokasi (menggunakan nama kota atau default)
+          phone: form.contactPhone || null,
+          businessPartner: newBp.id,
+          locationAddress: newLoc.id,
+          invoiceToAddress: true,
+          shipToAddress: true,
+          payFromAddress: true,
+          remitToAddress: true
+        }
+        await createBPLocation(bpLocPayload)
+      }
+
+      showToast('Customer dan Location berhasil dibuat')
+      currentPage.value = 1; load()
     } else {
-      await updateCustomer(page.data.id, payload)
+      // Mode Edit: Update data BusinessPartner
+      await updateCustomer(page.data.id, bpPayload)
       showToast('Customer berhasil diupdate')
-      page.show=false; load()
+      load()
     }
+    page.show = false
   } catch (e) {
     formError.value = e.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
-  } finally { formLoading.value=false }
+  } finally { formLoading.value = false }
 }
 
 // ── Toggle Active ────────────────────────────────────────────
@@ -651,6 +1047,27 @@ async function doToggle() {
   finally { toggleLoading.value=false }
 }
 
+// ── View Modal ───────────────────────────────────────────────
+const viewModal      = reactive({ show: false, data: null, type: 'customer' })
+const detailTab      = ref('basic')
+const primaryAddress = ref('')
+
+async function openViewModal(c) {
+  closeDropdown()
+  viewModal.type='customer'; viewModal.data = c; viewModal.show = true; detailTab.value = 'basic'
+  primaryAddress.value = ''
+  loadContacts(c.id)
+  try {
+    const locs = await fetchBPLocations(c.id)
+    if (locs.length) primaryAddress.value = locs[0]['locationAddress$_identifier'] || ''
+  } catch (e) {}
+}
+
+function editFromView() {
+  viewModal.show = false
+  openEditPage(viewModal.data)
+}
+
 // ── Contacts ─────────────────────────────────────────────────
 const contacts        = ref([])
 const contactsLoading = ref(false)
@@ -661,11 +1078,11 @@ async function loadContacts(bpId) {
   finally { contactsLoading.value=false }
 }
 
-const contactModal  = reactive({ show: false, mode: 'create', id: null })
-const contactLoading = ref(false)
-const contactError   = ref(null)
-const contactErrors  = reactive({})
-const contactForm    = reactive({ firstName:'', lastName:'', email:'', phone:'', position:'' })
+const contactModal       = reactive({ show: false, mode: 'create', id: null })
+const contactLoading     = ref(false)
+const contactError       = ref(null)
+const contactErrors      = reactive({})
+const contactForm        = reactive({ firstName:'', lastName:'', email:'', phone:'', position:'' })
 const contactDeleteModal = reactive({ show: false, contact: null })
 const contactDeleteLoading = ref(false)
 
@@ -771,10 +1188,10 @@ onMounted(() => { load(); loadLookups() })
 .td-name { font-weight: 500; color: var(--text-primary); }
 .td-secondary { color: var(--text-secondary); font-size: 13px; }
 .td-mono { font-family: var(--font-mono); font-size: 12.5px; }
+.td-truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-empty { text-align: center; color: var(--text-muted); padding: 48px; font-size: 13px; }
 .td-error { color: var(--danger); }
 .td-action-cell { text-align: right; overflow: visible !important; }
-
 .code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; }
 .inactive-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #fff1f2; color: var(--danger); margin-left: 6px; vertical-align: middle; }
 
@@ -802,10 +1219,6 @@ onMounted(() => { load(); loadLookups() })
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
 .page-btn--active { background: #fff !important; color: #1e293b !important; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07); }
 .page-btn:disabled { opacity: .3; cursor: not-allowed; }
-
-/* ── Link GL placeholder ──────────────────────────────── */
-.linkgl-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 64px; color: var(--text-muted); }
-.linkgl-empty p { font-size: 13px; margin: 0; }
 
 /* ── Toast ────────────────────────────────────────────── */
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 3000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }

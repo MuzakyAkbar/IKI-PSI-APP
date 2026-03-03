@@ -3,8 +3,7 @@ import axios from 'axios'
 // ==============================
 // Runtime Config
 // ==============================
-const BASE_URL =
-  window.APP_CONFIG?.API_BASE_URL || '/openbravo/'
+const BASE_URL = window.APP_CONFIG?.API_BASE_URL || '/openbravo/'
 
 // ==============================
 // Basic Auth
@@ -27,41 +26,37 @@ const api = axios.create({
 // ==============================
 // Constants — JSON REST endpoints
 // ==============================
-const BP_BASE    = '/org.openbravo.service.json.jsonrest/BusinessPartner'
-const USER_BASE  = '/org.openbravo.service.json.jsonrest/ADUser'
-const LOC_BASE   = '/org.openbravo.service.json.jsonrest/Location'
-const BPLOC_REST = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
+const BP_BASE       = '/org.openbravo.service.json.jsonrest/BusinessPartner'
+const USER_BASE     = '/org.openbravo.service.json.jsonrest/ADUser'
+const LOC_BASE      = '/org.openbravo.service.json.jsonrest/Location'
+const BPLOC_REST    = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
+const BPC_BASE      = '/org.openbravo.service.json.jsonrest/BusinessPartnerCategory'
+const BPC_ACCT_BASE = '/org.openbravo.service.json.jsonrest/BusinessPartnerCategoryAccount'
 
 // Helper: wrap FK value as { id } object
 const fkWrap = (val) => (val ? { id: val } : undefined)
 
 // Real organization ID from Openbravo (confirmed from API response)
-// '0' shorthand only works for some entities; Location & BPLocation need the real org ID
 const ORG_ID = 'B3FE20F490CF49989D7250C0D3341603'
 
 // ==============================
-// GET - list customers (EXACT reference logic)
+// GET - list customers
 // ==============================
 export async function fetchCustomers({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
-  // Filter berdasarkan kategori 'Customer'
   let where = `e.businessPartnerCategory.name = 'Customer'`
-
   if (searchKey.trim()) {
     const escaped = searchKey.trim().replace(/'/g, "''")
-    // Mencari berdasarkan nama atau searchKey (Code)
     where += ` and (upper(e.name) like upper('%${escaped}%') or upper(e.searchKey) like upper('%${escaped}%'))`
   }
-
   const res = await api.get(BP_BASE, {
     params: {
       _startRow: startRow,
       _endRow: startRow + pageSize,
       _where: where,
       _noCount: false,
-      _sortBy: 'searchKey' // Urutkan berdasarkan Code
+      _sortBy: 'searchKey',
     },
   })
-
   return res.data?.response ?? res.data
 }
 
@@ -69,7 +64,7 @@ export async function fetchCustomers({ startRow = 0, pageSize = 20, searchKey = 
 // Lookup: Business Partner Category
 // ==============================
 async function fetchCategoryIdByName(name) {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/BusinessPartnerCategory', {
+  const res = await api.get(BPC_BASE, {
     params: {
       _startRow: 0,
       _endRow: 100,
@@ -84,15 +79,13 @@ async function fetchCategoryIdByName(name) {
 let _customerCategoryId = null
 
 // ==============================
-// POST - create customer (EXACT reference logic — no value field)
+// POST - create customer
 // ==============================
 export async function createCustomer(data) {
   const { paymentTerms, priceList, paymentMethod, currency, ...rest } = data
-
   if (!_customerCategoryId) {
     _customerCategoryId = await fetchCategoryIdByName('Customer')
   }
-
   const payload = {
     data: {
       _entityName: 'BusinessPartner',
@@ -100,27 +93,24 @@ export async function createCustomer(data) {
       customer: true,
       vendor: false,
       businessPartnerCategory: { id: _customerCategoryId },
-      // Openbravo menggunakan searchKey sebagai field 'Code'
-      searchKey: data.searchKey, 
+      searchKey: data.searchKey,
       name: data.name,
-      currency: fkWrap(currency) ?? { id: '303' }, // Default IDR jika kosong
+      currency: fkWrap(currency) ?? { id: '303' },
       ...rest,
       ...(paymentTerms  && { paymentTerms:  fkWrap(paymentTerms) }),
       ...(priceList     && { priceList:     fkWrap(priceList) }),
       ...(paymentMethod && { paymentMethod: fkWrap(paymentMethod) }),
     },
   }
-
   const res = await api.post(BP_BASE, payload)
   return res.data?.response?.data?.[0] ?? res.data
 }
 
 // ==============================
-// PUT - update customer (EXACT reference logic)
+// PUT - update customer
 // ==============================
 export async function updateCustomer(id, data) {
   const { paymentTerms, priceList, paymentMethod, currency, ...rest } = data
-
   const payload = {
     data: {
       id,
@@ -132,7 +122,6 @@ export async function updateCustomer(id, data) {
       ...(paymentMethod && { paymentMethod: fkWrap(paymentMethod) }),
     },
   }
-
   const res = await api.put(`${BP_BASE}/${id}`, payload)
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
@@ -152,24 +141,195 @@ export async function deleteCustomer(id) {
 // Lookups
 // ==============================
 export async function fetchPaymentTerms() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/PaymentTerm', {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtPaymentTerm', {
     params: { _startRow: 0, _endRow: 100 },
   })
   return res.data?.response?.data ?? []
 }
 
 export async function fetchPriceLists() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/PriceList', {
-    params: { _startRow: 0, _endRow: 100, _where: `e.salesPriceList = true` },
+  const res = await api.get('/org.openbravo.service.json.jsonrest/PricingPriceList', {
+    params: { _startRow: 0, _endRow: 100, _where: `e.salesPriceList = true and e.active = true` },
   })
   return res.data?.response?.data ?? []
 }
 
 export async function fetchPaymentMethods() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_Payment_Method', {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtFinAccPaymentMethod', {
     params: { _startRow: 0, _endRow: 100 },
   })
   return res.data?.response?.data ?? []
+}
+
+// ==============================
+// LINK GL — BusinessPartnerCategory
+// ==============================
+export async function fetchBPCategories() {
+  const res = await api.get(BPC_BASE, {
+    params: { _startRow: 0, _endRow: 100, _where: 'e.active = true' },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function createBPCategory(data) {
+  const payload = {
+    data: {
+      _entityName: 'BusinessPartnerCategory',
+      organization: '0',
+      active: data.active ?? true,
+      searchKey: data.searchKey,
+      name: data.name,
+      description: data.description || null,
+      default: data.default ?? false,
+    },
+  }
+  const res = await api.post(BPC_BASE, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateBPCategory(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerCategory',
+      organization: '0',
+      active: data.active ?? true,
+      searchKey: data.searchKey,
+      name: data.name,
+      description: data.description || null,
+      default: data.default ?? false,
+    },
+  }
+  const res = await api.put(`${BPC_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function deleteBPCategory(id) {
+  const payload = { data: { id, _entityName: 'BusinessPartnerCategory', active: false } }
+  const res = await api.put(`${BPC_BASE}/${id}`, payload)
+  return res.data?.response?.data ?? res.data
+}
+
+// ==============================
+// LINK GL — BusinessPartnerCategoryAccount
+// ==============================
+export async function fetchBPCategoryAccounts() {
+  const res = await api.get(BPC_ACCT_BASE, {
+    params: { _startRow: 0, _endRow: 200 },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function fetchBPCategoryAccountsByCategory(categoryId) {
+  const res = await api.get(BPC_ACCT_BASE, {
+    params: {
+      _startRow: 0,
+      _endRow: 50,
+      _where: `e.businessPartnerCategory.id = '${categoryId}'`,
+    },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function createBPCategoryAccount(data) {
+  const payload = {
+    data: {
+      _entityName: 'BusinessPartnerCategoryAccount',
+      organization: '0',
+      active: true,
+      businessPartnerCategory: fkWrap(data.businessPartnerCategory),
+      accountingSchema: fkWrap(data.accountingSchema),
+      ...(data.customerReceivablesNo && { customerReceivablesNo: fkWrap(data.customerReceivablesNo) }),
+      ...(data.customerPrepayment    && { customerPrepayment:    fkWrap(data.customerPrepayment) }),
+      ...(data.vendorLiability       && { vendorLiability:       fkWrap(data.vendorLiability) }),
+      ...(data.vendorPrepayment      && { vendorPrepayment:      fkWrap(data.vendorPrepayment) }),
+      ...(data.writeoff              && { writeoff:              fkWrap(data.writeoff) }),
+      ...(data.nonInvoicedReceipts   && { nonInvoicedReceipts:   fkWrap(data.nonInvoicedReceipts) }),
+    },
+  }
+  const res = await api.post(BPC_ACCT_BASE, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateBPCategoryAccount(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerCategoryAccount',
+      organization: '0',
+      active: data.active ?? true,
+      businessPartnerCategory: fkWrap(data.businessPartnerCategory),
+      accountingSchema: fkWrap(data.accountingSchema),
+      ...(data.customerReceivablesNo && { customerReceivablesNo: fkWrap(data.customerReceivablesNo) }),
+      ...(data.customerPrepayment    && { customerPrepayment:    fkWrap(data.customerPrepayment) }),
+      ...(data.vendorLiability       && { vendorLiability:       fkWrap(data.vendorLiability) }),
+      ...(data.vendorPrepayment      && { vendorPrepayment:      fkWrap(data.vendorPrepayment) }),
+      ...(data.writeoff              && { writeoff:              fkWrap(data.writeoff) }),
+      ...(data.nonInvoicedReceipts   && { nonInvoicedReceipts:   fkWrap(data.nonInvoicedReceipts) }),
+    },
+  }
+  const res = await api.put(`${BPC_ACCT_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function deleteBPCategoryAccount(id) {
+  const payload = { data: { id, _entityName: 'BusinessPartnerCategoryAccount', active: false } }
+  const res = await api.put(`${BPC_ACCT_BASE}/${id}`, payload)
+  return res.data?.response?.data ?? res.data
+}
+
+// ==============================
+// Lookup: GL Accounts (FinancialMgmtElementValue / AccountingCombination)
+// ==============================
+export async function fetchGLAccounts(search = '') {
+  let where = `e.active = true`
+  if (search.trim()) {
+    const s = search.trim().replace(/'/g, "''")
+    where += ` and (upper(e.name) like upper('%${s}%') or upper(e.value) like upper('%${s}%'))`
+  }
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtElementValue', {
+    params: { _startRow: 0, _endRow: 50, _where: where },
+  })
+  return res.data?.response?.data ?? []
+}
+
+// Openbravo entity name varies by version — try known variants
+const ACCT_SCHEMA_ENTITIES = [
+  'FinancialMgmtAcctSchema',
+  'FinancialMgmtAccountingSchema',
+  'AcctSchema',
+]
+
+export async function fetchAccountingSchemas() {
+  for (const entity of ACCT_SCHEMA_ENTITIES) {
+    try {
+      const res = await api.get(`/org.openbravo.service.json.jsonrest/${entity}`, {
+        params: { _startRow: 0, _endRow: 50, _where: 'e.active = true' },
+      })
+      const data = res.data?.response?.data
+      if (Array.isArray(data) && data.length > 0) return data
+    } catch (_) { /* try next */ }
+  }
+  // Last resort: extract accountingSchema ID from existing BPCategoryAccount records
+  try {
+    const res = await api.get(BPC_ACCT_BASE, { params: { _startRow: 0, _endRow: 10 } })
+    const rows = res.data?.response?.data ?? []
+    const seen = new Map()
+    for (const r of rows) {
+      const s = r.accountingSchema
+      if (s) {
+        const id = typeof s === 'object' ? s.id : s
+        const name = typeof s === 'object' ? (s.name ?? s.id) : s
+        if (id && !seen.has(id)) seen.set(id, { id, name })
+      }
+    }
+    if (seen.size) return [...seen.values()]
+  } catch (_) { /* ignore */ }
+  return []
 }
 
 // ==============================
@@ -244,12 +404,7 @@ export async function updateContact(id, data) {
 // ==============================
 export async function deleteContact(id) {
   const payload = {
-    data: {
-      id,
-      _entityName: 'ADUser',
-      organization: '0',
-      active: false,
-    },
+    data: { id, _entityName: 'ADUser', organization: '0', active: false },
   }
   const res = await api.put(`${USER_BASE}/${id}`, payload)
   checkActionAllowed(res, 'deleteContact')
@@ -271,12 +426,11 @@ export async function createLocation(data) {
       addressLine2: data.addressLine2 || null,
       cityName: data.cityName,
       postalCode: data.postalCode || null,
-      country: data.country || '209',  // plain string ID per API response
+      country: data.country || '209',
       region: null,
     },
   }
   const res = await api.post(LOC_BASE, payload)
-  // Bypass checkActionAllowed — succeeds on server regardless of response status
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
   return raw ?? res.data
@@ -295,12 +449,11 @@ export async function updateLocation(id, data) {
       addressLine2: data.addressLine2 || null,
       cityName: data.cityName,
       postalCode: data.postalCode || null,
-      country: data.country || '209',  // plain string ID per API response
+      country: data.country || '209',
       region: null,
     },
   }
   const res = await api.put(`${LOC_BASE}/${id}`, payload)
-  // Bypass checkActionAllowed — succeeds on server regardless of response status
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
   return raw ?? res.data
@@ -322,7 +475,6 @@ export async function fetchBPLocations(businessPartnerId) {
 
 // ==============================
 // BP LOCATION — GET batch for multiple BP ids
-// businessPartner in response is a plain string ID (not object)
 // ==============================
 export async function fetchBPLocationsForIds(idsInClause) {
   const res = await api.get(BPLOC_REST, {
@@ -353,12 +505,11 @@ export async function createBPLocation(data) {
       payFromAddress: data.payFromAddress ?? true,
       remitToAddress: data.remitToAddress ?? true,
       taxLocation: false,
-      businessPartner: data.businessPartner,  // plain string ID per API response
-      locationAddress: data.locationAddress,  // plain string ID per API response
+      businessPartner: data.businessPartner,
+      locationAddress: data.locationAddress,
     },
   }
   const res = await api.post(BPLOC_REST, payload)
-  // Bypass checkActionAllowed — succeeds on server regardless of response status
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
   return raw ?? res.data
@@ -383,12 +534,11 @@ export async function updateBPLocation(id, data) {
       payFromAddress: data.payFromAddress ?? true,
       remitToAddress: data.remitToAddress ?? true,
       taxLocation: false,
-      businessPartner: data.businessPartner,  // plain string ID per API response
-      locationAddress: data.locationAddress,  // plain string ID per API response
+      businessPartner: data.businessPartner,
+      locationAddress: data.locationAddress,
     },
   }
   const res = await api.put(`${BPLOC_REST}/${id}`, payload)
-  // Bypass checkActionAllowed — succeeds on server regardless of response status
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
   return raw ?? res.data
@@ -418,29 +568,21 @@ export async function deleteBPLocation(id, oldRecord = null) {
     },
   }
   const res = await api.put(`${BPLOC_REST}/${id}`, payload)
-  // Bypass checkActionAllowed — succeeds on server regardless of response status
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
   return raw ?? res.data
 }
 
 // ==============================
-// Helper: detect errors (only throw on explicit negative status)
+// Helper: detect errors
 // ==============================
 function checkActionAllowed(res, label = '') {
   const response = res.data?.response
   const err = response?.error
   const status = response?.status
-
   if (err?.message === 'OBUIAPP_ActionNotAllowed') {
-    throw new Error(
-      'User APIService tidak memiliki akses write. ' +
-      'Tambahkan akses tabel di Openbravo: General Setup > Security > Role > [Role APIService] > Table Access.'
-    )
+    throw new Error('User APIService tidak memiliki akses write.')
   }
-
-  // Only throw if status is explicitly negative
-  // status 0 = success, undefined = HTTP 2xx without status = success
   if (status !== undefined && status < 0) {
     console.error(`[Openbravo ${label}] error status=${status}`, JSON.stringify(response))
     const detail = err?.message ?? err?.type ?? JSON.stringify(err) ?? 'Unknown error'

@@ -8,6 +8,7 @@ import GoodsShipmentView from '@/views/GoodsShipment.vue'
 import CustomerInvoiceView from '@/views/CustomerInvoice.vue'
 import WarehouseView from '@/views/Warehouse.vue'
 import StorageBinView from '@/views/StorageBin.vue'
+import PurchaseOrderView from '@/views/PurchaseOrder.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -20,6 +21,7 @@ const routes = [
   { path: '/customer-invoice', component: CustomerInvoiceView },
   { path: '/warehouse', component: WarehouseView },
   { path: '/storage-bin', component: StorageBinView },
+  { path: '/purchase-order', component: PurchaseOrderView },
 ]
 
 const router = createRouter({

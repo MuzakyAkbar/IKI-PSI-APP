@@ -4,18 +4,18 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Sales Order</h2>
+          <h2 class="page-title">Purchase Order</h2>
         </div>
 
         <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search order no or customer..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Search order no or vendor..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Sales Order
+            Create Purchase Order
           </button>
         </div>
 
@@ -23,8 +23,8 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>SO No.</th>
-              <th>Create Date</th>
+              <th>PO No.</th>
+              <th>Order Date</th>
               <th>Organization</th>
               <th>Status</th>
               <th>Total</th>
@@ -34,7 +34,7 @@
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">No sales orders found.</td></tr>
+              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">No purchase orders found.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -99,11 +99,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List Sales Order</span>
+                <span>List Purchase Order</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} Sales Order</span>
+                <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} Purchase Order</span>
               </div>
-              <div class="modal-title">{{ isEdit ? 'Edit' : 'Create' }} Sales Order</div>
+              <div class="modal-title">{{ isEdit ? 'Edit' : 'Create' }} Purchase Order</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -123,7 +123,7 @@
             <div v-if="activeFormTab==='transaction'">
               <div class="form-grid-3">
                 <div class="form-group">
-                  <label>SO No.</label>
+                  <label>PO No.</label>
                   <input v-model="form.documentNo" class="form-input" placeholder="Auto-generated" :disabled="isEdit" />
                 </div>
                 <div class="form-group">
@@ -147,7 +147,7 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Price List <span class="req">*</span></label>
+                  <label>Price List</label>
                   <select v-model="form.priceList" class="form-input">
                     <option value="">Select</option>
                     <option v-for="pl in priceLists" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
@@ -174,15 +174,15 @@
                 </div>
 
                 <div class="form-group form-group--full">
-                  <label>Customer <span class="req">*</span></label>
+                  <label>Vendor <span class="req">*</span></label>
                   <div class="acc-wrap">
-                    <input v-model="customerSearch" class="acc-input" placeholder="Search customer..." @input="onCustomerSearch" @focus="showCustomerDrop=true" @blur="onCustomerBlur" />
+                    <input v-model="vendorSearch" class="acc-input" placeholder="Search vendor..." @input="onVendorSearch" @focus="showVendorDrop=true" @blur="onVendorBlur" />
                     <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    <ul v-if="showCustomerDrop && filteredCustomers.length" class="acc-dropdown">
-                      <li v-for="c in filteredCustomers" :key="c.id" class="acc-opt" @mousedown.prevent="selectCustomer(c)">{{ c.name }}</li>
+                    <ul v-if="showVendorDrop && filteredVendors.length" class="acc-dropdown">
+                      <li v-for="v in filteredVendors" :key="v.id" class="acc-opt" @mousedown.prevent="selectVendor(v)">{{ v.name }}</li>
                     </ul>
-                    <ul v-else-if="showCustomerDrop && customerSearch.length > 1" class="acc-dropdown">
-                      <li class="acc-empty">No customers found</li>
+                    <ul v-else-if="showVendorDrop && vendorSearch.length > 1" class="acc-dropdown">
+                      <li class="acc-empty">No vendors found</li>
                     </ul>
                   </div>
                 </div>
@@ -228,10 +228,6 @@
                 <div class="form-group">
                   <label>Order Reference</label>
                   <input v-model="form.orderReference" class="form-input" placeholder="Order Reference" />
-                </div>
-                <div class="form-group">
-                  <label>Sales Representative</label>
-                  <input v-model="form.salesRepresentative" class="form-input" placeholder="Sales Rep" />
                 </div>
                 <div class="form-group">
                   <label>Description</label>
@@ -362,11 +358,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List Sales Order</span>
+                <span>List Purchase Order</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">View Sales Order</span>
+                <span class="bc-active">View Purchase Order</span>
               </div>
-              <div class="modal-title">Sales Order — {{ viewRow?.documentNo }}</div>
+              <div class="modal-title">Purchase Order — {{ viewRow?.documentNo }}</div>
             </div>
             <button class="modal-close" @click="showViewModal=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -374,11 +370,11 @@
           </div>
           <div class="modal-body" v-if="viewRow">
             <div class="detail-grid">
-              <div class="detail-item"><span class="detail-label">SO No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
+              <div class="detail-item"><span class="detail-label">PO No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
               <div class="detail-item"><span class="detail-label">Order Date</span><span class="detail-value">{{ formatDate(viewRow.orderDate) }}</span></div>
               <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', statusClass(viewRow.documentStatus)]">{{ statusLabel(viewRow.documentStatus) }}</span></div>
               <div class="detail-item"><span class="detail-label">Est. Arrival</span><span class="detail-value">{{ formatDate(viewRow.scheduledDeliveryDate) }}</span></div>
-              <div class="detail-item"><span class="detail-label">Customer</span><span class="detail-value">{{ viewRow['businessPartner$_identifier'] || '—' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Vendor</span><span class="detail-value">{{ viewRow['businessPartner$_identifier'] || '—' }}</span></div>
               <div class="detail-item"><span class="detail-label">Warehouse</span><span class="detail-value">{{ viewRow['warehouse$_identifier'] || '—' }}</span></div>
               <div class="detail-item"><span class="detail-label">Payment Term</span><span class="detail-value">{{ viewRow['paymentTerms$_identifier'] || '—' }}</span></div>
               <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
@@ -423,13 +419,13 @@
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal=false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <div class="modal-title">Delete Sales Order</div>
+            <div class="modal-title">Delete Purchase Order</div>
             <button class="modal-close" @click="showDeleteModal=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Are you sure you want to delete sales order <strong>{{ deleteRow?.documentNo }}</strong>? This action cannot be undone.</p>
+            <p class="delete-text">Are you sure you want to delete purchase order <strong>{{ deleteRow?.documentNo }}</strong>? This action cannot be undone.</p>
             <div v-if="deleteError" class="form-api-error" style="margin-top:10px">{{ deleteError }}</div>
           </div>
           <div class="modal-footer">
@@ -462,9 +458,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import {
   fetchAllOrders, fetchOrder, createOrder, updateOrder, deleteOrder,
   fetchOrderLines, createOrderLine, updateOrderLine, deleteOrderLine,
-  fetchCustomers, fetchPartnerLocations, fetchWarehouses, fetchDocumentSequences,
-  fetchPaymentTerms, fetchPaymentMethods, fetchProducts, fetchUOMs, fetchOrganizations, fetchPriceLists, fetchPaymentTermLines,
-} from '@/services/salesOrder.js'
+  fetchVendors, fetchPartnerLocations, fetchWarehouses, fetchDocumentSequences,
+  fetchPaymentTerms, fetchPaymentMethods, fetchProducts, fetchUOMs,
+  fetchOrganizations, fetchPriceLists, fetchPaymentTermLines,
+} from '@/services/purchaseOrder.js'
 
 // ── directive
 const vClickOutside = {
@@ -491,7 +488,6 @@ const openDropdown = ref(null)
 const dropdownPos = ref({ top: 0, right: 0 })
 
 // ── lookup data
-const customers = ref([])
 const partnerLocations = ref([])
 const warehouses = ref([])
 const documents = ref([])
@@ -522,16 +518,15 @@ const emptyForm = () => ({
   paymentMethod: '',
   invoiceTerm: '',
   orderReference: '',
-  salesRepresentative: '',
   description: '',
   invoiceAddress: '',
   deliveryLocation: '',
   priceList: '',
 })
 const form = ref(emptyForm())
-const customerSearch = ref('')
-const filteredCustomers = ref([])
-const showCustomerDrop = ref(false)
+const vendorSearch = ref('')
+const filteredVendors = ref([])
+const showVendorDrop = ref(false)
 
 // Document search
 const docSearch = ref('')
@@ -569,9 +564,7 @@ function showToast(msg, type = 'success') {
 }
 
 // ── helpers
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
+function today() { return new Date().toISOString().slice(0, 10) }
 function formatDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -631,7 +624,8 @@ function closeDropdown() { openDropdown.value = null }
 // ── load lookups
 async function loadLookups() {
   const [w, d, pt, pm, u, org, pl] = await Promise.allSettled([
-    fetchWarehouses(), fetchDocumentSequences(), fetchPaymentTerms(), fetchPaymentMethods(), fetchUOMs(), fetchOrganizations(), fetchPriceLists(),
+    fetchWarehouses(), fetchDocumentSequences(), fetchPaymentTerms(),
+    fetchPaymentMethods(), fetchUOMs(), fetchOrganizations(), fetchPriceLists(),
   ])
   warehouses.value = w.value ?? []
   documents.value = d.value ?? []
@@ -642,28 +636,28 @@ async function loadLookups() {
   priceLists.value = pl.value ?? []
 }
 
-// ── customer search
-let customerTimer = null
-async function onCustomerSearch() {
-  showCustomerDrop.value = true
-  clearTimeout(customerTimer)
-  customerTimer = setTimeout(async () => {
-    if (customerSearch.value.length < 1) { filteredCustomers.value = []; return }
-    filteredCustomers.value = await fetchCustomers(customerSearch.value)
+// ── vendor search
+let vendorTimer = null
+async function onVendorSearch() {
+  showVendorDrop.value = true
+  clearTimeout(vendorTimer)
+  vendorTimer = setTimeout(async () => {
+    if (vendorSearch.value.length < 1) { filteredVendors.value = []; return }
+    filteredVendors.value = await fetchVendors(vendorSearch.value)
   }, 300)
 }
-function selectCustomer(c) {
-  form.value.businessPartner = c.id
-  customerSearch.value = c.name
-  showCustomerDrop.value = false
-  loadPartnerLocations(c.id)
+function selectVendor(v) {
+  form.value.businessPartner = v.id
+  vendorSearch.value = v.name
+  showVendorDrop.value = false
+  loadPartnerLocations(v.id)
 }
 async function loadPartnerLocations(bpId) {
   form.value.partnerAddress = ''
   partnerLocations.value = await fetchPartnerLocations(bpId)
   if (partnerLocations.value.length === 1) form.value.partnerAddress = partnerLocations.value[0].id
 }
-function onCustomerBlur() { setTimeout(() => { showCustomerDrop.value = false }, 150) }
+function onVendorBlur() { setTimeout(() => { showVendorDrop.value = false }, 150) }
 
 // ── product search per line
 let productTimers = new WeakMap()
@@ -679,15 +673,13 @@ function selectProduct(line, p) {
   line.product = p.id
   line.productSearch = p.name
   line.showDrop = false
-  // Auto-fill UOM from product
   if (p.uOM) {
     line.uOM = p.uOM
-    // Find UOM label from loaded uoms
     const found = uoms.value.find(u => u.id === p.uOM)
     line.uomSearch = found ? (found.uOMSymbol || found.name) : (p['uOM$_identifier'] || p.uOM)
     line.uomOptions = found ? [found] : []
   }
-  line.unitPrice = p.listPrice || p.purchasePrice || p.standardPrice || 0
+  line.unitPrice = p.purchasePrice || p.listPrice || p.standardPrice || 0
   calcLine(line)
 }
 function onProductBlur(line) { setTimeout(() => { line.showDrop = false }, 150) }
@@ -724,14 +716,19 @@ function newLine() {
 function addLine() { lines.value.push(newLine()) }
 function removeLine(i) { lines.value.splice(i, 1) }
 function calcLine(line) { line.lineNetAmount = (line.orderedQuantity || 0) * (line.unitPrice || 0) }
-// Payment term lines are loaded from API when paymentTerms changes
 
 // ── open modals
 function openCreateModal() {
   isEdit.value = false; editId.value = null
   form.value = emptyForm(); lines.value = []; paymentLines.value = []
-  customerSearch.value = ''; docSearch.value = ''; partnerLocations.value = []
+  vendorSearch.value = ''; docSearch.value = ''; partnerLocations.value = []
   formError.value = ''; activeFormTab.value = 'transaction'
+  // Auto-select Purchase Order document type
+  if (documents.value.length > 0) {
+    const doc = documents.value[0]
+    form.value.transactionDocument = doc.id
+    docSearch.value = doc.name
+  }
   showFormModal.value = true
 }
 
@@ -741,7 +738,6 @@ async function openEditModal(r) {
   activeFormTab.value = 'transaction'; formError.value = ''
   showFormModal.value = true
 
-  // Populate form
   form.value = {
     documentNo: r.documentNo || '',
     transactionDocument: r['transactionDocument'] || '',
@@ -753,28 +749,25 @@ async function openEditModal(r) {
     paymentTerms: r['paymentTerms'] || '',
     scheduledDeliveryDate: r.scheduledDeliveryDate?.slice(0,10) || '',
     paymentMethod: r['paymentMethod'] || '',
-    invoiceTerm: r.invoiceTerm || '',
+    invoiceTerm: r.invoiceTerms || '',
     orderReference: r.orderReference || '',
-    salesRepresentative: r['salesRepresentative'] || '',
     description: r.description || '',
     invoiceAddress: r['invoiceAddress'] || '',
     priceList: r['priceList'] || '',
     deliveryLocation: r.deliveryLocation || '',
   }
-  customerSearch.value = r['businessPartner$_identifier'] || ''
-  // Populate docSearch
+  vendorSearch.value = r['businessPartner$_identifier'] || ''
   const foundDoc = documents.value.find(d => d.id === r['transactionDocument'])
   docSearch.value = foundDoc?.name || r['transactionDocument$_identifier'] || ''
 
   if (r.businessPartner) await loadPartnerLocations(r.businessPartner)
 
-  // Load lines
   const existingLines = await fetchOrderLines(r.id)
   lines.value = existingLines.map(l => {
     const foundUom = uoms.value.find(u => u.id === l.uOM)
     return {
       id: l.id,
-      product: l.uOM || '',
+      product: l.product || '',
       productSearch: l['product$_identifier'] || '',
       orderedQuantity: l.orderedQuantity || 1,
       uOM: l.uOM || '',
@@ -800,9 +793,8 @@ async function openViewModal(r) {
 
 // ── save
 async function saveOrder() {
-  if (!form.value.businessPartner) { formError.value = 'Customer is required.'; return }
+  if (!form.value.businessPartner) { formError.value = 'Vendor is required.'; return }
   if (!form.value.paymentTerms) { formError.value = 'Payment Term is required.'; return }
-  if (!form.value.priceList) { formError.value = 'Price List is required.'; return }
   saving.value = true; formError.value = ''
   try {
     let orderId
@@ -814,9 +806,7 @@ async function saveOrder() {
       orderId = created?.id
     }
 
-    // Save lines
     if (orderId) {
-      // For edit: simple approach - create new lines (could be enhanced with diff logic)
       for (const line of lines.value) {
         if (!line.product) continue
         const linePayload = {
@@ -835,7 +825,7 @@ async function saveOrder() {
     }
 
     showFormModal.value = false
-    showToast(isEdit.value ? 'Sales Order updated!' : 'Sales Order created!')
+    showToast(isEdit.value ? 'Purchase Order updated!' : 'Purchase Order created!')
     await loadOrders()
   } catch (e) {
     formError.value = e?.response?.data?.response?.error?.message || e.message
@@ -849,7 +839,7 @@ async function doDelete() {
   try {
     await deleteOrder(deleteRow.value.id)
     showDeleteModal.value = false
-    showToast('Sales Order deleted.')
+    showToast('Purchase Order deleted.')
     await loadOrders()
   } catch (e) {
     deleteError.value = e?.response?.data?.response?.error?.message || e.message
