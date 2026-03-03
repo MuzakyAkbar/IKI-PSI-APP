@@ -422,3 +422,44 @@ export async function createBPLocation(data) {
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw ?? res.data
 }
+
+export async function updateLocation(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'Location',
+      organization: ORG_ID,
+      addressLine1: data.addressLine1,
+      addressLine2: data.addressLine2 || null,
+      cityName: data.cityName,
+      postalCode: data.postalCode || null,
+      country: data.country || '209',
+      region: null,
+    },
+  }
+  const res = await api.put(`${LOC_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateBPLocation(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerLocation',
+      organization: ORG_ID,
+      active: data.active ?? true,
+      name: data.name,
+      phone: data.phone || null,
+      invoiceToAddress: data.invoiceToAddress ?? true,
+      shipToAddress: data.shipToAddress ?? true,
+      payFromAddress: data.payFromAddress ?? true,
+      remitToAddress: data.remitToAddress ?? true,
+      businessPartner: data.businessPartner,
+      locationAddress: data.locationAddress,
+    },
+  }
+  const res = await api.put(`${BPLOC_REST}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
