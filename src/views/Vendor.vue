@@ -676,7 +676,9 @@ import {
   fetchGLAccounts,
   fetchAccountingSchemas,
   createLocation,
-  createBPLocation
+  createBPLocation,
+  updateLocation,
+  updateBPLocation
 } from '@/services/vendor'
 
 // ── Contacts — reuse customer's ADUser endpoints ─────────────
@@ -789,9 +791,13 @@ async function enrichWithLocation(list) {
       const parts = ident.split(' - ')
       return { 
         ...v, 
-        cityName: parts[3]?.trim() || parts[0]?.trim() || '—', 
-        postalCode: parts[2]?.trim() || '',
-        phone: v.hp || loc?.phone || '—' 
+        streetAddress: parts[0] && parts[0].trim() !== 'null' ? parts[0].trim() : '',
+        otherDetails: parts[1] && parts[1].trim() !== 'null' ? parts[1].trim() : '',
+        postalCode: parts[2] && parts[2].trim() !== 'null' ? parts[2].trim() : '',
+        cityName: parts[3] && parts[3].trim() !== 'null' ? parts[3].trim() : (parts[0]?.trim() || '—'),
+        phone: v.hp || loc?.phone || '—',
+        bpLocationId: loc?.id || null, 
+        locationId: typeof loc?.locationAddress === 'object' ? loc?.locationAddress?.id : loc?.locationAddress || null
       }
     })
   } catch (e) { return list }
@@ -850,6 +856,7 @@ const defaultForm = () => ({
   phone: '', contactName: '', contactEmail: '', contactPhone: '',
   paymentTerms: '', priceList: '', paymentMethod: '',
   active: true,
+  bpLocationId: null, locationId: null
 })
 const form = reactive(defaultForm())
 
@@ -865,9 +872,9 @@ function openEditPage(v) {
     name:         v.name ?? '',
     description:  v.description ?? '',
     province:     v.province ?? '',
-    city:         v.cityName ?? '',
-    streetAddress:'',
-    otherDetails: v.description ?? '',
+    city:         v.cityName !== '—' ? v.cityName : '',
+    streetAddress:v.streetAddress ?? '',
+    otherDetails: v.otherDetails ?? '',
     postalCode:   v.postalCode ?? '',
     phone:        v.hp ?? v.phone ?? '',
     contactName:  '', contactEmail: '', contactPhone: '',
@@ -875,6 +882,8 @@ function openEditPage(v) {
     priceList:    v.priceList ?? '',
     paymentMethod:v.paymentMethod ?? '',
     active:       v.active ?? true,
+    bpLocationId: v.bpLocationId ?? null,
+    locationId:   v.locationId ?? null
   })
   Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; page.mode = 'edit'; page.data = v; page.show = true
@@ -936,7 +945,50 @@ async function submitForm() {
       showToast('Vendor dan Location berhasil dibuat')
       currentPage.value = 1; load(); page.show = false
     } else {
+      // Mode Edit: 1. Update BusinessPartner
       await updateVendor(page.data.id, payload)
+
+      // 2. Update atau Create Location
+      if (form.streetAddress || form.city || form.province || form.postalCode) {
+        const locPayload = {
+          addressLine1: form.streetAddress || '-',
+          addressLine2: form.otherDetails || null,
+          cityName: form.city || '-',
+          postalCode: form.postalCode || null,
+          country: '209'
+        }
+
+        if (form.locationId && form.bpLocationId) {
+          // Jika sebelumnya SUDAH PUNYA alamat -> UPDATE
+          await updateLocation(form.locationId, locPayload)
+          const bpLocPayload = {
+            name: form.city || 'Utama',
+            phone: form.phone || null,
+            businessPartner: page.data.id,
+            locationAddress: form.locationId,
+            invoiceToAddress: true,
+            shipToAddress: true,
+            payFromAddress: true,
+            remitToAddress: true
+          }
+          await updateBPLocation(form.bpLocationId, bpLocPayload)
+        } else {
+          // Jika sebelumnya KOSONG lalu sekarang diisi -> CREATE
+          const newLoc = await createLocation(locPayload)
+          const bpLocPayload = {
+            name: form.city || 'Utama',
+            phone: form.phone || null,
+            businessPartner: page.data.id,
+            locationAddress: newLoc.id,
+            invoiceToAddress: true,
+            shipToAddress: true,
+            payFromAddress: true,
+            remitToAddress: true
+          }
+          await createBPLocation(bpLocPayload)
+        }
+      }
+
       showToast('Vendor berhasil diupdate')
       page.show = false; load()
     }

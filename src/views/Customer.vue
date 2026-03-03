@@ -750,12 +750,15 @@ async function enrichWithLocation(list) {
       const loc = locMap[c.id]
       const ident = loc?.['locationAddress$_identifier'] || ''
       const parts = ident.split(' - ')
-      
       return { 
         ...c, 
-        cityName: parts[3]?.trim() || parts[0]?.trim() || '—', 
-        postalCode: parts[2]?.trim() || '', // <-- Tambahkan baris ini
-        phone: loc?.phone || '—' 
+        streetAddress: parts[0] && parts[0].trim() !== 'null' ? parts[0].trim() : '',
+        otherDetails: parts[1] && parts[1].trim() !== 'null' ? parts[1].trim() : '',
+        postalCode: parts[2] && parts[2].trim() !== 'null' ? parts[2].trim() : '',
+        cityName: parts[3] && parts[3].trim() !== 'null' ? parts[3].trim() : (parts[0]?.trim() || '—'),
+        phone: loc?.phone || '—',
+        bpLocationId: loc?.id || null, // <-- Ekstrak ID Relasi BP
+        locationId: typeof loc?.locationAddress === 'object' ? loc?.locationAddress?.id : loc?.locationAddress || null // <-- Ekstrak ID Master Location
       }
     })
   } catch (e) { return list }
@@ -946,6 +949,7 @@ const defaultForm = () => ({
   contactName: '', contactEmail: '', contactPhone: '',
   paymentTerms: '', priceList: '', paymentMethod: '',
   creditLimit: 0, active: true,
+  bpLocationId: null, locationId: null // <-- Tambahan untuk mode edit
 })
 const form = reactive(defaultForm())
 
@@ -957,11 +961,14 @@ function openEditPage(c) {
   closeDropdown()
   Object.assign(form, {
     searchKey: c.searchKey ?? '', name: c.name ?? '', description: c.description ?? '',
-    province: '', city: c.cityName ?? '', streetAddress: '', otherDetails: c.description ?? '',
-    postalCode: c.postalCode ?? '', // <-- Ubah dari '' menjadi c.postalCode ?? ''
-    linkGL: c.businessPartnerCategory ?? '', contactName: '', contactEmail: '', contactPhone: '',
+    province: '', city: c.cityName !== '—' ? c.cityName : '', 
+    streetAddress: c.streetAddress ?? '', otherDetails: c.otherDetails ?? '',
+    postalCode: c.postalCode ?? '', linkGL: c.businessPartnerCategory ?? '', 
+    contactName: '', contactEmail: '', contactPhone: c.phone !== '—' ? c.phone : '',
     paymentTerms: c.paymentTerms ?? '', priceList: c.priceList ?? '',
     paymentMethod: c.paymentMethod ?? '', creditLimit: c.creditLimit ?? 0, active: c.active ?? true,
+    bpLocationId: c.bpLocationId ?? null,
+    locationId: c.locationId ?? null
   })
   Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; page.type='customer'; page.mode='edit'; page.data=c; page.show=true
@@ -979,7 +986,6 @@ async function submitForm() {
   if (!validateForm()) return
   formLoading.value = true; formError.value = null
   try {
-    // Payload untuk Customer (BusinessPartner)
     const bpPayload = {
       searchKey: form.searchKey.trim(), name: form.name.trim(),
       description: form.description.trim() || null,
@@ -993,20 +999,20 @@ async function submitForm() {
       // 1. Create BusinessPartner
       const newBp = await createCustomer(bpPayload)
 
-      // 2. Create Location (Hanya dieksekusi jika field alamat diisi)
-      if (form.streetAddress || form.city || form.province) {
+      // 2. Create Location
+      if (form.streetAddress || form.city || form.province || form.postalCode) {
         const locPayload = {
           addressLine1: form.streetAddress || '-',
           addressLine2: form.otherDetails || null,
           cityName: form.city || '-',
           postalCode: form.postalCode || null,
-          country: '209' // ID Country Default (Indonesia)
+          country: '209'
         }
         const newLoc = await createLocation(locPayload)
 
         // 3. Create BusinessPartnerLocation
         const bpLocPayload = {
-          name: form.city || 'Utama', // Nama lokasi (menggunakan nama kota atau default)
+          name: form.city || 'Utama',
           phone: form.contactPhone || null,
           businessPartner: newBp.id,
           locationAddress: newLoc.id,
@@ -1021,8 +1027,49 @@ async function submitForm() {
       showToast('Customer dan Location berhasil dibuat')
       currentPage.value = 1; load()
     } else {
-      // Mode Edit: Update data BusinessPartner
+      // Mode Edit: 1. Update BusinessPartner
       await updateCustomer(page.data.id, bpPayload)
+
+      // 2. Update atau Create Location
+      if (form.streetAddress || form.city || form.province || form.postalCode) {
+        const locPayload = {
+          addressLine1: form.streetAddress || '-',
+          addressLine2: form.otherDetails || null,
+          cityName: form.city || '-',
+          postalCode: form.postalCode || null,
+          country: '209'
+        }
+
+        if (form.locationId && form.bpLocationId) {
+          // Jika sebelumnya SUDAH PUNYA alamat -> UPDATE
+          await updateLocation(form.locationId, locPayload)
+          const bpLocPayload = {
+            name: form.city || 'Utama',
+            phone: form.contactPhone || null,
+            businessPartner: page.data.id,
+            locationAddress: form.locationId,
+            invoiceToAddress: true,
+            shipToAddress: true,
+            payFromAddress: true,
+            remitToAddress: true
+          }
+          await updateBPLocation(form.bpLocationId, bpLocPayload)
+        } else {
+          // Jika sebelumnya KOSONG lalu sekarang diisi -> CREATE
+          const newLoc = await createLocation(locPayload)
+          const bpLocPayload = {
+            name: form.city || 'Utama',
+            phone: form.contactPhone || null,
+            businessPartner: page.data.id,
+            locationAddress: newLoc.id,
+            invoiceToAddress: true,
+            shipToAddress: true,
+            payFromAddress: true,
+            remitToAddress: true
+          }
+          await createBPLocation(bpLocPayload)
+        }
+      }
       showToast('Customer berhasil diupdate')
       load()
     }
