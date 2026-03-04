@@ -240,6 +240,40 @@
           </div>
         </div>
 
+        <!-- Payment Info Card -->
+        <div class="form-card">
+          <div class="form-card-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Payment Info
+          </div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Price List <span class="req">*</span></label>
+              <select v-model="form.priceList" :class="{'input-error': formErrors.priceList}">
+                <option value="">Select Price List</option>
+                <option v-for="pl in lookups.priceLists" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
+              </select>
+              <span class="field-error" v-if="formErrors.priceList">{{ formErrors.priceList }}</span>
+            </div>
+            <div class="form-group">
+              <label>Payment Method <span class="req">*</span></label>
+              <select v-model="form.paymentMethod" :class="{'input-error': formErrors.paymentMethod}">
+                <option value="">Select Payment Method</option>
+                <option v-for="pm in lookups.paymentMethods" :key="pm.id" :value="pm.id">{{ pm['_identifier'] || pm.name }}</option>
+              </select>
+              <span class="field-error" v-if="formErrors.paymentMethod">{{ formErrors.paymentMethod }}</span>
+            </div>
+            <div class="form-group">
+              <label>Payment Terms <span class="req">*</span></label>
+              <select v-model="form.paymentTerms" :class="{'input-error': formErrors.paymentTerms}">
+                <option value="">Select Payment Terms</option>
+                <option v-for="pt in lookups.paymentTerms" :key="pt.id" :value="pt.id">{{ pt.name }}</option>
+              </select>
+              <span class="field-error" v-if="formErrors.paymentTerms">{{ formErrors.paymentTerms }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Contact Info Card -->
         <div class="form-card">
           <div class="form-card-title">
@@ -420,6 +454,10 @@
                   <div class="detail-item">
                     <span class="detail-label">Price List</span>
                     <span class="detail-value">{{ viewModal.data?.['priceList$_identifier'] || '—' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Payment Method</span>
+                    <span class="detail-value">{{ viewModal.data?.['paymentMethod$_identifier'] || '—' }}</span>
                   </div>
                 </div>
               </div>
@@ -660,7 +698,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import {
   fetchCustomers, createCustomer, updateCustomer,
   fetchPaymentTerms, fetchPriceLists, fetchPaymentMethods,
-  fetchContacts, createContact, updateContact, deleteContact,
+  fetchContacts, fetchContactsForIds, createContact, updateContact, deleteContact,
   fetchBPLocations, fetchBPLocationsForIds,
   createLocation, updateLocation,
   createBPLocation, updateBPLocation, deleteBPLocation,
@@ -740,25 +778,41 @@ async function enrichWithLocation(list) {
   if (!list.length) return list
   try {
     const ids = list.map(c => `'${c.id}'`).join(',')
-    const locs = await fetchBPLocationsForIds(ids)
+
+    // Fetch locations and contacts in parallel
+    const [locs, allContacts] = await Promise.all([
+      fetchBPLocationsForIds(ids),
+      fetchContactsForIds(ids),
+    ])
+
     const locMap = {}
     for (const loc of locs) {
       const bpId = typeof loc.businessPartner === 'object' ? loc.businessPartner.id : loc.businessPartner
       if (bpId && !locMap[bpId]) locMap[bpId] = loc
     }
+
+    // Map first contact phone per BP
+    const contactPhoneMap = {}
+    for (const ct of allContacts) {
+      const bpId = typeof ct.businessPartner === 'object' ? ct.businessPartner.id : ct.businessPartner
+      if (bpId && !contactPhoneMap[bpId] && ct.phone) contactPhoneMap[bpId] = ct.phone
+    }
+
     return list.map(c => {
       const loc = locMap[c.id]
       const ident = loc?.['locationAddress$_identifier'] || ''
       const parts = ident.split(' - ')
+      // Use location phone first, fallback to first contact's phone
+      const phone = loc?.phone || contactPhoneMap[c.id] || '—'
       return { 
         ...c, 
         streetAddress: parts[0] && parts[0].trim() !== 'null' ? parts[0].trim() : '',
         otherDetails: parts[1] && parts[1].trim() !== 'null' ? parts[1].trim() : '',
         postalCode: parts[2] && parts[2].trim() !== 'null' ? parts[2].trim() : '',
         cityName: parts[3] && parts[3].trim() !== 'null' ? parts[3].trim() : (parts[0]?.trim() || '—'),
-        phone: loc?.phone || '—',
-        bpLocationId: loc?.id || null, // <-- Ekstrak ID Relasi BP
-        locationId: typeof loc?.locationAddress === 'object' ? loc?.locationAddress?.id : loc?.locationAddress || null // <-- Ekstrak ID Master Location
+        phone,
+        bpLocationId: loc?.id || null,
+        locationId: typeof loc?.locationAddress === 'object' ? loc?.locationAddress?.id : loc?.locationAddress || null
       }
     })
   } catch (e) { return list }
@@ -959,16 +1013,19 @@ function openCreatePage() {
 }
 function openEditPage(c) {
   closeDropdown()
+  const extractId = (v) => (v && typeof v === 'object' ? v.id : v) || ''
   Object.assign(form, {
     searchKey: c.searchKey ?? '', name: c.name ?? '', description: c.description ?? '',
     province: '', city: c.cityName !== '—' ? c.cityName : '', 
     streetAddress: c.streetAddress ?? '', otherDetails: c.otherDetails ?? '',
-    postalCode: c.postalCode ?? '', linkGL: c.businessPartnerCategory ?? '', 
+    postalCode: c.postalCode ?? '', linkGL: extractId(c.businessPartnerCategory),
     contactName: '', contactEmail: '', contactPhone: c.phone !== '—' ? c.phone : '',
-    paymentTerms: c.paymentTerms ?? '', priceList: c.priceList ?? '',
-    paymentMethod: c.paymentMethod ?? '', creditLimit: c.creditLimit ?? 0, active: c.active ?? true,
+    paymentTerms:  extractId(c.paymentTerms),
+    priceList:     extractId(c.priceList),
+    paymentMethod: extractId(c.paymentMethod),
+    creditLimit: c.creditLimit ?? 0, active: c.active ?? true,
     bpLocationId: c.bpLocationId ?? null,
-    locationId: c.locationId ?? null
+    locationId: c.locationId ?? null,
   })
   Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; page.type='customer'; page.mode='edit'; page.data=c; page.show=true
@@ -977,8 +1034,11 @@ function closePage() { if (formLoading.value || glFormLoading.value) return; pag
 
 function validateForm() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  if (!form.searchKey.trim()) formErrors.searchKey = 'Code wajib diisi'
-  if (!form.name.trim()) formErrors.name = 'Nama customer wajib diisi'
+  if (!form.searchKey.trim())  formErrors.searchKey    = 'Code wajib diisi'
+  if (!form.name.trim())       formErrors.name         = 'Nama customer wajib diisi'
+  if (!form.priceList)         formErrors.priceList    = 'Price List wajib dipilih'
+  if (!form.paymentMethod)     formErrors.paymentMethod= 'Payment Method wajib dipilih'
+  if (!form.paymentTerms)      formErrors.paymentTerms = 'Payment Terms wajib dipilih'
   return Object.keys(formErrors).length === 0
 }
 
@@ -990,8 +1050,9 @@ async function submitForm() {
       searchKey: form.searchKey.trim(), name: form.name.trim(),
       description: form.description.trim() || null,
       creditLimit: Number(form.creditLimit) || 0, active: form.active,
-      ...(form.paymentTerms  && { paymentTerms: form.paymentTerms }),
-      ...(form.priceList     && { priceList: form.priceList }),
+      ...(form.linkGL        && { businessPartnerCategory: form.linkGL }),
+      ...(form.paymentTerms  && { paymentTerms:  form.paymentTerms }),
+      ...(form.priceList     && { priceList:     form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
     }
 

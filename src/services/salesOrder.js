@@ -126,15 +126,20 @@ export async function fetchOrderLines(orderId) {
 }
 
 export async function createOrderLine(orderId, data) {
-  const { product, uOM, taxCategory, ...rest } = data
+  const { product, uOM, taxCategory, warehouse, currency, businessPartner, partnerAddress, tax, ...rest } = data
   const res = await api.post(LINE_BASE, {
     data: {
       _entityName: 'OrderLine',
       salesOrder: { id: orderId },
       ...rest,
-      ...(product     && { product:     fkWrap(product) }),
-      ...(uOM         && { uOM:         fkWrap(uOM) }),
-      ...(taxCategory && { taxCategory: fkWrap(taxCategory) }),
+      ...(product         && { product:         fkWrap(product) }),
+      ...(uOM             && { uOM:             fkWrap(uOM) }),
+      ...(taxCategory     && { taxCategory:     fkWrap(taxCategory) }),
+      ...(warehouse       && { warehouse:       fkWrap(warehouse) }),
+      ...(currency        && { currency:        fkWrap(currency) }),
+      ...(businessPartner && { businessPartner: fkWrap(businessPartner) }),
+      ...(partnerAddress  && { partnerAddress:  fkWrap(partnerAddress) }),
+      ...(tax             && { tax:             fkWrap(tax) }),
     },
   })
   const raw = res.data?.response?.data
@@ -172,6 +177,13 @@ export async function fetchOrganizations() {
     params: { _startRow: 0, _endRow: 100, _where: 'e.active = true' },
   })
   return res.data?.response?.data ?? []
+}
+
+// Fetch single customer by ID — untuk auto-fill form Sales Order
+export async function fetchCustomerById(id) {
+  const res = await api.get(`/org.openbravo.service.json.jsonrest/BusinessPartner/${id}`)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
 }
 
 // Customers only (businessPartnerCategory = "Customer")
@@ -240,10 +252,10 @@ export async function fetchPaymentTermLines(paymentTermId) {
   return res.data?.response?.data ?? []
 }
 
-// Payment Methods
+// Payment Methods — FIN_PaymentMethod agar ID match dengan BusinessPartner.paymentMethod
 export async function fetchPaymentMethods() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtFinAccPaymentMethod', {
-    params: { _startRow: 0, _endRow: 100 },
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_PaymentMethod', {
+    params: { _startRow: 0, _endRow: 100, _where: 'e.active = true' },
   })
   return res.data?.response?.data ?? []
 }

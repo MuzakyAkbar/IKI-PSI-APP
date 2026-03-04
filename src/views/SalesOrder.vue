@@ -49,7 +49,7 @@
                         <button class="action-btn action-btn--more" @click.stop="toggleDropdown(r.id, $event)">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                         </button>
-                        <div v-if="openDropdown===r.id" class="dropdown-menu" :style="{top: dropdownPos.top+'px', right: dropdownPos.right+'px'}">
+                        <div v-if="openDropdown===r.id" class="dropdown-menu" :style="{top: dropdownPos.top+'px', right: dropdownPos.right+'px'}" @click.stop>
                           <button class="dropdown-item" @click="openViewModal(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
                           </button>
@@ -148,10 +148,7 @@
                 </div>
                 <div class="form-group">
                   <label>Price List <span class="req">*</span></label>
-                  <select v-model="form.priceList" class="form-input">
-                    <option value="">Select</option>
-                    <option v-for="pl in priceLists" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
-                  </select>
+                  <input :value="priceListLabel" class="form-input" disabled placeholder="Auto dari customer" />
                 </div>
 
                 <div class="form-group">
@@ -189,10 +186,7 @@
 
                 <div class="form-group">
                   <label>Payment Term <span class="req">*</span></label>
-                  <select v-model="form.paymentTerms" class="form-input">
-                    <option value="">Select</option>
-                    <option v-for="pt in paymentTerms" :key="pt.id" :value="pt.id">{{ pt.name }}</option>
-                  </select>
+                  <input :value="paymentTermLabel" class="form-input" disabled placeholder="Auto dari customer" />
                 </div>
                 <div class="form-group">
                   <label>Est. Arrival</label>
@@ -201,10 +195,7 @@
 
                 <div class="form-group">
                   <label>Payment Method</label>
-                  <select v-model="form.paymentMethod" class="form-input">
-                    <option value="">Select</option>
-                    <option v-for="pm in paymentMethods" :key="pm.id" :value="pm.id">{{ pm['_identifier'] || pm.name }}</option>
-                  </select>
+                  <input :value="paymentMethodLabel" class="form-input" disabled placeholder="Auto dari customer" />
                 </div>
                 <div class="form-group">
                   <label>Document No.</label>
@@ -321,10 +312,10 @@
                     <tbody>
                       <tr v-if="paymentLines.length===0"><td colspan="4" class="td-empty" style="padding:20px">No lines found for this Payment Term.</td></tr>
                       <tr v-for="pl in paymentLines" :key="pl.id">
-                        <td class="td-secondary">{{ pl.line }}</td>
-                        <td class="td-secondary">{{ pl.offsetDays ?? pl.netDays ?? '—' }}</td>
-                        <td class="td-secondary">{{ pl.percentage != null ? pl.percentage + '%' : '—' }}</td>
-                        <td class="td-secondary">{{ pl.fixedMonthOffset != null ? formatCurrency(pl.fixedMonthOffset) : '—' }}</td>
+                        <td class="td-secondary">{{ pl.line ?? pl.lineNo ?? '—' }}</td>
+                        <td class="td-secondary">{{ pl.offsetDays ?? pl.netDays ?? pl.dueDateOffset ?? pl.dayOffset ?? '—' }}</td>
+                        <td class="td-secondary">{{ pl.percentage != null ? pl.percentage + '%' : (pl.fixedPercentage != null ? pl.fixedPercentage + '%' : '—') }}</td>
+                        <td class="td-secondary">{{ pl.fixedAmount != null ? formatCurrency(pl.fixedAmount) : (pl.fixedMonthOffset != null ? formatCurrency(pl.fixedMonthOffset) : (pl.amount != null ? formatCurrency(pl.amount) : '—')) }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -462,7 +453,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import {
   fetchAllOrders, fetchOrder, createOrder, updateOrder, deleteOrder,
   fetchOrderLines, createOrderLine, updateOrderLine, deleteOrderLine,
-  fetchCustomers, fetchPartnerLocations, fetchWarehouses, fetchDocumentSequences,
+  fetchCustomers, fetchCustomerById, fetchPartnerLocations, fetchWarehouses, fetchDocumentSequences,
   fetchPaymentTerms, fetchPaymentMethods, fetchProducts, fetchUOMs, fetchOrganizations, fetchPriceLists, fetchPaymentTermLines,
 } from '@/services/salesOrder.js'
 
@@ -470,9 +461,9 @@ import {
 const vClickOutside = {
   mounted(el, binding) {
     el._handler = (e) => { if (!el.contains(e.target)) binding.value(e) }
-    document.addEventListener('mousedown', el._handler)
+    document.addEventListener('click', el._handler, true)
   },
-  unmounted(el) { document.removeEventListener('mousedown', el._handler) },
+  unmounted(el) { document.removeEventListener('click', el._handler, true) },
 }
 
 // ── table state
@@ -511,7 +502,7 @@ const formError = ref('')
 
 const emptyForm = () => ({
   documentNo: '',
-  transactionDocument: '',
+  transactionDocument: '3F571AFD234A4811AFA75C22AEC72B4F',
   warehouse: '',
   organization: '',
   partnerAddress: '',
@@ -604,6 +595,23 @@ const pageNumbers = computed(() => {
   return pages
 })
 
+// ── computed labels untuk field read-only auto-fill
+const paymentTermLabel  = computed(() => {
+  if (!form.value.paymentTerms) return ''
+  const found = paymentTerms.value.find(pt => pt.id === form.value.paymentTerms)
+  return found?.name || form.value.paymentTerms
+})
+const paymentMethodLabel = computed(() => {
+  if (!form.value.paymentMethod) return ''
+  const found = paymentMethods.value.find(pm => pm.id === form.value.paymentMethod)
+  return found?.['_identifier'] || found?.name || form.value.paymentMethod
+})
+const priceListLabel = computed(() => {
+  if (!form.value.priceList) return ''
+  const found = priceLists.value.find(pl => pl.id === form.value.priceList)
+  return found?.name || form.value.priceList
+})
+
 // ── load orders
 async function loadOrders() {
   loading.value = true; error.value = ''
@@ -656,6 +664,32 @@ function selectCustomer(c) {
   form.value.businessPartner = c.id
   customerSearch.value = c.name
   showCustomerDrop.value = false
+
+  const extractId = (v) => {
+    if (!v) return ''
+    if (typeof v === 'object') return v.id || ''
+    return String(v)
+  }
+
+  // Isi langsung dari data search result
+  const ptId = extractId(c.paymentTerms)
+  const pmId = extractId(c.paymentMethod)
+  const plId = extractId(c.priceList)
+
+  if (ptId) form.value.paymentTerms  = ptId
+  if (pmId) form.value.paymentMethod = pmId
+  if (plId) form.value.priceList     = plId
+
+  // Fallback: fetch detail jika ada yang masih kosong
+  if (!ptId || !pmId || !plId) {
+    fetchCustomerById(c.id).then(detail => {
+      if (!detail) return
+      if (!form.value.paymentTerms)  form.value.paymentTerms  = extractId(detail.paymentTerms)
+      if (!form.value.paymentMethod) form.value.paymentMethod = extractId(detail.paymentMethod)
+      if (!form.value.priceList)     form.value.priceList     = extractId(detail.priceList)
+    }).catch(e => console.warn('[selectCustomer] fallback fetch failed:', e))
+  }
+
   loadPartnerLocations(c.id)
 }
 async function loadPartnerLocations(bpId) {
@@ -679,15 +713,22 @@ function selectProduct(line, p) {
   line.product = p.id
   line.productSearch = p.name
   line.showDrop = false
-  // Auto-fill UOM from product
-  if (p.uOM) {
-    line.uOM = p.uOM
-    // Find UOM label from loaded uoms
-    const found = uoms.value.find(u => u.id === p.uOM)
-    line.uomSearch = found ? (found.uOMSymbol || found.name) : (p['uOM$_identifier'] || p.uOM)
+  // Auto-fill UOM from product — p.uOM bisa berupa string ID atau object {id:...}
+  const uomId = p.uOM ? (typeof p.uOM === 'object' ? p.uOM.id : p.uOM) : ''
+  if (uomId) {
+    line.uOM = uomId
+    const found = uoms.value.find(u => u.id === uomId)
+    line.uomSearch = found ? (found.uOMSymbol || found.name) : (p['uOM$_identifier'] || uomId)
     line.uomOptions = found ? [found] : []
   }
-  line.unitPrice = p.listPrice || p.purchasePrice || p.standardPrice || 0
+  // listPrice bisa null, fallback ke 0
+  line.unitPrice = p.listPrice ?? p.purchasePrice ?? p.standardPrice ?? 0
+  // Auto-fill tax dari product jika tersedia
+  if (p.taxCategory || p['tax$_identifier']) {
+    line.tax = p.tax || 'F3F273F648784C858549A45FF0A69AFA'
+  } else {
+    line.tax = 'F3F273F648784C858549A45FF0A69AFA'
+  }
   calcLine(line)
 }
 function onProductBlur(line) { setTimeout(() => { line.showDrop = false }, 150) }
@@ -719,18 +760,18 @@ function onUomBlur(line) { setTimeout(() => { line.showUomDrop = false }, 150) }
 
 // ── line helpers
 function newLine() {
-  return { product: '', productSearch: '', orderedQuantity: 1, uOM: '', uomSearch: '', uomOptions: [], showUomDrop: false, unitPrice: 0, lineNetAmount: 0, showDrop: false, productOptions: [] }
+  return { product: '', productSearch: '', orderedQuantity: 1, uOM: '', uomSearch: '', uomOptions: [], showUomDrop: false, unitPrice: 0, lineNetAmount: 0, showDrop: false, productOptions: [], tax: 'F3F273F648784C858549A45FF0A69AFA' }
 }
 function addLine() { lines.value.push(newLine()) }
 function removeLine(i) { lines.value.splice(i, 1) }
-function calcLine(line) { line.lineNetAmount = (line.orderedQuantity || 0) * (line.unitPrice || 0) }
+function calcLine(line) { line.lineNetAmount = parseFloat(line.orderedQuantity || 0) * parseFloat(line.unitPrice || 0) }
 // Payment term lines are loaded from API when paymentTerms changes
 
 // ── open modals
 function openCreateModal() {
   isEdit.value = false; editId.value = null
   form.value = emptyForm(); lines.value = []; paymentLines.value = []
-  customerSearch.value = ''; docSearch.value = ''; partnerLocations.value = []
+  customerSearch.value = ''; docSearch.value = 'Standard Order'; partnerLocations.value = []
   formError.value = ''; activeFormTab.value = 'transaction'
   showFormModal.value = true
 }
@@ -774,7 +815,7 @@ async function openEditModal(r) {
     const foundUom = uoms.value.find(u => u.id === l.uOM)
     return {
       id: l.id,
-      product: l.uOM || '',
+      product: l.product || '',
       productSearch: l['product$_identifier'] || '',
       orderedQuantity: l.orderedQuantity || 1,
       uOM: l.uOM || '',
@@ -800,9 +841,9 @@ async function openViewModal(r) {
 
 // ── save
 async function saveOrder() {
-  if (!form.value.businessPartner) { formError.value = 'Customer is required.'; return }
-  if (!form.value.paymentTerms) { formError.value = 'Payment Term is required.'; return }
-  if (!form.value.priceList) { formError.value = 'Price List is required.'; return }
+  if (!form.value.businessPartner) { formError.value = 'Customer wajib dipilih.'; return }
+  if (!form.value.paymentTerms) { formError.value = 'Payment Term tidak ditemukan. Pastikan customer memiliki Payment Term.'; return }
+  if (!form.value.priceList) { formError.value = 'Price List tidak ditemukan. Pastikan customer memiliki Price List.'; return }
   saving.value = true; formError.value = ''
   try {
     let orderId
@@ -815,17 +856,53 @@ async function saveOrder() {
     }
 
     // Save lines
+    console.log('[saveOrder] orderId:', orderId, '| lines count:', lines.value.length)
     if (orderId) {
-      // For edit: simple approach - create new lines (could be enhanced with diff logic)
-      for (const line of lines.value) {
-        if (!line.product) continue
-        const linePayload = {
-          orderedQuantity: line.orderedQuantity,
-          uOM: line.uOM,
-          unitPrice: line.unitPrice,
-          lineNetAmount: line.lineNetAmount,
-          product: line.product,
+      for (let idx = 0; idx < lines.value.length; idx++) {
+        const line = lines.value[idx]
+        console.log(`[saveOrder] line[${idx}]:`, JSON.stringify({ product: line.product, productSearch: line.productSearch, uOM: line.uOM, qty: line.orderedQuantity, price: line.unitPrice }))
+        if (!line.product) {
+          console.warn(`[saveOrder] line[${idx}] skipped — product kosong (user tidak memilih dari dropdown?)`)
+          continue
         }
+        const lineNo = (idx + 1) * 10
+        const linePayload = {
+          lineNo,
+          // dates — wajib
+          orderDate:             form.value.orderDate,
+          scheduledDeliveryDate: form.value.scheduledDeliveryDate || form.value.orderDate,
+          // product & qty
+          product:               line.product,
+          orderedQuantity:       line.orderedQuantity,
+          uOM:                   line.uOM,
+          // pricing
+          unitPrice:             line.unitPrice,
+          listPrice:             line.unitPrice,
+          standardPrice:         line.unitPrice,
+          priceLimit:            0,
+          lineNetAmount:         line.lineNetAmount,
+          discount:              0,
+          freightAmount:         0,
+          chargeAmount:          0,
+          // header refs
+          warehouse:             form.value.warehouse,
+          currency:              '303',
+          businessPartner:       form.value.businessPartner,
+          partnerAddress:        form.value.partnerAddress,
+          // tax — wajib, default Free Tax
+          tax: line.tax || 'F3F273F648784C858549A45FF0A69AFA',
+          // flags
+          directShipment:        false,
+          descriptionOnly:       false,
+          cancelPriceAdjustment: false,
+          editLineAmount:        false,
+          manageReservation:     false,
+          managePrereservation:  false,
+          explode:               false,
+          printDescription:      false,
+          selectOrderLine:       false,
+        }
+        console.log(`[saveOrder] posting line[${idx}] payload:`, JSON.stringify(linePayload))
         if (line.id) {
           await updateOrderLine(line.id, linePayload)
         } else {
@@ -863,7 +940,22 @@ watch(() => form.value.paymentTerms, async (newVal) => {
   if (!newVal) return
   paymentLinesLoading.value = true
   try {
-    paymentLines.value = await fetchPaymentTermLines(newVal)
+    const fetchedLines = await fetchPaymentTermLines(newVal)
+    if (fetchedLines.length > 0) {
+      paymentLines.value = fetchedLines
+    } else {
+      // Fallback: gunakan data header Payment Term jika tidak ada child lines
+      const header = paymentTerms.value.find(pt => pt.id === newVal)
+      if (header) {
+        paymentLines.value = [{
+          id: header.id,
+          line: 10,
+          offsetDays: header.overduePaymentDaysRule ?? header.offsetMonthDue ?? 0,
+          percentage: null,
+          fixedAmount: null,
+        }]
+      }
+    }
   } finally {
     paymentLinesLoading.value = false
   }

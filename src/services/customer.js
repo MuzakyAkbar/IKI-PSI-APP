@@ -155,8 +155,10 @@ export async function fetchPriceLists() {
 }
 
 export async function fetchPaymentMethods() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtFinAccPaymentMethod', {
-    params: { _startRow: 0, _endRow: 100 },
+  // Endpoint menggunakan nama tabel DB: FIN_PaymentMethod (bukan nama entitas Java)
+  // Kolom target di BusinessPartner: FIN_Paymentmethod_ID
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_PaymentMethod', {
+    params: { _startRow: 0, _endRow: 100, _where: 'e.active = true' },
   })
   return res.data?.response?.data ?? []
 }
@@ -341,6 +343,20 @@ export async function fetchContacts(businessPartnerId) {
       _startRow: 0,
       _endRow: 200,
       _where: `e.businessPartner.id = '${businessPartnerId}' and e.active = true`,
+    },
+  })
+  return res.data?.response?.data ?? []
+}
+
+// ==============================
+// CONTACT (ADUser) — GET batch for multiple BP ids
+// ==============================
+export async function fetchContactsForIds(idsInClause) {
+  const res = await api.get(USER_BASE, {
+    params: {
+      _startRow: 0,
+      _endRow: 500,
+      _where: `e.businessPartner.id in (${idsInClause}) and e.active = true`,
     },
   })
   return res.data?.response?.data ?? []
