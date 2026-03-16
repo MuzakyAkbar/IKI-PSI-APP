@@ -10,6 +10,7 @@ import WarehouseView from '@/views/Warehouse.vue'
 import StorageBinView from '@/views/StorageBin.vue'
 import PurchaseOrderView from '@/views/PurchaseOrder.vue'
 import ARAgingView from '@/views/ARAgingView.vue'
+import PaymentInView from '@/views/PaymentIn.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -24,6 +25,7 @@ const routes = [
   { path: '/storage-bin', component: StorageBinView },
   { path: '/purchase-order', component: PurchaseOrderView },
   { path: '/ar-aging', component: ARAgingView },
+  { path: '/payment-in', component: PaymentInView },
 ]
 
 const router = createRouter({

@@ -53,10 +53,10 @@
                           <button class="dropdown-item" @click="openViewModal(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
                           </button>
-                          <button class="dropdown-item" @click="openEditModal(r)">
+                          <button v-if="r.documentStatus === 'DR'" class="dropdown-item" @click="openEditModal(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                           </button>
-                          <button class="dropdown-item dropdown-item--danger" @click="confirmDelete(r)">
+                          <button v-if="r.documentStatus === 'DR'" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
                           </button>
                         </div>
@@ -212,16 +212,16 @@
                   <thead><tr>
                     <th style="width:40px">#</th>
                     <th>Product</th>
-                    <th style="width:70px">Qty</th>
-                    <th style="width:100px">UOM</th>
-                    <th style="width:120px">Unit Price</th>
-                    <th style="width:120px">Net Amount</th>
+                    <th style="width:110px;text-align:center">Qty</th>
+                    <th style="width:150px;text-align:center">UOM</th>
+                    <th style="width:160px;text-align:right">Unit Price</th>
+                    <th style="width:170px;text-align:right">Net Amount</th>
                     <th style="width:40px"></th>
                   </tr></thead>
                   <tbody>
                     <tr v-if="lines.length === 0"><td colspan="7" class="td-empty" style="padding:20px">No lines yet. Click "Add Line".</td></tr>
                     <tr v-for="(line, idx) in lines" :key="idx">
-                      <td class="td-secondary">{{ idx + 1 }}</td>
+                      <td class="td-secondary" style="text-align:center">{{ idx + 1 }}</td>
                       <td>
                         <div class="acc-wrap">
                           <input v-model="line.productSearch" class="acc-input acc-input--sm" placeholder="Search product..." @input="onProductSearch(line)" @focus="line.showDrop = true" @blur="() => onProductBlur(line)" />
@@ -230,10 +230,10 @@
                           </ul>
                         </div>
                       </td>
-                      <td><input v-model.number="line.invoicedQuantity" type="number" min="0" class="form-input form-input--sm" @input="calcLine(line)" /></td>
-                      <td>
+                      <td style="text-align:center"><input v-model.number="line.invoicedQuantity" type="number" min="0" class="form-input form-input--sm" style="text-align:center" @input="calcLine(line)" /></td>
+                      <td style="text-align:center">
                         <div class="acc-wrap">
-                          <input v-model="line.uomSearch" class="acc-input acc-input--sm" placeholder="UOM..." @input="onUomSearch(line)" @focus="line.showUomDrop = true" @blur="() => onUomBlur(line)" />
+                          <input v-model="line.uomSearch" class="acc-input acc-input--sm" placeholder="UOM..." style="text-align:center;padding-right:24px" @input="onUomSearch(line)" @focus="line.showUomDrop = true" @blur="() => onUomBlur(line)" />
                           <ul v-if="line.showUomDrop && line.uomOptions.length" class="acc-dropdown">
                             <li v-for="u in line.uomOptions" :key="u.id" class="acc-opt" @mousedown.prevent="selectUom(line, u)">{{ u.uOMSymbol || u.name }}</li>
                           </ul>
@@ -242,8 +242,8 @@
                           </ul>
                         </div>
                       </td>
-                      <td><input v-model.number="line.unitPrice" type="number" min="0" class="form-input form-input--sm" @input="calcLine(line)" /></td>
-                      <td class="td-secondary">{{ formatCurrency(line.lineNetAmount) }}</td>
+                      <td style="text-align:right"><input v-model.number="line.unitPrice" type="number" min="0" class="form-input form-input--sm" style="text-align:right" @input="calcLine(line)" /></td>
+                      <td class="td-secondary" style="text-align:right;font-weight:600;white-space:nowrap">{{ formatCurrency(line.lineNetAmount) }}</td>
                       <td>
                         <button class="btn-rm-line" @click="removeLine(idx)">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -401,7 +401,7 @@
                       <span class="acc-summary-value">{{ formatDate(viewRow.invoiceDate) }}</span>
                     </div>
                     <div class="acc-summary-item">
-                      <span class="acc-summary-label">Journal</span>
+                      <span class="acc-summary-label">Invoice No</span>
                       <span class="acc-summary-value">{{ accountingFacts[0]?.['journalEntry$_identifier'] || viewRow.documentNo || '—' }}</span>
                     </div>
                     <div class="acc-summary-item">
@@ -464,14 +464,44 @@
 
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="showViewModal = false">Close</button>
-            <button class="btn btn--edit" @click="openEditFromView">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit
-            </button>
-            <button class="btn btn--complete" disabled>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              Complete
-            </button>
+
+            <!-- DR: Edit + Complete -->
+            <template v-if="viewRow?.documentStatus === 'DR'">
+              <button class="btn btn--edit" @click="openEditFromView">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit
+              </button>
+              <button class="btn btn--complete" :disabled="completing" @click="doCompleteInvoice">
+                <span v-if="completing" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                {{ completing ? 'Completing...' : 'Complete' }}
+              </button>
+            </template>
+
+            <!-- CO + belum posted: Reactivate (Post sudah auto setelah Complete) -->
+            <template v-else-if="viewRow?.documentStatus === 'CO' && !isPosted">
+              <!-- Post button dinonaktifkan — sudah auto-post saat Complete -->
+              <!-- <button class="btn btn--post" :disabled="posting" @click="doPostAccounting">
+                <span v-if="posting" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+                {{ posting ? 'Posting...' : 'Post' }}
+              </button> -->
+              <button class="btn btn--reactivate" :disabled="reactivating" @click="doReactivateInvoice">
+                <span v-if="reactivating" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                {{ reactivating ? 'Reactivating...' : 'Reactivate' }}
+              </button>
+            </template>
+
+            <!-- CO + posted: Unpost -->
+            <template v-else-if="viewRow?.documentStatus === 'CO' && isPosted">
+              <button class="btn btn--unpost" :disabled="unposting" @click="doUnpostAccounting">
+                <span v-if="unposting" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                {{ unposting ? 'Unposting...' : 'Unpost' }}
+              </button>
+            </template>
+
           </div>
         </div>
       </div>
@@ -527,6 +557,8 @@ import {
   fetchCustomers, fetchCustomerById, fetchPartnerLocations,
   fetchPaymentTerms, fetchPaymentTermLines, fetchPaymentMethods,
   fetchPriceLists, fetchProducts, fetchUOMs,
+  runInvoiceProcess, postAccountingProcess,
+  unpostAccountingProcess, reactivateInvoice, voidInvoice,
   DEFAULT_TAX_ID,
   DEFAULT_ORGANIZATION,
 } from '@/services/customerInvoice.js'
@@ -620,6 +652,20 @@ const deleteError = ref('')
 
 // ── posting
 const posting = ref(false)
+
+// ── completing
+const completing = ref(false)
+
+// ── unposting / reactivating / voiding
+const unposting = ref(false)
+const reactivating = ref(false)
+const voiding = ref(false)
+
+// posted bisa boolean true atau string 'Y' tergantung Openbravo response
+const isPosted = computed(() => {
+  const p = viewRow.value?.posted
+  return p === true || p === 'Y'
+})
 
 // ── toast
 const toast = ref({ show: false, type: 'success', message: '' })
@@ -1005,6 +1051,93 @@ async function doPostInvoice() {
   } finally { posting.value = false }
 }
 
+// ── complete invoice via RunProcess (DocAction), lalu auto-post
+async function doCompleteInvoice() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  completing.value = true
+  try {
+    await runInvoiceProcess(invoiceId, viewRow.value)
+    showToast('Invoice completed! Memproses posting...')
+    // Auto-post langsung setelah Complete berhasil
+    const completedInvoice = await fetchInvoice(invoiceId)
+    if (completedInvoice) {
+      await postAccountingProcess(invoiceId, completedInvoice)
+      showToast('Invoice completed & posted. Jurnal accounting terbentuk.')
+    }
+    await loadInvoices()
+    const fresh = await fetchInvoice(invoiceId)
+    if (fresh) viewRow.value = fresh
+    else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated; else showViewModal.value = false }
+  } catch (e) {
+    showToast(e?.message || 'Failed to complete invoice', 'error')
+  } finally { completing.value = false }
+}
+
+// ── post accounting — tetap tersedia untuk dipanggil manual jika diperlukan
+// (tombol UI sudah dicomment, tapi fungsi ini masih dipakai oleh doCompleteInvoice)
+async function doPostAccounting() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  posting.value = true
+  try {
+    await postAccountingProcess(invoiceId, viewRow.value)
+    showToast('Invoice posted successfully! Jurnal accounting terbentuk.')
+    await loadInvoices()
+    const fresh = await fetchInvoice(invoiceId)
+    if (fresh) viewRow.value = fresh
+    else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated; else showViewModal.value = false }
+  } catch (e) {
+    showToast(e?.message || 'Failed to post invoice', 'error')
+  } finally { posting.value = false }
+}
+
+async function doUnpostAccounting() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  unposting.value = true
+  try {
+    await unpostAccountingProcess(invoiceId, viewRow.value)
+    showToast('Invoice unposted. Jurnal accounting dihapus.')
+    await loadInvoices()
+    const fresh = await fetchInvoice(invoiceId)
+    if (fresh) viewRow.value = fresh
+    else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated }
+  } catch (e) {
+    showToast(e?.message || 'Failed to unpost invoice', 'error')
+  } finally { unposting.value = false }
+}
+
+async function doReactivateInvoice() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  reactivating.value = true
+  try {
+    const updated = await reactivateInvoice(invoiceId, viewRow.value)
+    showToast('Invoice reactivated. Status kembali ke Draft.')
+    await loadInvoices()
+    const refreshed = rows.value.find(r => r.id === invoiceId)
+    viewRow.value = refreshed || updated
+  } catch (e) {
+    showToast(e?.message || 'Failed to reactivate invoice', 'error')
+  } finally { reactivating.value = false }
+}
+
+async function doVoidInvoice() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  voiding.value = true
+  try {
+    const updated = await voidInvoice(invoiceId, viewRow.value)
+    showToast('Invoice voided.')
+    await loadInvoices()
+    const refreshed = rows.value.find(r => r.id === invoiceId)
+    viewRow.value = refreshed || updated
+  } catch (e) {
+    showToast(e?.message || 'Failed to void invoice', 'error')
+  } finally { voiding.value = false }
+}
+
 // ── delete
 function confirmDelete(r) { closeDropdown(); deleteRow.value = r; deleteError.value = ''; showDeleteModal.value = true }
 async function doDelete() {
@@ -1084,7 +1217,21 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .btn--danger:disabled { opacity: .6; cursor: not-allowed; }
 .btn--edit { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .15s; font-family: var(--font); }
 .btn--edit:hover { background: #e2e8f0; color: var(--text-primary); }
-.btn--complete { background: #16a34a; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: not-allowed; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); opacity: .5; }
+.btn--complete { background: #16a34a; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
+.btn--complete:hover:not(:disabled) { background: #15803d; }
+.btn--complete:disabled { opacity: .4; cursor: not-allowed; }
+.btn--post { background: #7c3aed; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
+.btn--post:hover:not(:disabled) { background: #6d28d9; }
+.btn--post:disabled { opacity: .4; cursor: not-allowed; }
+.btn--unpost { background: #ea580c; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
+.btn--unpost:hover:not(:disabled) { background: #c2410c; }
+.btn--unpost:disabled { opacity: .4; cursor: not-allowed; }
+.btn--reactivate { background: #0284c7; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
+.btn--reactivate:hover:not(:disabled) { background: #0369a1; }
+.btn--reactivate:disabled { opacity: .4; cursor: not-allowed; }
+.btn--void { background: #dc2626; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
+.btn--void:hover:not(:disabled) { background: #b91c1c; }
+.btn--void:disabled { opacity: .4; cursor: not-allowed; }
 
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -1168,6 +1315,9 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .btn-add-line:hover { background: #dbeafe; }
 .btn-rm-line { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #fee2e2; color: var(--danger); border: none; cursor: pointer; transition: background .12s; }
 .btn-rm-line:hover { background: #fecaca; }
+.table--lines { table-layout: fixed; min-width: 820px; }
+.table--lines th, .table--lines td { padding: 8px 10px; vertical-align: middle; }
+.table--lines .form-input--sm, .table--lines .acc-input--sm { width: 100%; min-width: 0; }
 
 /* Combobox */
 .acc-wrap { position: relative; width: 100%; }

@@ -81,8 +81,6 @@ export async function deleteInvoice(id) {
 }
 
 export async function postInvoice(data) {
-  // "Post Invoice" = create a new invoice via POST (sama persis seperti createInvoice)
-  // data = viewRow dari response API, field FK bisa berupa string ID langsung
   const getId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
 
   const orgId  = getId(data.organization)  || DEFAULT_ORGANIZATION
@@ -169,7 +167,6 @@ export async function fetchInvoiceLines(invoiceId) {
 }
 
 export async function createInvoiceLine(invoiceId, data) {
-  // FK dikirim sebagai plain string ID (sesuai API contract)
   const res = await api.post(LINE_BASE, {
     data: {
       _entityName:      'InvoiceLine',
@@ -194,7 +191,6 @@ export async function createInvoiceLine(invoiceId, data) {
 }
 
 export async function updateInvoiceLine(id, data) {
-  // FK plain string, sama seperti create
   const res = await api.put(`${LINE_BASE}/${id}`, {
     data: {
       id,
@@ -317,6 +313,116 @@ export async function fetchUOMs() {
   return res.data?.response?.data ?? []
 }
 
+// ════════════════════════════════════════════════════
+// PROCESS INVOICE (Complete / DocAction)
+// ════════════════════════════════════════════════════
+
+// Fetch the AD_Process_ID (numeric "111") for "Process Invoice"
+let _cachedProcessId = null
+export async function fetchInvoiceProcessId() {
+  if (_cachedProcessId) return _cachedProcessId
+  const res = await api.get('/org.openbravo.service.json.jsonrest/ADProcess', {
+    params: {
+      _where: `e.searchKey = 'C_Invoice Post'`,
+      _startRow: 0,
+      _endRow: 1,
+    },
+  })
+  const data = res.data?.response?.data ?? []
+  const record = data[0]
+  if (!record) throw new Error('Process "C_Invoice Post" tidak ditemukan di sistem.')
+  const id = record.id
+  if (!id) throw new Error('Process ID tidak ditemukan.')
+  _cachedProcessId = id
+  return id
+}
+
+// Complete invoice — tries multiple Openbravo endpoints in order
+
+
+export async function runInvoiceProcess(invoiceId, invoiceData) {
+  if (invoiceData?.documentStatus !== 'DR') {
+    throw new Error(`Invoice sudah dalam status "${invoiceData?.documentStatus}", tidak bisa di-Complete.`)
+  }
+
+  // ── Attempt 1: Standard Openbravo process servlet (ad_process)
+  // This is the actual endpoint behind the "Complete" button dialog in Openbravo UI
+  try {
+    const formData = new URLSearchParams({
+      inpTableId:         '318',
+      inpwindowId:        '167',
+      inpcInvoiceId:      invoiceId,
+      inpdocAction:       'CO',
+      inpDocStatus:       'DR',
+      inpProcessing:      'Y',
+      processId:          '111',
+      reportId:           'C_Invoice Post',
+      Command:            'OK',
+    })
+    const r1 = await fetch(`${BASE_URL}ad_process/C_InvoicePost`, {
+      method:      'POST',
+      credentials: 'include',
+      headers: {
+        Authorization:  `Basic ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    })
+    const t1 = await r1.text()
+    console.log('[ad_process/C_InvoicePost]', r1.status, t1.slice(0, 300))
+    const isHtml1 = t1.trimStart().startsWith('<')
+    if (r1.ok && !isHtml1 && !t1.includes('Error') && !t1.includes('error')) {
+      return { status: 'ok', raw: t1 }
+    }
+  } catch (e) {
+    console.warn('[Attempt 1 ad_process failed]', e.message)
+  }
+
+  // ── Attempt 2: servlet C_Invoice_Post (alternate URL pattern)
+  try {
+    const formData2 = new URLSearchParams({
+      inpTableId:    '318',
+      inpcInvoiceId: invoiceId,
+      inpdocAction:  'CO',
+      Command:       'OK',
+    })
+    const r2 = await fetch(`${BASE_URL}C_Invoice_Post`, {
+      method:      'POST',
+      credentials: 'include',
+      headers: {
+        Authorization:  `Basic ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData2.toString(),
+    })
+    const t2 = await r2.text()
+    console.log('[C_Invoice_Post servlet]', r2.status, t2.slice(0, 300))
+    if (r2.ok) return { status: 'ok', raw: t2 }
+  } catch (e) {
+    console.warn('[Attempt 2 servlet failed]', e.message)
+  }
+
+  // ── Attempt 3: JSON REST PUT — directly set fields
+  // NOTE: Openbravo may protect processed/docAction fields after CO,
+  // but we try anyway as fallback
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentStatus: 'CO',
+      documentAction: 'CL',
+      processed:      true,
+    },
+  })
+  const st = res.data?.response?.status
+  if (st !== undefined && st < 0) {
+    throw new Error(res.data?.response?.error?.message || 'Complete Invoice gagal di semua attempt.')
+  }
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
 // Error interceptor
 api.interceptors.response.use(
   (res) => {
@@ -333,3 +439,119 @@ api.interceptors.response.use(
     return Promise.reject(err)
   }
 )
+
+// ════════════════════════════════════════════════════
+// POST ACCOUNTING (docAction=PO → posted=Y, creates journal)
+// ════════════════════════════════════════════════════
+export async function postAccountingProcess(invoiceId, invoiceData) {
+  if (invoiceData?.documentStatus !== 'CO') {
+    throw new Error(`Invoice harus berstatus Complete (CO) sebelum di-Post. Status saat ini: "${invoiceData?.documentStatus}"`)
+  }
+
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentStatus: 'CO',
+      documentAction: 'PO',
+      processed:      true,
+    },
+  })
+  const status = res.data?.response?.status
+  if (status !== undefined && status < 0) {
+    throw new Error(res.data?.response?.error?.message || 'Post Invoice gagal.')
+  }
+  return await fetchInvoice(invoiceId)
+}
+// ════════════════════════════════════════════════════
+// UNPOST (hapus jurnal accounting, posted=N)
+// 1. Fetch semua AccountingFact untuk invoice ini
+// 2. DELETE satu per satu
+// 3. PUT posted=false pada invoice
+// ════════════════════════════════════════════════════
+const FACT_BASE = '/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingFact'
+
+export async function unpostAccountingProcess(invoiceId, invoiceData) {
+  const isPosted = invoiceData?.posted === true || invoiceData?.posted === 'Y'
+  if (!isPosted) {
+    throw new Error(`Invoice belum di-Post, tidak bisa di-Unpost.`)
+  }
+
+  // Step 1: ambil semua accounting facts
+  const factsRes = await api.get(FACT_BASE, {
+    params: {
+      _where: `e.recordID = '${invoiceId}' and e.table.id = '318'`,
+      _startRow: 0,
+      _endRow: 200,
+    },
+  })
+  const facts = factsRes.data?.response?.data ?? []
+
+  // Step 2: delete semua facts
+  await Promise.all(facts.map(f => api.delete(`${FACT_BASE}/${f.id}`)))
+
+  // Step 3: set posted=false pada invoice
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:          invoiceId,
+      _entityName: 'Invoice',
+      documentNo:  invoiceData.documentNo,
+      posted:      'N',
+    },
+  })
+  const st = res.data?.response?.status
+  if (st !== undefined && st < 0) {
+    throw new Error(res.data?.response?.error?.message || 'Unpost Invoice gagal.')
+  }
+  return await fetchInvoice(invoiceId)
+}
+
+// ════════════════════════════════════════════════════
+// REACTIVATE (Complete → Draft kembali)
+// PUT documentAction='RC' → documentStatus=DR, bisa diedit lagi
+// ════════════════════════════════════════════════════
+export async function reactivateInvoice(invoiceId, invoiceData) {
+  if (invoiceData?.documentStatus !== 'CO') {
+    throw new Error(`Invoice harus berstatus Complete (CO) untuk di-Reactivate. Status saat ini: "${invoiceData?.documentStatus}"`)
+  }
+  // Set langsung documentStatus=DR dan documentAction=CO (kembali ke Draft siap di-Complete lagi)
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentStatus: 'DR',
+      documentAction: 'CO',
+      processed:      'N',
+    },
+  })
+  const st = res.data?.response?.status
+  if (st !== undefined && st < 0) {
+    throw new Error(res.data?.response?.error?.message || 'Reactivate Invoice gagal.')
+  }
+  return await fetchInvoice(invoiceId)
+}
+
+// ════════════════════════════════════════════════════
+// VOID (batalkan invoice, documentStatus=VO)
+// PUT documentAction='VO' → invoice dibatalkan permanen
+// ════════════════════════════════════════════════════
+export async function voidInvoice(invoiceId, invoiceData) {
+  if (!['CO', 'DR'].includes(invoiceData?.documentStatus)) {
+    throw new Error(`Invoice tidak bisa di-Void dari status "${invoiceData?.documentStatus}".`)
+  }
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentAction: 'VO',
+    },
+  })
+  const st = res.data?.response?.status
+  if (st !== undefined && st < 0) {
+    throw new Error(res.data?.response?.error?.message || 'Void Invoice gagal.')
+  }
+  return await fetchInvoice(invoiceId)
+}
