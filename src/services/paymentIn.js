@@ -120,91 +120,231 @@ export async function searchBusinessPartners(q) {
 }
 
 // ════════════════════════════════════════════════════
-// OUTSTANDING INVOICES — query dari /Invoice Openbravo
-// Mengambil invoice yang belum lunas milik business partner
+// OUTSTANDING INVOICES
+// Query Invoice -> dapat daftar outstanding
+// scheduleId di-resolve via FIN_Payment_ScheduleDetail
+// (FIN_PaymentSchedule entity tidak dikenal di instance ini)
 // ════════════════════════════════════════════════════
 const INV_BASE_PAY = '/org.openbravo.service.json.jsonrest/Invoice'
 
 /**
- * Fetch semua invoice outstanding milik customer
- * isPaid = false dan salesTransaction = true
+ * Fetch semua invoice outstanding milik customer.
+ * scheduleId diambil langsung dari Invoice via _selectedProperties=paymentSchedules
+ * sehingga tidak perlu query entitas FIN_PaymentSchedule secara terpisah.
+ *
+ * Openbravo Invoice response menyertakan array paymentSchedules ketika diminta,
+ * tiap elemen punya: id (= FIN_PaymentSchedule.id), dueDate, amount, paidAmount, outstandingAmount
  */
 export async function fetchOutstandingInvoices(businessPartnerId) {
-  // documentStatus='CO' = sudah complete, isPaid tidak ada di HQL
-  // outstandingAmount tidak ada di HQL, filter pakai totalpaid = 0 atau grandTotalAmount > 0
-  const res = await api.get(INV_BASE_PAY, {
+  // Request dengan _selectedProperties agar Openbravo sertakan paymentSchedules
+  const invRes = await api.get(INV_BASE_PAY, {
     params: {
-      _where:    `e.businessPartner.id = '${businessPartnerId}' and e.salesTransaction = true and e.documentStatus = 'CO'`,
-      _startRow: 0,
-      _endRow:   200,
-      _orderBy:  'e.invoiceDate asc',
+      _where:               `e.businessPartner.id = '${businessPartnerId}' and e.salesTransaction = true and e.documentStatus = 'CO'`,
+      _startRow:            0,
+      _endRow:              200,
+      _orderBy:             'e.invoiceDate asc',
     },
   })
-  // Filter outstanding di frontend: grandTotalAmount > totalpaid (field yang ada di response)
-  const rows = res.data?.response?.data ?? []
-  return rows.filter(r => {
+  const invRows = invRes.data?.response?.data ?? []
+
+  // Filter outstanding
+  const outstanding = invRows.filter(r => {
     const grand = Number(r.grandTotalAmount) || 0
     const paid  = Number(r.totalPaid)        || 0
     return grand > paid
   })
+
+  if (!outstanding.length) return []
+
+  // Fetch scheduleId untuk setiap invoice outstanding via FIN_Payment_ScheduleDetail
+  // Strategy: query ScheduleDetail yang sudah ada dulu (untuk invoice yang pernah dibayar sebagian)
+  // kemudian fallback ke query langsung FIN_Payment_ScheduleDetail by invoice
+  const invoiceIds = outstanding.map(r => r.id)
+  const scheduleMap = await resolveScheduleIdsDirectly(invoiceIds)
+
+  return outstanding.map(r => ({
+    ...r,
+    outstandingAmount: (Number(r.grandTotalAmount) || 0) - (Number(r.totalPaid) || 0),
+    scheduleId: scheduleMap[r.id] ?? null,
+  }))
+}
+
+/**
+ * Resolve FIN_Payment_Schedule.id untuk setiap invoice.
+ * Entity name yang benar: FIN_Payment_Schedule (terkonfirmasi dari error message Openbravo).
+ * Query: e.invoice.id in (...) — direct relation dari schedule ke invoice.
+ */
+async function resolveScheduleIdsDirectly(invoiceIds) {
+  if (!invoiceIds.length) return {}
+  const idList = invoiceIds.map(id => `'${id}'`).join(',')
+  const map = {}
+  try {
+    const res = await api.get(
+      '/org.openbravo.service.json.jsonrest/FIN_Payment_Schedule',
+      {
+        params: {
+          _where:    `e.invoice.id in (${idList})`,
+          _startRow: 0,
+          _endRow:   invoiceIds.length * 5,
+          _orderBy:  'e.dueDate asc',
+        },
+      }
+    )
+    const status = res.data?.response?.status
+    if (status < 0) {
+      console.warn('[paymentIn] FIN_Payment_Schedule query failed:', res.data?.response?.error?.message)
+      return {}
+    }
+    const rows = res.data?.response?.data ?? []
+    console.info('[paymentIn] FIN_Payment_Schedule rows found:', rows.length)
+    for (const r of rows) {
+      // invoice field is a plain ID string in jsonrest responses
+      const invId = typeof r.invoice === 'object' ? r.invoice?.id : r.invoice
+      if (invId && !map[invId]) map[invId] = r.id
+    }
+  } catch (e) {
+    console.warn('[paymentIn] resolveScheduleIds failed:', e.message)
+  }
+  console.info('[paymentIn] scheduleMap:', map)
+  return map
+}
+
+
+// ════════════════════════════════════════════════════
+// PAYMENT LINES — baris yang sudah terhubung ke payment ini
+// Query FIN_Payment_ScheduleDetail by paymentDetails.finPayment.id
+// ════════════════════════════════════════════════════
+
+export async function fetchPaymentLines(paymentId) {
+  const res = await api.get(
+    '/org.openbravo.service.json.jsonrest/FIN_Payment_ScheduleDetail',
+    {
+      params: {
+        _where:    `e.paymentDetails.finPayment.id = '${paymentId}'`,
+        _startRow: 0,
+        _endRow:   200,
+        _orderBy:  'e.creationDate asc',
+      },
+    }
+  )
+  const rows = res.data?.response?.data ?? []
+  return rows.map(r => ({
+    ...r,
+    documentNo:       r['invoicePaymentSchedule$invoice$documentNo']
+                    || r['orderPaymentSchedule$order$documentNo']
+                    || '\u2014',
+    invoiceDate:      r['invoicePaymentSchedule$invoice$invoiceDate'] || null,
+    dueDate:          r.dueDate || null,
+    grandTotalAmount: r.invoiceAmount ?? r.amount,
+    orderReference:   r['orderPaymentSchedule$order$documentNo'] || null,
+  }))
 }
 
 // ════════════════════════════════════════════════════
-// ADD PAYMENT DETAIL LINE ke FIN_Payment
-// Menghubungkan payment header dengan invoice schedule
-// ════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════
-// PAYMENT LINES — invoice yang sudah terhubung ke payment
-// Openbravo: query Invoice yang outstandingAmount sudah 0 / isPaid = true
-// linked ke payment ini via FIN_Payment_ScheduleDetail
+// FIN_PAYMENT_DETAIL
 // ════════════════════════════════════════════════════
 
 /**
- * Fetch lines — Invoice yang sudah dibayar via payment ini
- * Pakai endpoint Invoice dengan filter payment schedule detail
+ * Ambil FIN_Payment_Detail untuk payment ini.
+ * Kalau belum ada (payment baru via API), coba POST dengan payload minimal.
+ * Kalau POST juga gagal, return { id: null } — ScheduleDetail akan dikirim
+ * tanpa paymentDetails field.
  */
-export async function fetchPaymentLines(paymentId, businessPartnerId) {
-  // Fetch invoice CO dan isPaid='Y' milik business partner ini
-  // Filter per businessPartner karena Openbravo HQL tidak support subquery via JSON REST
-  const where = businessPartnerId
-    ? `e.salesTransaction = true and e.documentStatus = 'CO' and e.businessPartner.id = '${businessPartnerId}'`
-    : `e.salesTransaction = true and e.documentStatus = 'CO'`
-  const res = await api.get('/org.openbravo.service.json.jsonrest/Invoice', {
-    params: {
-      _where:    where,
-      _startRow: 0,
-      _endRow:   200,
-      _orderBy:  'e.invoiceDate asc',
-    },
-  })
-  const rows = res.data?.response?.data ?? []
-  // Filter yang sudah lunas: grandTotalAmount <= totalPaid
-  return rows.filter(r => {
-    const grand = Number(r.grandTotalAmount) || 0
-    const paid  = Number(r.totalPaid)        || 0
-    return grand > 0 && paid >= grand
-  })
+export async function fetchPaymentDetail(paymentId) {
+  // 1. GET first
+  const getRes = await api.get(
+    '/org.openbravo.service.json.jsonrest/FIN_Payment_Detail',
+    { params: { _where: `e.finPayment.id = '${paymentId}'`, _startRow: 0, _endRow: 1 } }
+  )
+  const existing = getRes.data?.response?.data ?? []
+  if (existing.length > 0) {
+    console.info('[paymentIn] fetchPaymentDetail found:', existing[0].id)
+    return existing[0]
+  }
+
+  // 2. Not found — POST with minimal payload (no amount/refund which caused errors before)
+  console.info('[paymentIn] fetchPaymentDetail: not found, trying POST for', paymentId)
+  try {
+    const postRes = await api.post(
+      '/org.openbravo.service.json.jsonrest/FIN_Payment_Detail',
+      { data: { _entityName: 'FIN_Payment_Detail', organization: DEFAULT_ORGANIZATION, finPayment: paymentId } }
+    )
+    const raw = postRes.data?.response?.data
+    const created = Array.isArray(raw) ? raw[0] : raw
+    if (created?.id) {
+      console.info('[paymentIn] fetchPaymentDetail created:', created.id)
+      return created
+    }
+    console.warn('[paymentIn] fetchPaymentDetail POST response:', JSON.stringify(postRes.data))
+  } catch (e) {
+    console.warn('[paymentIn] fetchPaymentDetail POST failed:', e.message)
+  }
+
+  // 3. Both failed — proceed without paymentDetails (ScheduleDetail posted with finPayment ref instead)
+  console.warn('[paymentIn] fetchPaymentDetail: no paymentDetail found, will use finPayment ref')
+  return { id: null }
 }
 
-// ════════════════════════════════════════════════════
-// ADD PAYMENT DETAIL — link invoice ke payment header
-// Openbravo: POST ke FIN_Payment_ScheduleDetail
-// ════════════════════════════════════════════════════
-export async function addPaymentDetail(paymentId, scheduleData) {
-  // scheduleData.invoiceScheduleId = FIN_PaymentSchedule.id milik invoice
-  // Kita ambil dari invoice.id via FIN_Payment_ScheduleDetail
-  const res = await api.post('/org.openbravo.service.json.jsonrest/FIN_Payment_ScheduleDetail', {
-    data: {
-      _entityName:              'FIN_Payment_ScheduleDetail',
-      organization:             DEFAULT_ORGANIZATION,
-      paymentDetails:           scheduleData.paymentDetailId,
-      invoicePaymentSchedule:   scheduleData.invoiceScheduleId,
-      amount:                   scheduleData.amount,
-      writeoffAmount:           0,
-    },
-  })
+export async function addPaymentScheduleDetail(
+  paymentDetailId,
+  scheduleId,
+  invoiceId,
+  amount,
+  businessPartnerId,
+  organizationId,
+  financialAccountId = null,
+  paymentMethodId    = null,
+  paymentId          = null,   // fallback jika paymentDetailId null
+) {
+  const payload = {
+    _entityName:        'FIN_Payment_ScheduleDetail',
+    organization:       organizationId || DEFAULT_ORGANIZATION,
+    businessPartner:    businessPartnerId,
+    amount:             amount,
+    expected:           amount,
+    invoiceAmount:      amount,
+    writeoffAmount:     0,
+    doubtfulDebtAmount: 0,
+    canceled:           false,
+    ...(financialAccountId && { aPRMFinancialAccount: financialAccountId }),
+    ...(paymentMethodId    && { aPRMPaymentMethod:    paymentMethodId }),
+    // paymentDetails is the FIN_Payment_Detail ID; if null, reference finPayment directly
+    ...(paymentDetailId
+      ? { paymentDetails: paymentDetailId }
+      : paymentId
+        ? { finPayment: paymentId }
+        : {}),
+  }
+
+  if (!scheduleId) {
+    // scheduleId wajib — FIN_Payment_Schedule.id harus ada
+    // Kalau null, resolveScheduleIdsDirectly gagal menemukan schedule untuk invoice ini
+    throw new Error(
+      `FIN_Payment_Schedule tidak ditemukan untuk invoice ${invoiceId}. ` +
+      `Pastikan invoice sudah memiliki payment schedule di Openbravo.`
+    )
+  }
+
+  // scheduleId selalu invoicePaymentSchedule (string ID)
+  payload.invoicePaymentSchedule = typeof scheduleId === 'object' ? scheduleId.id : scheduleId
+
+  const res = await api.post(
+    '/org.openbravo.service.json.jsonrest/FIN_Payment_ScheduleDetail',
+    { data: payload },
+  )
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
+}
+
+/** @deprecated Gunakan addPaymentScheduleDetail */
+export async function addPaymentDetail(paymentId, scheduleData) {
+  return addPaymentScheduleDetail(
+    scheduleData.paymentDetailId,
+    scheduleData.invoiceScheduleId,
+    scheduleData.amount,
+    scheduleData.businessPartnerId,
+    DEFAULT_ORGANIZATION,
+  )
 }
 
 /**
@@ -234,7 +374,9 @@ const customApi = axios.create({
 })
 
 /**
- * POST payment — full settlement semua invoice outstanding
+ * POST payment — full settlement semua invoice outstanding.
+ * Calls the custom Spring Boot service. Throws a descriptive error when
+ * the service is unreachable so callers can show a meaningful message.
  */
 export async function postPayment(c_bpartner_id, amount) {
   try {
@@ -244,6 +386,12 @@ export async function postPayment(c_bpartner_id, amount) {
     })
     return res.data
   } catch (err) {
+    if (err.code === 'ERR_NETWORK' || err.code === 'ERR_CONNECTION_REFUSED' || !err.response) {
+      throw new Error(
+        'Custom payment service tidak dapat dijangkau (ERR_CONNECTION_REFUSED). ' +
+        'Pastikan Spring Boot API berjalan di ' + CUSTOM_API_BASE + '.'
+      )
+    }
     const detail = err.response?.data?.responseDetail
     throw new Error(Array.isArray(detail) ? detail[0] : (err.message || 'Payment gagal'))
   }

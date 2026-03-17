@@ -11,6 +11,9 @@ import StorageBinView from '@/views/StorageBin.vue'
 import PurchaseOrderView from '@/views/PurchaseOrder.vue'
 import ARAgingView from '@/views/ARAgingView.vue'
 import PaymentInView from '@/views/PaymentIn.vue'
+import GLJournalView from '@/views/GLJournal.vue'
+import TrialBalanceView from '@/views/TrialBalance.vue'
+import APAgingView from '@/views/APAgingView.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -26,6 +29,9 @@ const routes = [
   { path: '/purchase-order', component: PurchaseOrderView },
   { path: '/ar-aging', component: ARAgingView },
   { path: '/payment-in', component: PaymentInView },
+  { path: '/gl-journal', component: GLJournalView },
+  { path: '/trial-balance', component: TrialBalanceView },
+  { path: '/ap-aging', component: APAgingView },
 ]
 
 const router = createRouter({

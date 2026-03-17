@@ -497,6 +497,10 @@
                     {{ addDetailSaving ? 'Saving...' : `Done (${addDetailSelected.length} selected)` }}
                   </button>
                 </div>
+                <div v-if="viewError" class="form-api-error" style="margin-top:10px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {{ viewError }}
+                </div>
               </div>
 
               <!-- Lines table header + Add Detail button -->
@@ -620,11 +624,13 @@ import {
   searchBusinessPartners,
   fetchOutstandingInvoices,
   fetchPaymentLines,
-  addPaymentDetail,
+  fetchPaymentDetail,
+  addPaymentScheduleDetail,
   finalizePaymentAmount,
   postPayment,
   fetchFinancialAccounts,
   fetchPaymentMethods,
+  DEFAULT_ORGANIZATION,
   DEFAULT_FIN_ACCOUNT_ID,
   DEFAULT_PAYMETHOD_ID,
 } from '@/services/paymentIn.js'
@@ -692,6 +698,9 @@ export default {
 
       // Delete
       deleteTarget: null, deleting: false,
+
+      // View modal error
+      viewError: null,
 
       // Toast
       toast: { show: false, msg: '', type: 'success' },
@@ -851,16 +860,16 @@ export default {
         this.showAddDetail = false
         this.addDetailInvoices = []
         this.addDetailSelectAll = false
+        this.viewError = null
         this.showViewModal = true
-        const bpId = typeof r.businessPartner === 'object' ? r.businessPartner : r.businessPartner
-        this.loadViewLines(r.id, bpId)
+        this.loadViewLines(r.id)
       })
     },
 
-    async loadViewLines(paymentId, bpId) {
+    async loadViewLines(paymentId) {
       this.viewLinesLoading = true
       try {
-        this.viewLines = await fetchPaymentLines(paymentId, bpId)
+        this.viewLines = await fetchPaymentLines(paymentId)
       } catch (e) {
         console.error('Load lines failed', e.message)
         this.viewLines = []
@@ -874,6 +883,7 @@ export default {
       this.showAddDetail = true
       this.addDetailInvoices = []
       this.addDetailSelectAll = false
+      this.viewError = null
       this.loadAddDetailInvoices()
     },
 
@@ -881,7 +891,7 @@ export default {
       if (!this.viewRow?.businessPartner) return
       this.addDetailLoading = true
       const bpId = typeof this.viewRow.businessPartner === 'object'
-        ? this.viewRow.businessPartner
+        ? this.viewRow.businessPartner?.id
         : this.viewRow.businessPartner
       try {
         const rows = await fetchOutstandingInvoices(bpId)
@@ -905,33 +915,58 @@ export default {
     async saveAddDetail() {
       if (this.addDetailSelected.length === 0) return
       this.addDetailSaving = true
-      this.formError = null
+      this.viewError = null
       const paymentId = this.viewRow.id
-      const totalSelected = this.addDetailSelected.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0)
       const bpId = typeof this.viewRow.businessPartner === 'object'
-        ? this.viewRow.businessPartner
+        ? this.viewRow.businessPartner?.id ?? this.viewRow.businessPartner
         : this.viewRow.businessPartner
+      const orgId = typeof this.viewRow.organization === 'object'
+        ? this.viewRow.organization?.id ?? DEFAULT_ORGANIZATION
+        : (this.viewRow.organization || DEFAULT_ORGANIZATION)
+      const finAccId = typeof this.viewRow.account === 'object'
+        ? this.viewRow.account?.id ?? this.viewRow.account
+        : (this.viewRow.account || DEFAULT_FIN_ACCOUNT_ID)
+      const payMethId = typeof this.viewRow.paymentMethod === 'object'
+        ? this.viewRow.paymentMethod?.id ?? this.viewRow.paymentMethod
+        : (this.viewRow.paymentMethod || DEFAULT_PAYMETHOD_ID)
+
+      console.log('[saveAddDetail] start', { paymentId, bpId, orgId, finAccId, payMethId })
+      console.log('[saveAddDetail] selected:', this.addDetailSelected.map(i => ({ id: i.id, doc: i.documentNo, scheduleId: i.scheduleId, amount: i.outstandingAmount })))
+
       try {
-        // Update amount header Openbravo
-        await finalizePaymentAmount(paymentId, totalSelected)
-        // Proses ke Spring Boot — handles schedule, detail, invoice update
-        const res = await postPayment(bpId, totalSelected)
-        if (res.responseCode === 0) {
-          this.showToast('Payment berhasil diproses!', 'success')
-          this.showAddDetail = false
-          const bpId = typeof this.viewRow.businessPartner === 'object' ? this.viewRow.businessPartner : this.viewRow.businessPartner
-          await this.loadViewLines(paymentId, bpId)
-          await this.loadRows()
-        } else {
-          this.formError = res.responseDetail?.[0] || 'Gagal proses payment.'
+        // Step A: GET FIN_Payment_Detail (auto-created by Openbravo when header saved)
+        const payDetail = await fetchPaymentDetail(paymentId)
+        console.log('[saveAddDetail] payDetail:', payDetail.id)
+
+        // Step B: POST each selected invoice to FIN_Payment_ScheduleDetail
+        for (const inv of this.addDetailSelected) {
+          const scheduleId = inv.scheduleId || null
+          const invoiceId  = inv.id
+          const amount     = Number(inv.outstandingAmount) || 0
+          console.log('[saveAddDetail] posting:', { scheduleId, invoiceId, amount })
+          await addPaymentScheduleDetail(
+            payDetail.id, scheduleId, invoiceId, amount,
+            bpId, orgId, finAccId, payMethId, paymentId,
+          )
         }
+
+        // Step C: Update amount on FIN_Payment header
+        const totalSelected = this.addDetailSelected.reduce(
+          (s, i) => s + (Number(i.outstandingAmount) || 0), 0
+        )
+        await finalizePaymentAmount(paymentId, totalSelected)
+
+        this.showToast('Payment detail berhasil disimpan!', 'success')
+        this.showAddDetail = false
+        await this.loadViewLines(paymentId)
+        await this.loadRows()
       } catch (e) {
-        this.formError = e.message
+        console.error('[saveAddDetail] ERROR:', e.message, e)
+        this.viewError = e.message
       } finally {
         this.addDetailSaving = false
       }
     },
-
     closeFormModal() {
       if (this.saving || this.paying) return
       this.showFormModal = false
@@ -1023,29 +1058,41 @@ export default {
         && this.outstandingInvoices.every(i => i.selected)
     },
 
-    // ── Process Payment ───────────────────────────────────
+    // ── Process Payment (dari Form Modal tab Detail) ──────
     async processPayment() {
       if (this.selectedInvoices.length === 0) return
       this.formError = null
       this.paying = true
 
-      const paymentId = this.savedPaymentId || this.editId
-      const totalAmount = this.totalSelectedAmount
+      const paymentId  = this.savedPaymentId || this.editId
+      const bpId       = typeof this.form.businessPartner === 'object'
+        ? this.form.businessPartner?.id : this.form.businessPartner
+      const orgId      = DEFAULT_ORGANIZATION
+      const finAccId   = this.form.financialAccount || DEFAULT_FIN_ACCOUNT_ID
+      const payMethId  = this.form.paymentMethod    || DEFAULT_PAYMETHOD_ID
 
       try {
-        // Step 1: Update amount di header Openbravo
-        await finalizePaymentAmount(paymentId, totalAmount)
+        // Step A: Ambil atau buat FIN_Payment_Detail (parent)
+        // FIN_Payment_Detail dibuat otomatis Openbravo saat header di-save — cukup GET
+        const payDetail = await fetchPaymentDetail(paymentId)
+        if (!payDetail?.id) throw new Error('FIN_Payment_Detail tidak ditemukan. Simpan payment header terlebih dahulu.')
 
-        // Step 2: Proses payment ke Spring Boot (update invoice, schedule, financial account, dll)
-        const res = await postPayment(this.form.businessPartner, totalAmount)
-        if (res.responseCode === 0) {
-          this.showToast('Payment berhasil diproses!', 'success')
-          this.closeFormModal()
-        } else {
-          // Spring Boot gagal, tapi Openbravo detail sudah masuk
-          // Tetap tampilkan pesan warning
-          this.formError = res.responseDetail?.[0] || 'Payment gagal di proses akhir.'
+        // Step B: POST tiap invoice schedule ke FIN_Payment_ScheduleDetail
+        for (const inv of this.selectedInvoices) {
+          const scheduleId = inv.scheduleId || null
+          const invoiceId  = inv.id
+          const amount     = Number(inv.outstandingAmount) || 0
+          await addPaymentScheduleDetail(
+            payDetail.id, scheduleId, invoiceId, amount,
+            bpId, orgId, finAccId, payMethId, paymentId,
+          )
         }
+
+        // Step C: Update amount di FIN_Payment header
+        await finalizePaymentAmount(paymentId, this.totalSelectedAmount)
+
+        this.showToast('Payment berhasil diproses!', 'success')
+        this.closeFormModal()
       } catch (e) {
         this.formError = e.message
       } finally {
