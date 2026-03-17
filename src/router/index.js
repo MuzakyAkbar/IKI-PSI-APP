@@ -14,6 +14,7 @@ import PaymentInView from '@/views/PaymentIn.vue'
 import GLJournalView from '@/views/GLJournal.vue'
 import TrialBalanceView from '@/views/TrialBalance.vue'
 import APAgingView from '@/views/APAgingView.vue'
+import GeneralLedgerView from '@/views/GeneralLedger.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -32,6 +33,7 @@ const routes = [
   { path: '/gl-journal', component: GLJournalView },
   { path: '/trial-balance', component: TrialBalanceView },
   { path: '/ap-aging', component: APAgingView },
+  { path: '/general-ledger', component: GeneralLedgerView },
 ]
 
 const router = createRouter({
