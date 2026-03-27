@@ -120,15 +120,20 @@ export async function fetchOrderLines(orderId) {
 }
 
 export async function createOrderLine(orderId, data) {
-  const { product, uOM, taxCategory, ...rest } = data
+  const { product, uOM, taxCategory, warehouse, currency, businessPartner, partnerAddress, tax, ...rest } = data
   const res = await api.post(LINE_BASE, {
     data: {
       _entityName: 'OrderLine',
       salesOrder: { id: orderId },
       ...rest,
-      ...(product     && { product:     fkWrap(product) }),
-      ...(uOM         && { uOM:         fkWrap(uOM) }),
-      ...(taxCategory && { taxCategory: fkWrap(taxCategory) }),
+      ...(product         && { product:         fkWrap(product) }),
+      ...(uOM             && { uOM:             fkWrap(uOM) }),
+      ...(taxCategory     && { taxCategory:     fkWrap(taxCategory) }),
+      ...(warehouse       && { warehouse:       fkWrap(warehouse) }),
+      ...(currency        && { currency:        fkWrap(currency) }),
+      ...(businessPartner && { businessPartner: fkWrap(businessPartner) }),
+      ...(partnerAddress  && { partnerAddress:  fkWrap(partnerAddress) }),
+      ...(tax             && { tax:             fkWrap(tax) }),
     },
   })
   const raw = res.data?.response?.data
@@ -168,7 +173,14 @@ export async function fetchOrganizations() {
   return res.data?.response?.data ?? []
 }
 
-// Vendors only (businessPartnerCategory = "Vendor")
+// Fetch single vendor by ID — untuk auto-fill form Purchase Order
+export async function fetchVendorById(id) {
+  const res = await api.get(`/org.openbravo.service.json.jsonrest/BusinessPartner/${id}`)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+// Vendors only (vendor = true)
 export async function fetchVendors(search = '') {
   let where = `e.vendor = true`
   if (search.trim()) {

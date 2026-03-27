@@ -91,7 +91,7 @@
     <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showFormModal" class="modal-overlay" @mousedown.self="closeFormModal">
-        <div class="modal modal--xl">
+        <div class="modal modal--xxl">
 
           <!-- Header -->
           <div class="modal-header">
@@ -121,7 +121,7 @@
 
             <!-- ── Transaction Tab ── -->
             <div v-if="activeFormTab === 'transaction'">
-              <div class="form-grid-3">
+              <div class="form-grid-4">
 
                 <div class="form-group">
                   <label>Invoice No.</label>
@@ -308,7 +308,7 @@
     <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showViewModal" class="modal-overlay" @mousedown.self="showViewModal = false">
-        <div class="modal modal--xl">
+        <div class="modal modal--xxl">
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
@@ -478,18 +478,18 @@
               </button>
             </template>
 
-            <!-- CO + belum posted: Reactivate (Post sudah auto setelah Complete) -->
+            <!-- CO + belum posted: Reactivate + Post -->
+            <!-- (Reactivate hanya tersedia setelah Unpost) -->
             <template v-else-if="viewRow?.documentStatus === 'CO' && !isPosted">
-              <!-- Post button dinonaktifkan — sudah auto-post saat Complete -->
-              <!-- <button class="btn btn--post" :disabled="posting" @click="doPostAccounting">
-                <span v-if="posting" class="spinner"></span>
-                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
-                {{ posting ? 'Posting...' : 'Post' }}
-              </button> -->
               <button class="btn btn--reactivate" :disabled="reactivating" @click="doReactivateInvoice">
                 <span v-if="reactivating" class="spinner"></span>
                 <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 {{ reactivating ? 'Reactivating...' : 'Reactivate' }}
+              </button>
+              <button class="btn btn--post" :disabled="posting" @click="doPostAccounting">
+                <span v-if="posting" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+                {{ posting ? 'Posting...' : 'Post' }}
               </button>
             </template>
 
@@ -1051,20 +1051,15 @@ async function doPostInvoice() {
   } finally { posting.value = false }
 }
 
-// ── complete invoice via RunProcess (DocAction), lalu auto-post
+// ── complete invoice via RunProcess (DocAction)
+// Setelah Complete, user harus klik Post secara manual (sama seperti GL Journal)
 async function doCompleteInvoice() {
   if (!viewRow.value) return
   const invoiceId = viewRow.value.id
   completing.value = true
   try {
     await runInvoiceProcess(invoiceId, viewRow.value)
-    showToast('Invoice completed! Memproses posting...')
-    // Auto-post langsung setelah Complete berhasil
-    const completedInvoice = await fetchInvoice(invoiceId)
-    if (completedInvoice) {
-      await postAccountingProcess(invoiceId, completedInvoice)
-      showToast('Invoice completed & posted. Jurnal accounting terbentuk.')
-    }
+    showToast('Invoice completed! Klik Post untuk membentuk jurnal accounting.')
     await loadInvoices()
     const fresh = await fetchInvoice(invoiceId)
     if (fresh) viewRow.value = fresh
@@ -1074,22 +1069,41 @@ async function doCompleteInvoice() {
   } finally { completing.value = false }
 }
 
-// ── post accounting — tetap tersedia untuk dipanggil manual jika diperlukan
-// (tombol UI sudah dicomment, tapi fungsi ini masih dipakai oleh doCompleteInvoice)
+// ── post accounting — dipanggil saat user klik tombol Post di modal view
 async function doPostAccounting() {
   if (!viewRow.value) return
   const invoiceId = viewRow.value.id
   posting.value = true
+  let postError = null
   try {
     await postAccountingProcess(invoiceId, viewRow.value)
     showToast('Invoice posted successfully! Jurnal accounting terbentuk.')
+  } catch (e) {
+    postError = e
+    showToast(e?.message || 'Failed to post invoice', 'error')
+  }
+
+  // Reload data & accounting tab terlepas dari sukses/gagal
+  try {
     await loadInvoices()
     const fresh = await fetchInvoice(invoiceId)
     if (fresh) viewRow.value = fresh
-    else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated; else showViewModal.value = false }
-  } catch (e) {
-    showToast(e?.message || 'Failed to post invoice', 'error')
-  } finally { posting.value = false }
+    else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated }
+  } catch (_) {}
+
+  // Auto-switch ke tab Accounting dan reload facts
+  accountingFacts.value = []
+  accountingError.value = ''
+  viewTab.value = 'accounting'
+  accountingLoading.value = true
+  try {
+    accountingFacts.value = await fetchAccountingFacts(invoiceId)
+  } catch (e2) {
+    accountingError.value = e2?.response?.data?.response?.error?.message || e2.message || 'Failed to load accounting data'
+  } finally {
+    accountingLoading.value = false
+    posting.value = false
+  }
 }
 
 async function doUnpostAccounting() {
@@ -1099,13 +1113,31 @@ async function doUnpostAccounting() {
   try {
     await unpostAccountingProcess(invoiceId, viewRow.value)
     showToast('Invoice unposted. Jurnal accounting dihapus.')
+  } catch (e) {
+    showToast(e?.message || 'Failed to unpost invoice', 'error')
+  }
+
+  // Reload data & kosongkan accounting tab terlepas dari sukses/gagal
+  try {
     await loadInvoices()
     const fresh = await fetchInvoice(invoiceId)
     if (fresh) viewRow.value = fresh
     else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated }
-  } catch (e) {
-    showToast(e?.message || 'Failed to unpost invoice', 'error')
-  } finally { unposting.value = false }
+  } catch (_) {}
+
+  // Reset accounting tab ke kosong
+  accountingFacts.value = []
+  accountingError.value = ''
+  viewTab.value = 'accounting'
+  accountingLoading.value = true
+  try {
+    accountingFacts.value = await fetchAccountingFacts(invoiceId)
+  } catch (e2) {
+    accountingError.value = e2?.response?.data?.response?.error?.message || e2.message || 'Failed to load accounting data'
+  } finally {
+    accountingLoading.value = false
+    unposting.value = false
+  }
 }
 
 async function doReactivateInvoice() {
@@ -1284,7 +1316,7 @@ onMounted(() => { loadInvoices(); loadLookups() })
 /* ── Modal ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
 .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 480px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
-.modal--xl { max-width: 860px; }
+.modal--xxl { max-width: 1060px; }
 .modal--sm { max-width: 400px; }
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); gap: 12px; flex-shrink: 0; }
 .modal-breadcrumb { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; }
@@ -1299,7 +1331,7 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; align-items: center; }
 
 /* ── Form ── */
-.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group--full { grid-column: 1 / -1; }
 .form-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
@@ -1331,7 +1363,7 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .acc-empty { padding: 8px 12px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
 
 /* Detail view */
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .detail-item { display: flex; flex-direction: column; gap: 3px; }
 .detail-item--full { grid-column: 1 / -1; }
 .detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }

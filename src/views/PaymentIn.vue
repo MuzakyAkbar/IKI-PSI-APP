@@ -45,18 +45,18 @@
                   <td><span :class="['status-pill', payStatusClass(r.status)]">{{ payStatusLabel(r.status) }}</span></td>
                   <td class="td-action-cell">
                     <div class="action-group">
-                      <div class="dropdown-wrap">
-                        <button class="action-btn action-btn--more" @click.stop="toggleDropdown(r.id)">
+                      <div class="dropdown-wrap" v-click-outside="closeDropdown">
+                        <button class="action-btn action-btn--more" @click.stop="toggleDropdown(r.id, $event)">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                         </button>
-                        <div v-if="openDropdown === r.id" class="dropdown-menu">
-                          <button class="dropdown-item" @click.stop="openViewModal(r)">
+                        <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }" @click.stop>
+                          <button class="dropdown-item" @click="openViewModal(r); closeDropdown()">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
                           </button>
-                          <button v-if="r.status === 'RPAP'" class="dropdown-item" @click.stop="openEditModal(r)">
+                          <button v-if="r.status === 'RPAP'" class="dropdown-item" @click="openEditModal(r); closeDropdown()">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                           </button>
-                          <button v-if="r.status === 'RPAP'" class="dropdown-item dropdown-item--danger" @click.stop="confirmDelete(r)">
+                          <button v-if="r.status === 'RPAP'" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r); closeDropdown()">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
                           </button>
                         </div>
@@ -99,7 +99,7 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <router-link to="/payment-in" class="bc-link">Payment In</router-link>
+                <span>Payment In</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} Payment In</span>
               </div>
@@ -110,27 +110,18 @@
             </button>
           </div>
 
-          <!-- Status bar (like Openbravo screenshot) -->
+          <!-- Status bar -->
           <div class="pay-statusbar">
             <span class="pay-statusbar-item">
               <span class="pay-statusbar-label">Status:</span>
               <span class="pay-statusbar-val pay-statusbar-val--status">{{ isEdit ? payStatusLabel(form.status) : 'Awaiting Payment' }}</span>
             </span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item">
-              <span class="pay-statusbar-label">Generated Credit:</span>
-              <span class="pay-statusbar-val">0.00</span>
-            </span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Generated Credit:</span><span class="pay-statusbar-val">0.00</span></span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item">
-              <span class="pay-statusbar-label">Used Credit:</span>
-              <span class="pay-statusbar-val">0.00</span>
-            </span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Used Credit:</span><span class="pay-statusbar-val">0.00</span></span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item">
-              <span class="pay-statusbar-label">Write-off Amount:</span>
-              <span class="pay-statusbar-val">0.00</span>
-            </span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Write-off Amount:</span><span class="pay-statusbar-val">0.00</span></span>
           </div>
 
           <!-- Tabs -->
@@ -215,12 +206,11 @@
 
               </div>
 
-              <!-- Info box: belum disimpan -->
               <div v-if="!isEdit && !savedPaymentId" class="info-box info-box--blue" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Simpan header terlebih dahulu, lalu buka tab <strong>Detail / Add Invoice</strong> untuk menambahkan invoice yang akan dibayar.
+                Simpan header terlebih dahulu, lalu buka tab <strong>Detail / Add Invoice</strong> untuk menambahkan invoice.
               </div>
-              <div v-if="savedPaymentId" class="info-box info-box--green" style="margin-top:16px">
+              <div v-if="savedPaymentId && !isEdit" class="info-box info-box--green" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 Header tersimpan. Buka tab <strong>Detail / Add Invoice</strong> untuk melanjutkan pembayaran invoice.
               </div>
@@ -229,7 +219,6 @@
             <!-- ── Detail Tab ── -->
             <div v-if="activeFormTab === 'detail'">
 
-              <!-- Summary card (mirip Openbravo Add Details header) -->
               <div class="pay-detail-summary">
                 <div class="pay-ds-item">
                   <span class="pay-ds-label">Payment Document No.</span>
@@ -269,7 +258,6 @@
                 </div>
               </div>
 
-              <!-- Order / Invoice section -->
               <div class="section-divider" style="margin-top:16px">
                 <div style="display:flex;align-items:center;gap:8px">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -277,26 +265,19 @@
                 </div>
               </div>
 
-              <!-- Transaction Type + Load button -->
               <div class="pay-detail-filter">
-                <label class="pay-ds-label" style="white-space:nowrap">Transaction Type</label>
-                <select class="form-input" style="max-width:180px;height:32px;font-size:12.5px" v-model="transactionType">
-                  <option value="invoices">Invoices</option>
-                </select>
                 <button class="btn-add-line" @click="loadOutstandingInvoices" :disabled="invoiceLoading || !form.businessPartner" style="margin-left:8px">
                   <span v-if="invoiceLoading" class="spinner spinner--dark"></span>
                   <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.22-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
-                  {{ invoiceLoading ? 'Loading...' : (invoicesLoaded ? 'Refresh' : 'Load Invoices') }}
+                  {{ invoiceLoading ? 'Loading...' : (invoicesLoaded ? 'Refresh' : 'Load') }}
                 </button>
               </div>
 
-              <!-- Info message -->
               <div v-if="invoiceCheckMsg" :class="['info-box', invoiceCheckMsg.type === 'error' ? 'info-box--red' : invoiceCheckMsg.type === 'warn' ? 'info-box--yellow' : 'info-box--green']" style="margin-bottom:12px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {{ invoiceCheckMsg.text }}
               </div>
 
-              <!-- Invoice table -->
               <div class="table-wrap" style="margin-bottom:0">
                 <table class="table">
                   <thead><tr>
@@ -305,10 +286,10 @@
                     </th>
                     <th>Order No.</th>
                     <th>Invoice No.</th>
-                    <th>Payment Method</th>
+                    <th>Type</th>
                     <th>Business Partner</th>
-                    <th>Expected Date</th>
-                    <th style="text-align:right">Invoiced Amount</th>
+                    <th>Date</th>
+                    <th style="text-align:right">Amount</th>
                     <th style="text-align:right">Outstanding</th>
                   </tr></thead>
                   <tbody>
@@ -316,18 +297,18 @@
                       <td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td>
                     </tr>
                     <tr v-else-if="!invoicesLoaded">
-                      <td colspan="8" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load Invoices" untuk melihat tagihan outstanding.</td>
+                      <td colspan="8" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load" untuk melihat tagihan outstanding.</td>
                     </tr>
                     <tr v-else-if="outstandingInvoices.length === 0">
                       <td colspan="8" class="td-empty">No items to show.</td>
                     </tr>
-                    <tr v-else v-for="inv in outstandingInvoices" :key="inv.id" class="tr-data" :class="{ 'tr-selected': inv.selected }">
+                    <tr v-else v-for="inv in outstandingInvoices" :key="inv.id + (inv._type||'')" class="tr-data" :class="{ 'tr-selected': inv.selected }">
                       <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onInvoiceSelect" /></td>
                       <td class="td-secondary">{{ inv.orderReference || '—' }}</td>
                       <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
-                      <td class="td-secondary">{{ inv['paymentMethod$_identifier'] || selectedPaymentMethodName }}</td>
+                      <td class="td-secondary"><span :class="['type-badge', inv._type === 'order' ? 'type-badge--order' : 'type-badge--invoice']">{{ inv._type === 'order' ? 'Order' : 'Invoice' }}</span></td>
                       <td class="td-secondary">{{ customerSearch }}</td>
-                      <td class="td-secondary">{{ formatDate(inv.dueDate) }}</td>
+                      <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
                       <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
                       <td class="td-secondary" style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
                     </tr>
@@ -335,7 +316,6 @@
                 </table>
               </div>
 
-              <!-- Totals + Done button -->
               <div class="pay-detail-footer">
                 <div class="totals-block" style="margin-top:0">
                   <div class="totals-row"><span>Selected</span><span>{{ selectedInvoices.length }} invoice(s)</span></div>
@@ -365,7 +345,7 @@
               <span v-if="saving" class="spinner"></span>
               {{ saving ? 'Saving...' : (isEdit ? 'Update' : 'Save Header') }}
             </button>
-            <button v-if="activeFormTab === 'header' && savedPaymentId" class="btn btn--secondary" @click="activeFormTab = 'detail'">
+            <button v-if="activeFormTab === 'header' && (savedPaymentId || isEdit)" class="btn btn--secondary" @click="switchToDetailTab">
               Next: Add Invoice →
             </button>
           </div>
@@ -384,7 +364,7 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <router-link to="/payment-in" class="bc-link">Payment In</router-link>
+                <span>Payment In</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">View Payment</span>
               </div>
@@ -394,6 +374,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
+
           <!-- Status bar -->
           <div class="pay-statusbar">
             <span class="pay-statusbar-item">
@@ -405,7 +386,7 @@
             <span class="pay-statusbar-sep">|</span>
             <span class="pay-statusbar-item"><span class="pay-statusbar-label">Used Credit:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.usedCredit ?? 0) }}</span></span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Write-off:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.writeoffAmount ?? 0) }}</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Write-off:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.writeOffAmt ?? 0) }}</span></span>
           </div>
 
           <!-- Tabs -->
@@ -431,7 +412,6 @@
                   </button>
                 </div>
 
-                <!-- Add detail summary -->
                 <div class="add-detail-summary">
                   <div class="pay-ds-item"><span class="pay-ds-label">Payment Doc No.</span><span class="pay-ds-val mono">{{ viewRow.documentNo }}</span></div>
                   <div class="pay-ds-item"><span class="pay-ds-label">Received From</span><span class="pay-ds-val">{{ bpName(viewRow) }}</span></div>
@@ -444,11 +424,12 @@
                   </div>
                 </div>
 
-                <!-- Transaction Type -->
                 <div class="pay-detail-filter" style="margin-top:12px">
                   <label class="pay-ds-label" style="white-space:nowrap">Transaction Type</label>
-                  <select class="form-input" style="max-width:180px;height:32px;font-size:12.5px">
-                    <option>Invoices</option>
+                  <select class="form-input" style="max-width:180px;height:32px;font-size:12.5px" v-model="addDetailTransactionType" @change="addDetailInvoices = []">
+                    <option value="invoices">Invoices</option>
+                    <option value="orders">Orders</option>
+                    <option value="orders_and_invoices">Orders and Invoices</option>
                   </select>
                   <button class="btn-add-line" @click="loadAddDetailInvoices" :disabled="addDetailLoading" style="margin-left:8px">
                     <span v-if="addDetailLoading" class="spinner spinner--dark"></span>
@@ -457,30 +438,29 @@
                   </button>
                 </div>
 
-                <!-- Invoice picker table -->
                 <div class="table-wrap" style="margin:8px 0 0">
                   <table class="table">
                     <thead><tr>
                       <th style="width:36px;text-align:center"><input type="checkbox" v-model="addDetailSelectAll" @change="toggleAddDetailAll" :disabled="addDetailInvoices.length===0" /></th>
                       <th>Order No.</th>
                       <th>Invoice No.</th>
-                      <th>Invoice Date</th>
+                      <th>Type</th>
+                      <th>Date</th>
                       <th>Due Date</th>
-                      <th style="text-align:right">Invoice Amount</th>
-                      <th style="text-align:right">Expected Amount</th>
+                      <th style="text-align:right">Amount</th>
                       <th style="text-align:right">Outstanding</th>
                       <th>Business Partner</th>
                     </tr></thead>
                     <tbody>
                       <tr v-if="addDetailLoading"><td colspan="9" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-                      <tr v-else-if="addDetailInvoices.length === 0"><td colspan="9" class="td-empty" style="font-style:italic;color:var(--text-muted)">Klik Load untuk menampilkan invoice outstanding.</td></tr>
-                      <tr v-else v-for="inv in addDetailInvoices" :key="inv.id" class="tr-data" :class="{ 'tr-selected': inv.selected }">
+                      <tr v-else-if="addDetailInvoices.length === 0"><td colspan="9" class="td-empty" style="font-style:italic;color:var(--text-muted)">Klik Load untuk menampilkan tagihan outstanding.</td></tr>
+                      <tr v-else v-for="inv in addDetailInvoices" :key="inv.id + (inv._type||'')" class="tr-data" :class="{ 'tr-selected': inv.selected }">
                         <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onAddDetailSelect" /></td>
                         <td class="td-secondary">{{ inv.orderReference || '—' }}</td>
                         <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
+                        <td><span :class="['type-badge', inv._type === 'order' ? 'type-badge--order' : 'type-badge--invoice']">{{ inv._type === 'order' ? 'Order' : 'Invoice' }}</span></td>
                         <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
                         <td class="td-secondary">{{ formatDate(inv.dueDate) }}</td>
-                        <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
                         <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
                         <td style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
                         <td class="td-secondary">{{ bpName(viewRow) }}</td>
@@ -489,7 +469,6 @@
                   </table>
                 </div>
 
-                <!-- Add Detail actions -->
                 <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
                   <button class="btn btn--ghost" @click="showAddDetail = false">Cancel</button>
                   <button class="btn btn--primary" :disabled="addDetailSaving || addDetailSelected.length === 0" @click="saveAddDetail">
@@ -503,7 +482,7 @@
                 </div>
               </div>
 
-              <!-- Lines table header + Add Detail button -->
+              <!-- Lines table -->
               <div class="section-divider" style="margin-top:0">
                 <span>Payment Lines</span>
                 <button v-if="viewRow.status === 'RPAP'" class="btn-add-line" @click="openAddDetail">
@@ -512,7 +491,6 @@
                 </button>
               </div>
 
-              <!-- Existing lines -->
               <div v-if="viewLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table">
@@ -524,31 +502,28 @@
                     <th style="text-align:right">Invoice Amount</th>
                     <th style="text-align:right">Expected Amount</th>
                     <th style="text-align:right">Received Amount</th>
-                    <th>G/L Item</th>
                     <th>Business Partner</th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="viewLines.length === 0"><td colspan="9" class="td-empty">No data in grid.</td></tr>
+                    <tr v-if="viewLines.length === 0"><td colspan="8" class="td-empty">No data in grid.</td></tr>
                     <tr v-else v-for="line in viewLines" :key="line.id" class="tr-data">
                       <td class="td-secondary">{{ line.orderReference || '—' }}</td>
                       <td><span class="code-badge">{{ line.documentNo || '—' }}</span></td>
                       <td class="td-secondary">{{ formatDate(line.invoiceDate) }}</td>
                       <td class="td-secondary">{{ formatDate(line.dueDate) }}</td>
                       <td class="td-secondary" style="text-align:right">{{ formatCurrency(line.grandTotalAmount) }}</td>
-                      <td class="td-secondary" style="text-align:right">{{ formatCurrency(line.grandTotalAmount) }}</td>
-                      <td style="text-align:right;font-weight:600;color:#16a34a">{{ formatCurrency(line.grandTotalAmount) }}</td>
-                      <td class="td-secondary">—</td>
-                      <td class="td-secondary">{{ bpName(viewRow) }}</td>
+                      <td class="td-secondary" style="text-align:right">{{ formatCurrency(line.expectedAmount ?? line.grandTotalAmount) }}</td>
+                      <td style="text-align:right;font-weight:600;color:#16a34a">{{ formatCurrency(line.amount) }}</td>
+                      <td class="td-secondary">{{ line.businessPartnerName || bpName(viewRow) }}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              <!-- Lines totals -->
               <div v-if="viewLines.length > 0" class="totals-block">
                 <div class="totals-row totals-row--grand">
                   <span>Total Received</span>
-                  <span>{{ formatCurrency(viewLines.reduce((s,l) => s+(Number(l.grandTotalAmount)||0), 0)) }}</span>
+                  <span>{{ formatCurrency(viewLines.reduce((s,l) => s+(Number(l.amount)||0), 0)) }}</span>
                 </div>
               </div>
             </div>
@@ -584,13 +559,14 @@
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <div class="modal-title" style="color:var(--danger)">Delete Payment</div>
+            <div class="modal-title">Delete Payment</div>
             <button class="modal-close" @click="showDeleteModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
             <p class="delete-text">Are you sure you want to delete payment <strong>{{ deleteTarget?.documentNo }}</strong>? This action cannot be undone.</p>
+            <div v-if="deleteError" class="form-api-error" style="margin-top:10px">{{ deleteError }}</div>
           </div>
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="showDeleteModal = false">Cancel</button>
@@ -605,17 +581,20 @@
 
     <!-- ══ TOAST ══ -->
     <transition name="fade">
-      <div v-if="toast.show" :class="['toast', toast.type === 'success' ? 'toast--success' : 'toast--error']">
-        <svg v-if="toast.type === 'success'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        {{ toast.msg }}
+      <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path v-if="toast.type === 'success'" d="M20 6 9 17l-5-5"/>
+          <path v-else d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+        {{ toast.message }}
       </div>
     </transition>
 
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
 import {
   fetchAllPayments,
   createPaymentHeader,
@@ -623,11 +602,11 @@ import {
   deletePaymentHeader,
   searchBusinessPartners,
   fetchOutstandingInvoices,
+  fetchOutstandingOrders,
   fetchPaymentLines,
   fetchPaymentDetail,
   addPaymentScheduleDetail,
   finalizePaymentAmount,
-  postPayment,
   fetchFinancialAccounts,
   fetchPaymentMethods,
   DEFAULT_ORGANIZATION,
@@ -635,614 +614,527 @@ import {
   DEFAULT_PAYMETHOD_ID,
 } from '@/services/paymentIn.js'
 
+// ── directive
+const vClickOutside = {
+  mounted(el, binding) {
+    el._handler = (e) => { if (!el.contains(e.target)) binding.value(e) }
+    document.addEventListener('click', el._handler, true)
+  },
+  unmounted(el) { document.removeEventListener('click', el._handler, true) },
+}
+
 const PAGE_SIZE = 20
 
-export default {
-  name: 'PaymentIn',
+// ── table state
+const rows        = ref([])
+const loading     = ref(false)
+const error       = ref('')
+const currentPage = ref(1)
+const totalRows   = ref(0)
+const searchQuery = ref('')
+let   searchTimer = null
 
+// ── dropdown
+const openDropdown = ref(null)
+const dropdownPos  = ref({ top: 0, right: 0 })
 
+// ── lookups
+const paymentMethods    = ref([])
+const financialAccounts = ref([])
 
-  data() {
-    const today = new Date().toISOString().slice(0, 10)
-    return {
-      // Table
-      rows: [], loading: false, error: null,
-      searchQuery: '', searchTimer: null,
-      currentPage: 1, totalRows: 0,
+// ── form state
+const showFormModal  = ref(false)
+const isEdit         = ref(false)
+const editId         = ref(null)
+const savedPaymentId = ref(null)
+const activeFormTab  = ref('header')
+const saving         = ref(false)
+const formError      = ref('')
 
-      // Dropdown
-      openDropdown: null,
+const emptyForm = () => ({
+  documentNo: '',
+  paymentDate: today(),
+  businessPartner: '',
+  paymentMethod: DEFAULT_PAYMETHOD_ID,
+  financialAccount: DEFAULT_FIN_ACCOUNT_ID,
+  referenceNo: '',
+  description: '',
+  status: 'RPAP',
+  amount: 0,
+})
+const form = ref(emptyForm())
 
-      // Modals
-      showFormModal: false, showViewModal: false, showDeleteModal: false,
+// ── customer search
+const customerSearch    = ref('')
+const filteredCustomers = ref([])
+const showCustomerDrop  = ref(false)
+const customerLoading   = ref(false)
+let   customerTimer     = null
 
-      // Form
-      isEdit: false, activeFormTab: 'header',
-      editId: null, savedPaymentId: null,
-      saving: false, formError: null,
-      form: {
-        documentNo: '',
-        paymentDate: today,
-        businessPartner: '',
-        paymentMethod: DEFAULT_PAYMETHOD_ID,
-        financialAccount: DEFAULT_FIN_ACCOUNT_ID,
-        referenceNo: '',
-        description: '',
-        status: 'RPAP',
-        amount: 0,
-      },
+// ── detail tab
+const transactionType    = ref('invoices')
+const outstandingInvoices = ref([])
+const invoiceLoading     = ref(false)
+const invoicesLoaded     = ref(false)
+const invoiceCheckMsg    = ref(null)
+const selectAllInvoices  = ref(false)
+const paying             = ref(false)
 
-      // Customer search
-      customerSearch: '', filteredCustomers: [],
-      showCustomerDrop: false, customerLoading: false, customerTimer: null,
+// ── view modal
+const showViewModal    = ref(false)
+const viewRow          = ref(null)
+const viewTab          = ref('lines')
+const viewLines        = ref([])
+const viewLinesLoading = ref(false)
+const viewError        = ref('')
 
-      // Lookups
-      paymentMethods: [], financialAccounts: [],
+// ── add detail (from view modal)
+const showAddDetail             = ref(false)
+const addDetailInvoices         = ref([])
+const addDetailLoading          = ref(false)
+const addDetailSaving           = ref(false)
+const addDetailSelectAll        = ref(false)
+const addDetailTransactionType  = ref('invoices')
 
-      // Detail tab
-      transactionType: 'invoices',
-      outstandingInvoices: [],
-      invoiceLoading: false,
-      invoicesLoaded: false,
-      invoiceCheckMsg: null,
-      selectAllInvoices: false,
-      paying: false,
+// ── delete modal
+const showDeleteModal = ref(false)
+const deleteTarget    = ref(null)
+const deleting        = ref(false)
+const deleteError     = ref('')
 
-      // View
-      viewRow: null,
-      viewTab: 'lines',
-      viewLines: [], viewLinesLoading: false,
-      showAddDetail: false,
-      addDetailInvoices: [], addDetailLoading: false, addDetailSaving: false,
-      addDetailSelectAll: false,
+// ── toast
+const toast = ref({ show: false, type: 'success', message: '' })
 
-      // Delete
-      deleteTarget: null, deleting: false,
+// ── computed
+const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / PAGE_SIZE)))
+const pageNumbers = computed(() => {
+  const tp = totalPages.value, cp = currentPage.value, pages = []
+  if (tp <= 7) { for (let i = 1; i <= tp; i++) pages.push(i); return pages }
+  pages.push(1)
+  if (cp > 3) pages.push('...')
+  for (let i = Math.max(2, cp - 1); i <= Math.min(tp - 1, cp + 1); i++) pages.push(i)
+  if (cp < tp - 2) pages.push('...')
+  pages.push(tp)
+  return pages
+})
+const selectedInvoices    = computed(() => outstandingInvoices.value.filter(i => i.selected))
+const totalSelectedAmount = computed(() => selectedInvoices.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0))
+const totalOutstandingAmount = computed(() => outstandingInvoices.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0))
+const addDetailSelected   = computed(() => addDetailInvoices.value.filter(i => i.selected))
+const selectedPaymentMethodName = computed(() => {
+  const m = paymentMethods.value.find(m => m.id === form.value.paymentMethod)
+  return m?.name || 'Transfer'
+})
+const selectedFinAccName = computed(() => {
+  const a = financialAccounts.value.find(a => a.id === form.value.financialAccount)
+  return a?.name || 'Receive Bank - IDR'
+})
 
-      // View modal error
-      viewError: null,
+// ── helpers
+function today() { return new Date().toISOString().slice(0, 10) }
 
-      // Toast
-      toast: { show: false, msg: '', type: 'success' },
-    }
-  },
-
-  computed: {
-    totalPages() { return Math.ceil(this.totalRows / PAGE_SIZE) || 1 },
-    pageNumbers() {
-      const { currentPage: c, totalPages: t } = this
-      if (t <= 7) return Array.from({ length: t }, (_, i) => i + 1)
-      const pages = [1]
-      if (c > 3) pages.push('...')
-      for (let i = Math.max(2, c - 1); i <= Math.min(t - 1, c + 1); i++) pages.push(i)
-      if (c < t - 2) pages.push('...')
-      pages.push(t)
-      return pages
-    },
-    selectedInvoices() { return this.outstandingInvoices.filter(i => i.selected) },
-    totalSelectedAmount() { return this.selectedInvoices.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0) },
-    totalOutstandingAmount() { return this.outstandingInvoices.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0) },
-    addDetailSelected() { return this.addDetailInvoices.filter(i => i.selected) },
-    selectedPaymentMethodName() {
-      const m = this.paymentMethods.find(m => m.id === this.form.paymentMethod)
-      return m ? m.name : 'Transfer'
-    },
-    selectedFinAccName() {
-      const a = this.financialAccounts.find(a => a.id === this.form.financialAccount)
-      return a ? a.name : 'Receive Bank - IDR'
-    },
-  },
-
-  async mounted() {
-    await this.loadRows()
-    this.loadLookups()
-    this._docClickHandler = (e) => {
-      if (!e.target.closest('.dropdown-wrap')) {
-        this.openDropdown = null
-      }
-    }
-    document.addEventListener('click', this._docClickHandler)
-  },
-  unmounted() {
-    document.removeEventListener('click', this._docClickHandler)
-  },
-
-  methods: {
-    // ── Load ──────────────────────────────────────────────
-    async loadRows() {
-      this.loading = true; this.error = null
-      try {
-        const startRow = (this.currentPage - 1) * PAGE_SIZE
-        const res = await fetchAllPayments({ startRow, pageSize: PAGE_SIZE, searchKey: this.searchQuery })
-        this.rows = res.data ?? []
-        this.totalRows = res.totalRows ?? this.rows.length
-      } catch (e) { this.error = e.message }
-      finally { this.loading = false }
-    },
-
-    async loadLookups() {
-      try {
-        const [methods, accounts] = await Promise.all([fetchPaymentMethods(), fetchFinancialAccounts()])
-        this.paymentMethods = methods
-        this.financialAccounts = accounts
-      } catch (e) { console.warn('Lookup load failed', e.message) }
-    },
-
-    // ── Search / Pagination ───────────────────────────────
-    onSearch() {
-      clearTimeout(this.searchTimer)
-      this.searchTimer = setTimeout(() => { this.currentPage = 1; this.loadRows() }, 400)
-    },
-    goPage(p) { this.currentPage = p; this.loadRows() },
-
-    // ── Dropdown ──────────────────────────────────────────
-    toggleDropdown(id) {
-      this.openDropdown = this.openDropdown === id ? null : id
-    },
-    closeDropdown() { this.openDropdown = null },
-
-    // ── Customer search ───────────────────────────────────
-    onCustomerSearch() {
-      clearTimeout(this.customerTimer)
-      if (this.customerSearch.length < 2) { this.filteredCustomers = []; return }
-      this.customerLoading = true
-      this.customerTimer = setTimeout(async () => {
-        try { this.filteredCustomers = await searchBusinessPartners(this.customerSearch) }
-        catch { this.filteredCustomers = [] }
-        finally { this.customerLoading = false }
-      }, 300)
-    },
-    onCustomerBlur() { setTimeout(() => { this.showCustomerDrop = false }, 200) },
-    selectCustomer(c) {
-      this.form.businessPartner = c.id
-      this.customerSearch = c.name
-      this.showCustomerDrop = false
-      this.filteredCustomers = []
-      // Reset invoice list when customer changes
-      this.outstandingInvoices = []
-      this.invoiceCheckMsg = null
-    },
-
-    // ── Open modals ───────────────────────────────────────
-    openCreateModal() {
-      this.isEdit = false
-      this.editId = null
-      this.savedPaymentId = null
-      this.activeFormTab = 'header'
-      const today = new Date().toISOString().slice(0, 10)
-      this.form = {
-        documentNo: '', paymentDate: today,
-        businessPartner: '',
-        paymentMethod: DEFAULT_PAYMETHOD_ID,
-        financialAccount: DEFAULT_FIN_ACCOUNT_ID,
-        referenceNo: '', description: '', status: 'RPAP', amount: 0,
-      }
-      this.customerSearch = ''
-      this.filteredCustomers = []
-      this.outstandingInvoices = []
-      this.invoicesLoaded = false
-      this.invoiceCheckMsg = null
-      this.formError = null
-      this.showFormModal = true
-    },
-
-    openEditModal(r) {
-      this.openDropdown = null
-      this.showFormModal = false
-      this.isEdit = true
-      this.editId = r.id
-      this.savedPaymentId = r.id
-      this.activeFormTab = 'header'
-      this.form = {
-        documentNo: r.documentNo || '',
-        paymentDate: r.paymentDate?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-        businessPartner: typeof r.businessPartner === 'object' ? r.businessPartner?.id : r.businessPartner,
-        paymentMethod: typeof r.paymentMethod === 'object' ? r.paymentMethod?.id : (r.paymentMethod || DEFAULT_PAYMETHOD_ID),
-        financialAccount: typeof r.financialAccount === 'object' ? r.financialAccount?.id : (r.financialAccount || DEFAULT_FIN_ACCOUNT_ID),
-        referenceNo: r.referenceNo || '',
-        description: r.description || '',
-        status: r.status || 'RPAP',
-        amount: r.amount || 0,
-      }
-      this.customerSearch = r['businessPartner$_identifier'] || ''
-      this.outstandingInvoices = []
-      this.invoiceCheckMsg = null
-      this.formError = null
-      this.showFormModal = true
-    },
-
-    openViewModal(r) {
-      this.openDropdown = null
-      this.$nextTick(() => {
-        this.viewRow = { ...r }
-        this.viewTab = 'lines'
-        this.viewLines = []
-        this.showAddDetail = false
-        this.addDetailInvoices = []
-        this.addDetailSelectAll = false
-        this.viewError = null
-        this.showViewModal = true
-        this.loadViewLines(r.id)
-      })
-    },
-
-    async loadViewLines(paymentId) {
-      this.viewLinesLoading = true
-      try {
-        this.viewLines = await fetchPaymentLines(paymentId)
-      } catch (e) {
-        console.error('Load lines failed', e.message)
-        this.viewLines = []
-      } finally {
-        this.viewLinesLoading = false
-      }
-    },
-
-    // ── Add Detail (from View modal) ───────────────────────
-    openAddDetail() {
-      this.showAddDetail = true
-      this.addDetailInvoices = []
-      this.addDetailSelectAll = false
-      this.viewError = null
-      this.loadAddDetailInvoices()
-    },
-
-    async loadAddDetailInvoices() {
-      if (!this.viewRow?.businessPartner) return
-      this.addDetailLoading = true
-      const bpId = typeof this.viewRow.businessPartner === 'object'
-        ? this.viewRow.businessPartner?.id
-        : this.viewRow.businessPartner
-      try {
-        const rows = await fetchOutstandingInvoices(bpId)
-        this.addDetailInvoices = rows.map(r => ({ ...r, selected: false }))
-      } catch (e) {
-        console.error('Load add detail invoices failed', e.message)
-      } finally {
-        this.addDetailLoading = false
-      }
-    },
-
-    toggleAddDetailAll() {
-      this.addDetailInvoices.forEach(i => { i.selected = this.addDetailSelectAll })
-    },
-
-    onAddDetailSelect() {
-      this.addDetailSelectAll = this.addDetailInvoices.length > 0
-        && this.addDetailInvoices.every(i => i.selected)
-    },
-
-    async saveAddDetail() {
-      if (this.addDetailSelected.length === 0) return
-      this.addDetailSaving = true
-      this.viewError = null
-      const paymentId = this.viewRow.id
-      const bpId = typeof this.viewRow.businessPartner === 'object'
-        ? this.viewRow.businessPartner?.id ?? this.viewRow.businessPartner
-        : this.viewRow.businessPartner
-      const orgId = typeof this.viewRow.organization === 'object'
-        ? this.viewRow.organization?.id ?? DEFAULT_ORGANIZATION
-        : (this.viewRow.organization || DEFAULT_ORGANIZATION)
-      const finAccId = typeof this.viewRow.account === 'object'
-        ? this.viewRow.account?.id ?? this.viewRow.account
-        : (this.viewRow.account || DEFAULT_FIN_ACCOUNT_ID)
-      const payMethId = typeof this.viewRow.paymentMethod === 'object'
-        ? this.viewRow.paymentMethod?.id ?? this.viewRow.paymentMethod
-        : (this.viewRow.paymentMethod || DEFAULT_PAYMETHOD_ID)
-
-      console.log('[saveAddDetail] start', { paymentId, bpId, orgId, finAccId, payMethId })
-      console.log('[saveAddDetail] selected:', this.addDetailSelected.map(i => ({ id: i.id, doc: i.documentNo, scheduleId: i.scheduleId, amount: i.outstandingAmount })))
-
-      try {
-        // Step A: GET FIN_Payment_Detail (auto-created by Openbravo when header saved)
-        const payDetail = await fetchPaymentDetail(paymentId)
-        console.log('[saveAddDetail] payDetail:', payDetail.id)
-
-        // Step B: POST each selected invoice to FIN_Payment_ScheduleDetail
-        for (const inv of this.addDetailSelected) {
-          const scheduleId = inv.scheduleId || null
-          const invoiceId  = inv.id
-          const amount     = Number(inv.outstandingAmount) || 0
-          console.log('[saveAddDetail] posting:', { scheduleId, invoiceId, amount })
-          await addPaymentScheduleDetail(
-            payDetail.id, scheduleId, invoiceId, amount,
-            bpId, orgId, finAccId, payMethId, paymentId,
-          )
-        }
-
-        // Step C: Update amount on FIN_Payment header
-        const totalSelected = this.addDetailSelected.reduce(
-          (s, i) => s + (Number(i.outstandingAmount) || 0), 0
-        )
-        await finalizePaymentAmount(paymentId, totalSelected)
-
-        this.showToast('Payment detail berhasil disimpan!', 'success')
-        this.showAddDetail = false
-        await this.loadViewLines(paymentId)
-        await this.loadRows()
-      } catch (e) {
-        console.error('[saveAddDetail] ERROR:', e.message, e)
-        this.viewError = e.message
-      } finally {
-        this.addDetailSaving = false
-      }
-    },
-    closeFormModal() {
-      if (this.saving || this.paying) return
-      this.showFormModal = false
-      this.savedPaymentId = null
-      this.loadRows()
-    },
-
-    confirmDelete(r) {
-      this.openDropdown = null
-      this.$nextTick(() => {
-        this.deleteTarget = { ...r }
-        this.showDeleteModal = true
-      })
-    },
-
-    // ── Save Header ───────────────────────────────────────
-    async saveHeader() {
-      this.formError = null
-      if (!this.form.businessPartner) { this.formError = 'Received From wajib diisi.'; return }
-      if (!this.form.paymentDate) { this.formError = 'Payment Date wajib diisi.'; return }
-      if (!this.form.paymentMethod) { this.formError = 'Payment Method wajib diisi.'; return }
-      if (!this.form.financialAccount) { this.formError = 'Deposit To wajib diisi.'; return }
-
-      this.saving = true
-      try {
-        let result
-        if (this.isEdit) {
-          result = await updatePaymentHeader(this.editId, this.form)
-          this.showToast('Payment header berhasil diupdate.', 'success')
-        } else {
-          result = await createPaymentHeader(this.form)
-          this.savedPaymentId = result.id
-          this.form.documentNo = result.documentNo || ''
-          this.showToast('Header tersimpan. Lanjutkan ke tab Detail.', 'success')
-        }
-      } catch (e) {
-        this.formError = e.message || 'Gagal menyimpan header.'
-      } finally {
-        this.saving = false
-      }
-    },
-
-    // ── Switch to detail tab ──────────────────────────────
-    switchToDetailTab() {
-      if (!this.savedPaymentId && !this.isEdit) {
-        this.formError = 'Simpan header terlebih dahulu.'
-        return
-      }
-      this.formError = null
-      this.activeFormTab = 'detail'
-      // Auto load jika belum pernah load
-      if (this.form.businessPartner && !this.invoicesLoaded) {
-        this.loadOutstandingInvoices()
-      }
-    },
-
-    // ── Load Outstanding Invoices dari Openbravo FIN_PaymentSchedule ──
-    async loadOutstandingInvoices() {
-      if (!this.form.businessPartner) {
-        this.invoiceCheckMsg = { type: 'error', text: 'Pilih customer terlebih dahulu.' }
-        return
-      }
-      this.invoiceLoading = true
-      this.invoiceCheckMsg = null
-      this.outstandingInvoices = []
-      this.invoicesLoaded = false
-      this.selectAllInvoices = false
-      try {
-        const rows = await fetchOutstandingInvoices(this.form.businessPartner)
-        // Tambahkan field selected ke tiap baris
-        this.outstandingInvoices = rows.map(r => ({ ...r, selected: false }))
-        this.invoicesLoaded = true
-        if (rows.length === 0) {
-          this.invoiceCheckMsg = { type: 'warn', text: 'Customer ini tidak memiliki tagihan outstanding.' }
-        }
-      } catch (e) {
-        this.invoiceCheckMsg = { type: 'error', text: e.message || 'Gagal memuat invoice.' }
-      } finally {
-        this.invoiceLoading = false
-      }
-    },
-
-    toggleAllInvoices() {
-      this.outstandingInvoices.forEach(i => { i.selected = this.selectAllInvoices })
-    },
-
-    onInvoiceSelect() {
-      this.selectAllInvoices = this.outstandingInvoices.length > 0
-        && this.outstandingInvoices.every(i => i.selected)
-    },
-
-    // ── Process Payment (dari Form Modal tab Detail) ──────
-    async processPayment() {
-      if (this.selectedInvoices.length === 0) return
-      this.formError = null
-      this.paying = true
-
-      const paymentId  = this.savedPaymentId || this.editId
-      const bpId       = typeof this.form.businessPartner === 'object'
-        ? this.form.businessPartner?.id : this.form.businessPartner
-      const orgId      = DEFAULT_ORGANIZATION
-      const finAccId   = this.form.financialAccount || DEFAULT_FIN_ACCOUNT_ID
-      const payMethId  = this.form.paymentMethod    || DEFAULT_PAYMETHOD_ID
-
-      try {
-        // Step A: Ambil atau buat FIN_Payment_Detail (parent)
-        // FIN_Payment_Detail dibuat otomatis Openbravo saat header di-save — cukup GET
-        const payDetail = await fetchPaymentDetail(paymentId)
-        if (!payDetail?.id) throw new Error('FIN_Payment_Detail tidak ditemukan. Simpan payment header terlebih dahulu.')
-
-        // Step B: POST tiap invoice schedule ke FIN_Payment_ScheduleDetail
-        for (const inv of this.selectedInvoices) {
-          const scheduleId = inv.scheduleId || null
-          const invoiceId  = inv.id
-          const amount     = Number(inv.outstandingAmount) || 0
-          await addPaymentScheduleDetail(
-            payDetail.id, scheduleId, invoiceId, amount,
-            bpId, orgId, finAccId, payMethId, paymentId,
-          )
-        }
-
-        // Step C: Update amount di FIN_Payment header
-        await finalizePaymentAmount(paymentId, this.totalSelectedAmount)
-
-        this.showToast('Payment berhasil diproses!', 'success')
-        this.closeFormModal()
-      } catch (e) {
-        this.formError = e.message
-      } finally {
-        this.paying = false
-      }
-    },
-
-    // ── Delete ────────────────────────────────────────────
-    async doDelete() {
-      this.deleting = true
-      try {
-        await deletePaymentHeader(this.deleteTarget.id)
-        this.showDeleteModal = false
-        this.showToast('Payment berhasil dihapus.', 'success')
-        await this.loadRows()
-      } catch (e) {
-        this.showToast(e.message || 'Gagal menghapus.', 'error')
-      } finally { this.deleting = false }
-    },
-
-    // ── Helpers ───────────────────────────────────────────
-    bpName(r) {
-      const id = r['businessPartner$_identifier'] || ''
-      return id.includes(' - ') ? id.split(' - ').slice(1).join(' - ') : (id || '—')
-    },
-
-    formatDate(v) {
-      if (!v) return '—'
-      return new Date(v).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-    },
-
-    formatCurrency(v) {
-      if (v == null || v === '') return '—'
-      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
-    },
-
-    payStatusClass(s) {
-      const map = { RPAP: 'status-awaiting', RDNC: 'status-complete', RPVD: 'status-void', RPAE: 'status-error' }
-      return map[s] || 'status-draft'
-    },
-
-    payStatusLabel(s) {
-      const map = { RPAP: 'Awaiting Payment', RDNC: 'Deposited Not Cleared', RPVD: 'Payment Voided', RPAE: 'Awaiting Execution' }
-      return map[s] || s || '—'
-    },
-
-    showToast(msg, type = 'success') {
-      this.toast = { show: true, msg, type }
-      setTimeout(() => { this.toast.show = false }, 3000)
-    },
-  },
+function formatDate(v) {
+  if (!v) return '—'
+  return new Date(v).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+function formatCurrency(v) {
+  if (v == null || v === '') return '—'
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
+}
+function bpName(r) {
+  // Openbravo returns "SEARCH_KEY - Name" in _identifier fields
+  const id = r?.['businessPartner$_identifier'] || ''
+  if (!id) return '—'
+  // Format: "CODE - Name" → ambil bagian setelah " - " pertama
+  const sepIdx = id.indexOf(' - ')
+  return sepIdx >= 0 ? id.slice(sepIdx + 3) : id
+}
+function payStatusClass(s) {
+  const map = { RPAP: 'status-awaiting', RDNC: 'status-complete', RPVD: 'status-void', RPAE: 'status-error' }
+  return map[s] || 'status-draft'
+}
+function payStatusLabel(s) {
+  const map = { RPAP: 'Awaiting Payment', RDNC: 'Deposited Not Cleared', RPVD: 'Payment Voided', RPAE: 'Awaiting Execution' }
+  return map[s] || s || '—'
+}
+function showToast(msg, type = 'success') {
+  toast.value = { show: true, type, message: msg }
+  setTimeout(() => { toast.value.show = false }, 3000)
+}
+
+// ── load rows
+async function loadRows() {
+  loading.value = true; error.value = ''
+  try {
+    const startRow = (currentPage.value - 1) * PAGE_SIZE
+    const res = await fetchAllPayments({ startRow, pageSize: PAGE_SIZE, searchKey: searchQuery.value })
+    rows.value = res.data ?? []
+    totalRows.value = res.totalRows ?? rows.value.length
+  } catch (e) { error.value = e.message }
+  finally { loading.value = false }
+}
+
+async function loadLookups() {
+  try {
+    const [methods, accounts] = await Promise.all([fetchPaymentMethods(), fetchFinancialAccounts()])
+    paymentMethods.value    = methods
+    financialAccounts.value = accounts
+  } catch (e) { console.warn('Lookup load failed', e.message) }
+}
+
+// ── pagination / search
+function goPage(p) { if (p >= 1 && p <= totalPages.value) { currentPage.value = p; loadRows() } }
+function onSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage.value = 1; loadRows() }, 400) }
+
+// ── dropdown
+function toggleDropdown(id, e) {
+  if (openDropdown.value === id) { openDropdown.value = null; return }
+  openDropdown.value = id
+  const btn = e.currentTarget.getBoundingClientRect()
+  dropdownPos.value = { top: btn.bottom + 4, right: window.innerWidth - btn.right }
+}
+function closeDropdown() { openDropdown.value = null }
+
+// ── customer search
+function onCustomerSearch() {
+  showCustomerDrop.value = true
+  clearTimeout(customerTimer)
+  if (customerSearch.value.length < 2) { filteredCustomers.value = []; return }
+  customerLoading.value = true
+  customerTimer = setTimeout(async () => {
+    try { filteredCustomers.value = await searchBusinessPartners(customerSearch.value) }
+    catch { filteredCustomers.value = [] }
+    finally { customerLoading.value = false }
+  }, 300)
+}
+function onCustomerBlur() { setTimeout(() => { showCustomerDrop.value = false }, 200) }
+function selectCustomer(c) {
+  form.value.businessPartner = c.id
+  customerSearch.value = c.name
+  showCustomerDrop.value = false
+  filteredCustomers.value = []
+  outstandingInvoices.value = []
+  invoiceCheckMsg.value = null
+  invoicesLoaded.value = false
+}
+
+// ── open modals
+function openCreateModal() {
+  isEdit.value = false; editId.value = null; savedPaymentId.value = null
+  activeFormTab.value = 'header'; formError.value = ''
+  form.value = emptyForm()
+  customerSearch.value = ''; filteredCustomers.value = []
+  outstandingInvoices.value = []; invoicesLoaded.value = false; invoiceCheckMsg.value = null
+  showFormModal.value = true
+}
+
+function openEditModal(r) {
+  isEdit.value = true; editId.value = r.id; savedPaymentId.value = r.id
+  activeFormTab.value = 'header'; formError.value = ''
+  form.value = {
+    documentNo:      r.documentNo || '',
+    paymentDate:     r.paymentDate?.slice(0, 10) || today(),
+    businessPartner: typeof r.businessPartner === 'object' ? r.businessPartner?.id : r.businessPartner,
+    paymentMethod:   typeof r.paymentMethod === 'object' ? r.paymentMethod?.id : (r.paymentMethod || DEFAULT_PAYMETHOD_ID),
+    financialAccount: typeof r.financialAccount === 'object' ? r.financialAccount?.id : (r.financialAccount || DEFAULT_FIN_ACCOUNT_ID),
+    referenceNo:     r.referenceNo || '',
+    description:     r.description || '',
+    status:          r.status || 'RPAP',
+    amount:          r.amount || 0,
+  }
+  customerSearch.value = r['businessPartner$_identifier'] || ''
+  outstandingInvoices.value = []; invoiceCheckMsg.value = null; invoicesLoaded.value = false
+  showFormModal.value = true
+}
+
+function openViewModal(r) {
+  viewRow.value = { ...r }
+  viewTab.value = 'lines'
+  viewLines.value = []; viewLinesLoading.value = false
+  showAddDetail.value = false
+  addDetailInvoices.value = []; addDetailSelectAll.value = false
+  viewError.value = ''
+  showViewModal.value = true
+  loadViewLines(r.id)
+}
+
+async function loadViewLines(paymentId) {
+  viewLinesLoading.value = true
+  try { viewLines.value = await fetchPaymentLines(paymentId) }
+  catch (e) { console.error('Load lines failed', e.message); viewLines.value = [] }
+  finally { viewLinesLoading.value = false }
+}
+
+// ── add detail (from view modal)
+function openAddDetail() {
+  showAddDetail.value = true
+  addDetailTransactionType.value = 'invoices'
+  addDetailInvoices.value = []; addDetailSelectAll.value = false; viewError.value = ''
+  loadAddDetailInvoices()
+}
+
+async function loadAddDetailInvoices() {
+  if (!viewRow.value?.businessPartner) return
+  addDetailLoading.value = true
+  const bpId = typeof viewRow.value.businessPartner === 'object' ? viewRow.value.businessPartner?.id : viewRow.value.businessPartner
+  try {
+    const tt = addDetailTransactionType.value
+    let combined = []
+    if (tt === 'invoices' || tt === 'orders_and_invoices') {
+      const invRows = await fetchOutstandingInvoices(bpId).catch(() => [])
+      combined = [...combined, ...invRows]
+    }
+    if (tt === 'orders' || tt === 'orders_and_invoices') {
+      const ordRows = await fetchOutstandingOrders(bpId).catch(() => [])
+      combined = [...combined, ...ordRows]
+    }
+    combined.sort((a, b) => (a.invoiceDate || '') < (b.invoiceDate || '') ? -1 : 1)
+    addDetailInvoices.value = combined.map(r => ({ ...r, selected: false }))
+  } catch (e) { console.error('Load add detail invoices failed', e.message) }
+  finally { addDetailLoading.value = false }
+}
+
+function toggleAddDetailAll() { addDetailInvoices.value.forEach(i => { i.selected = addDetailSelectAll.value }) }
+function onAddDetailSelect() {
+  addDetailSelectAll.value = addDetailInvoices.value.length > 0 && addDetailInvoices.value.every(i => i.selected)
+}
+
+async function saveAddDetail() {
+  if (addDetailSelected.value.length === 0) return
+  addDetailSaving.value = true; viewError.value = ''
+  const paymentId = viewRow.value.id
+  const bpId    = typeof viewRow.value.businessPartner === 'object' ? viewRow.value.businessPartner?.id : viewRow.value.businessPartner
+  const orgId   = typeof viewRow.value.organization === 'object' ? viewRow.value.organization?.id : (viewRow.value.organization || DEFAULT_ORGANIZATION)
+  const finAccId  = typeof viewRow.value.account === 'object' ? viewRow.value.account?.id : (viewRow.value.account || DEFAULT_FIN_ACCOUNT_ID)
+  const payMethId = typeof viewRow.value.paymentMethod === 'object' ? viewRow.value.paymentMethod?.id : (viewRow.value.paymentMethod || DEFAULT_PAYMETHOD_ID)
+
+  try {
+    const payDetail = await fetchPaymentDetail(paymentId)
+
+    for (const inv of addDetailSelected.value) {
+      await addPaymentScheduleDetail(
+        payDetail.id, inv.scheduleId || null, inv.id,
+        Number(inv.outstandingAmount) || 0,
+        bpId, orgId, finAccId, payMethId, paymentId,
+        inv._type || 'invoice',
+      )
+    }
+
+    const total = addDetailSelected.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0)
+    await finalizePaymentAmount(paymentId, total)
+
+    showToast('Payment detail berhasil disimpan!')
+    showAddDetail.value = false
+    await loadViewLines(paymentId)
+    await loadRows()
+  } catch (e) {
+    viewError.value = e.message
+  } finally { addDetailSaving.value = false }
+}
+
+// ── save header
+async function saveHeader() {
+  formError.value = ''
+  if (!form.value.businessPartner) { formError.value = 'Received From wajib diisi.'; return }
+  if (!form.value.paymentDate)     { formError.value = 'Payment Date wajib diisi.'; return }
+  if (!form.value.paymentMethod)   { formError.value = 'Payment Method wajib diisi.'; return }
+  if (!form.value.financialAccount){ formError.value = 'Deposit To wajib diisi.'; return }
+
+  saving.value = true
+  try {
+    if (isEdit.value) {
+      await updatePaymentHeader(editId.value, form.value)
+      showToast('Payment header berhasil diupdate.')
+    } else {
+      const result = await createPaymentHeader(form.value)
+      savedPaymentId.value = result.id
+      form.value.documentNo = result.documentNo || ''
+      showToast('Header tersimpan. Lanjutkan ke tab Detail.')
+    }
+  } catch (e) {
+    formError.value = e.message || 'Gagal menyimpan header.'
+  } finally { saving.value = false }
+}
+
+// ── switch to detail tab
+function switchToDetailTab() {
+  if (!savedPaymentId.value && !isEdit.value) { formError.value = 'Simpan header terlebih dahulu.'; return }
+  formError.value = ''; activeFormTab.value = 'detail'
+  if (form.value.businessPartner && !invoicesLoaded.value) loadOutstandingInvoices()
+}
+
+// ── load outstanding invoices
+async function loadOutstandingInvoices() {
+  if (!form.value.businessPartner) { invoiceCheckMsg.value = { type: 'error', text: 'Pilih customer terlebih dahulu.' }; return }
+  invoiceLoading.value = true; invoiceCheckMsg.value = null
+  outstandingInvoices.value = []; invoicesLoaded.value = false; selectAllInvoices.value = false
+  try {
+    let data = []
+    const tt = transactionType.value
+    if (tt === 'invoices' || tt === 'orders_and_invoices') {
+      const invData = await fetchOutstandingInvoices(form.value.businessPartner)
+      data = [...data, ...invData]
+    }
+    if (tt === 'orders' || tt === 'orders_and_invoices') {
+      const ordData = await fetchOutstandingOrders(form.value.businessPartner)
+      data = [...data, ...ordData]
+    }
+    // sort by date ascending
+    data.sort((a, b) => (a.invoiceDate || '') < (b.invoiceDate || '') ? -1 : 1)
+    outstandingInvoices.value = data.map(r => ({ ...r, selected: false }))
+    invoicesLoaded.value = true
+    if (data.length === 0) invoiceCheckMsg.value = { type: 'warn', text: 'Tidak ada tagihan outstanding untuk customer ini.' }
+  } catch (e) {
+    invoiceCheckMsg.value = { type: 'error', text: e.message || 'Gagal memuat data.' }
+  } finally { invoiceLoading.value = false }
+}
+
+function toggleAllInvoices() { outstandingInvoices.value.forEach(i => { i.selected = selectAllInvoices.value }) }
+function onInvoiceSelect() {
+  selectAllInvoices.value = outstandingInvoices.value.length > 0 && outstandingInvoices.value.every(i => i.selected)
+}
+
+// ── process payment (dari form modal tab detail)
+async function processPayment() {
+  if (selectedInvoices.value.length === 0) return
+  formError.value = ''; paying.value = true
+
+  const paymentId = savedPaymentId.value || editId.value
+  const bpId      = typeof form.value.businessPartner === 'object' ? form.value.businessPartner?.id : form.value.businessPartner
+  const orgId     = DEFAULT_ORGANIZATION
+  const finAccId  = form.value.financialAccount || DEFAULT_FIN_ACCOUNT_ID
+  const payMethId = form.value.paymentMethod    || DEFAULT_PAYMETHOD_ID
+
+  try {
+    const payDetail = await fetchPaymentDetail(paymentId)
+
+    for (const inv of selectedInvoices.value) {
+      await addPaymentScheduleDetail(
+        payDetail.id, inv.scheduleId || null, inv.id,
+        Number(inv.outstandingAmount) || 0,
+        bpId, orgId, finAccId, payMethId, paymentId,
+        inv._type || 'invoice',
+      )
+    }
+
+    await finalizePaymentAmount(paymentId, totalSelectedAmount.value)
+    showFormModal.value = false
+    savedPaymentId.value = null
+    showToast('Payment berhasil diproses!')
+    await loadRows()
+  } catch (e) {
+    formError.value = e.message
+  } finally { paying.value = false }
+}
+
+// ── close form modal
+function closeFormModal() {
+  if (saving.value || paying.value) return
+  showFormModal.value = false
+  savedPaymentId.value = null
+  loadRows()
+}
+
+// ── delete
+function confirmDelete(r) {
+  deleteTarget.value = { ...r }; deleteError.value = ''
+  showDeleteModal.value = true
+}
+async function doDelete() {
+  deleting.value = true; deleteError.value = ''
+  try {
+    await deletePaymentHeader(deleteTarget.value.id)
+    showDeleteModal.value = false
+    showToast('Payment berhasil dihapus.')
+    await loadRows()
+  } catch (e) {
+    deleteError.value = e.message || 'Gagal menghapus.'
+  } finally { deleting.value = false }
+}
+
+onMounted(() => { loadRows(); loadLookups() })
 </script>
 
 <style scoped>
-/* ── Base variables (mirror CustomerInvoice) ── */
 :root {
-  --font: 'Inter', system-ui, sans-serif;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --accent: #2563eb;
-  --accent-light: #eff6ff;
-  --danger: #dc2626;
-  --bg: #f1f5f9;
-  --surface: #ffffff;
-  --surface2: #f8fafc;
-  --border: #e2e8f0;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow-md: 0 4px 20px rgba(0,0,0,.10);
+  --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
+  --border: #e2e8f0; --accent: #3b82f6; --accent-light: #eff6ff;
+  --text-primary: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+  --danger: #ef4444;
+  --radius: 10px; --radius-sm: 6px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+.layout { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); font-family: var(--font); }
+.main { flex: 1; padding: 28px 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
+.content-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
 
-.layout { display: flex; min-height: 100vh; background: var(--bg); font-family: var(--font); }
-.main   { flex: 1; padding: 24px; overflow-x: hidden; }
-.content-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); overflow: hidden; }
+.page-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+.page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 
-/* ── Page header ── */
-.page-header { padding: 20px 24px 0; }
-.page-title  { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-
-/* ── Toolbar ── */
-.toolbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; gap: 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.search-wrap  { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
-.search-icon  { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-.search-input { width: 100%; height: 36px; padding: 0 12px 0 34px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); font-family: var(--font); color: var(--text-primary); transition: border-color .15s; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.search-wrap { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
+.search-input { height: 36px; padding: 0 12px 0 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; font-family: var(--font); background: var(--surface2); width: 260px; transition: border-color .15s; }
 .search-input:focus { border-color: var(--accent); background: #fff; }
 
-/* ── Buttons ── */
-.btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; border: none; cursor: pointer; font-family: var(--font); transition: all .15s; }
-.btn--primary   { background: var(--accent); color: #fff; }
-.btn--primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; height: 36px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); transition: all .15s; }
+.btn--primary { background: var(--accent); color: #fff; }
+.btn--primary:hover:not(:disabled) { background: #2563eb; }
 .btn--secondary { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
 .btn--secondary:hover:not(:disabled) { background: #bae6fd; }
-.btn--ghost  { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
-.btn--ghost:hover:not(:disabled)  { background: var(--surface2); }
+.btn--ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--text-secondary); }
+.btn--ghost:hover:not(:disabled) { background: var(--border); }
 .btn--danger { background: var(--danger); color: #fff; }
-.btn--danger:hover:not(:disabled) { background: #b91c1c; }
+.btn--danger:hover:not(:disabled) { background: #dc2626; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ── Table ── */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.table th { padding: 10px 16px; text-align: left; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
-.table td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
-.tr-data:hover td { background: #fafbff; }
-.td-empty  { text-align: center; padding: 40px !important; color: var(--text-muted); font-size: 13px; }
-.td-error  { color: var(--danger); }
-.td-secondary { color: var(--text-secondary); }
-.td-clip   { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.td-name   { font-weight: 500; }
-.th-action { text-align: right; }
-.td-action-cell { text-align: right; }
+.table thead th { background: var(--surface2); color: var(--text-muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 10px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: left; }
+.th-action { text-align: right; width: 80px; }
+.table tbody tr td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.tr-data:hover { background: var(--surface2); }
+.tr-data:last-child td { border-bottom: none; }
+.tr-selected td { background: #eff6ff !important; }
+.tr-selected:hover td { background: #dbeafe !important; }
 
-/* ── Code badge ── */
-.code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; background: #f1f5f9; color: #334155; padding: 2px 8px; border-radius: 5px; }
+.code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; }
+.td-secondary { color: var(--text-secondary); font-size: 13px; }
+.td-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-name { font-weight: 500; }
+.td-empty { text-align: center; color: var(--text-muted); padding: 48px 16px; font-size: 13px; }
+.td-error { color: var(--danger); }
+.td-action-cell { text-align: right; overflow: visible !important; }
 
-/* ── Status pills ── */
-.status-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.status-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .status-awaiting { background: #fef9c3; color: #854d0e; }
-.status-complete { background: #dcfce7; color: #15803d; }
-.status-void     { background: #f1f5f9; color: #64748b; }
-.status-error    { background: #fee2e2; color: var(--danger); }
-.status-draft    { background: #f1f5f9; color: #64748b; }
+.status-complete  { background: #dcfce7; color: #15803d; }
+.status-void      { background: #f1f5f9; color: #64748b; }
+.status-error     { background: #fee2e2; color: var(--danger); }
+.status-draft     { background: #f1f5f9; color: #64748b; }
 
-/* ── Action buttons ── */
-.action-group  { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
-.action-btn    { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all .12s; }
-.action-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
-.action-btn--more:hover { background: var(--surface2); color: var(--text-primary); border-color: var(--border); }
-
-/* ── Dropdown ── */
+.action-group { display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
+.action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; transition: background .12s; font-family: var(--font); }
+.action-btn--more { background: var(--surface2); color: var(--text-secondary); padding: 5px 8px; }
+.action-btn--more:hover { background: var(--border); }
 .dropdown-wrap { position: relative; }
-.dropdown-menu { position: absolute; z-index: 500; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); min-width: 150px; padding: 4px 0; }
-.dropdown-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 14px; font-size: 12.5px; color: var(--text-primary); background: none; border: none; cursor: pointer; font-family: var(--font); transition: background .1s; }
-.dropdown-item:hover { background: var(--surface2); }
+.dropdown-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 9999; min-width: 160px; overflow: hidden; }
+.dropdown-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; font-size: 12.5px; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text-secondary); font-family: var(--font); transition: background .1s; white-space: nowrap; }
+.dropdown-item:hover { background: var(--surface2); color: var(--text-primary); }
 .dropdown-item--danger { color: var(--danger); }
 .dropdown-item--danger:hover { background: #fff1f2; }
 
-/* ── Loading dots ── */
-.loading-dots { display: inline-flex; gap: 5px; }
-.loading-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: bounce .8s infinite; }
-.loading-dots span:nth-child(2) { animation-delay: .15s; }
-.loading-dots span:nth-child(3) { animation-delay: .30s; }
+.loading-dots { display: flex; gap: 6px; justify-content: center; align-items: center; }
+.loading-dots span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
+.loading-dots span:nth-child(2) { animation-delay: .2s; }
+.loading-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
 
-/* ── Pagination ── */
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
 .page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); }
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
@@ -1250,7 +1142,6 @@ export default {
 .page-btn:disabled { opacity: .3; cursor: not-allowed; }
 .page-ellipsis { color: var(--text-muted); padding: 0 4px; font-size: 13px; }
 
-/* ── Modal ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
 .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 480px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
 .modal--xl { max-width: 900px; }
@@ -1258,8 +1149,6 @@ export default {
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); gap: 12px; flex-shrink: 0; }
 .modal-breadcrumb { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; }
 .bc-active { color: var(--accent); font-weight: 500; }
-.bc-link { color: var(--text-muted); font-size: 11.5px; text-decoration: none; transition: color .12s; }
-.bc-link:hover { color: var(--accent); }
 .modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .modal-close { background: none; border: none; color: var(--text-muted); display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; transition: background .12s; flex-shrink: 0; }
 .modal-close:hover { background: var(--surface2); color: var(--text-primary); }
@@ -1270,31 +1159,23 @@ export default {
 .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; align-items: center; }
 
-/* ── Payment Status Bar (Openbravo-style) ── */
 .pay-statusbar { display: flex; align-items: center; gap: 10px; padding: 8px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 12px; flex-wrap: wrap; flex-shrink: 0; }
-.pay-statusbar--view { border-bottom: none; border-top: 1px solid var(--border); margin-top: 0; border-radius: 0; }
 .pay-statusbar-item { display: flex; align-items: center; gap: 4px; }
 .pay-statusbar-label { color: var(--text-muted); font-weight: 500; }
 .pay-statusbar-val { color: var(--text-primary); font-weight: 600; }
 .pay-statusbar-val--status { color: #854d0e; background: #fef9c3; padding: 1px 8px; border-radius: 12px; font-size: 11px; }
 .pay-statusbar-sep { color: var(--border); font-size: 16px; }
 
-/* ── Payment Detail Summary ── */
 .pay-detail-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
 .pay-ds-item { display: flex; flex-direction: column; gap: 3px; }
 .pay-ds-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
 .pay-ds-val { font-size: 13px; font-weight: 500; color: var(--text-primary); }
 .pay-ds-val.mono { font-family: var(--font-mono); font-size: 12px; }
-.pay-ds-val--amount { 
-  font-weight: 700; font-size: 15px; color: var(--accent); 
-  background: transparent; border: none; cursor: default; user-select: none;
-  display: block; padding: 2px 0;
-}
+.pay-ds-val--amount { font-weight: 700; font-size: 15px; color: var(--accent); }
 
-/* ── Detail filter row ── */
 .pay-detail-filter { display: flex; align-items: center; gap: 10px; margin: 12px 0 8px; }
+.pay-detail-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
 
-/* ── Form ── */
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group--full { grid-column: 1 / -1; }
@@ -1305,36 +1186,31 @@ export default {
 .req { color: var(--danger); }
 .form-api-error { margin-top: 14px; padding: 10px 14px; background: #fff1f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); color: var(--danger); font-size: 12.5px; display: flex; align-items: flex-start; gap: 8px; }
 
-/* ── Combobox ── */
 .acc-wrap { position: relative; width: 100%; }
 .acc-input { display: block; width: 100%; height: 36px; padding: 0 32px 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); transition: border-color .15s; font-family: var(--font); color: var(--text-primary); box-sizing: border-box; }
 .acc-input:focus { border-color: var(--accent); background: #fff; }
 .acc-input:disabled { opacity: .6; background: #f1f5f9; }
 .acc-chevron { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .acc-dropdown { position: absolute; z-index: 300; top: calc(100% + 3px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto; list-style: none; margin: 0; padding: 4px 0; }
-.acc-opt { padding: 8px 12px; font-size: 12.5px; color: var(--text-primary); cursor: pointer; transition: background .1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-opt { padding: 8px 12px; font-size: 12.5px; color: var(--text-primary); cursor: pointer; transition: background .1s; }
 .acc-opt:hover { background: var(--accent-light); }
 .acc-empty { padding: 8px 12px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
 
-/* ── Section divider ── */
 .section-divider { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .btn-add-line { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: var(--font); transition: background .12s; }
 .btn-add-line:hover:not(:disabled) { background: #dbeafe; }
 .btn-add-line:disabled { opacity: .4; cursor: not-allowed; }
 
-/* ── Info boxes ── */
 .info-box { display: flex; align-items: flex-start; gap: 8px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12.5px; }
 .info-box--blue   { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
 .info-box--green  { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
 .info-box--yellow { background: #fefce8; border: 1px solid #fef08a; color: #854d0e; }
 .info-box--red    { background: #fff1f2; border: 1px solid #fecaca; color: var(--danger); }
 
-/* ── Totals ── */
 .totals-block { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .totals-row { display: flex; justify-content: space-between; gap: 48px; font-size: 13px; color: var(--text-secondary); min-width: 260px; }
 .totals-row--grand { font-weight: 700; font-size: 14px; color: var(--text-primary); border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
 
-/* ── Detail view ── */
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .detail-item { display: flex; flex-direction: column; gap: 3px; }
 .detail-item--full { grid-column: 1 / -1; }
@@ -1342,35 +1218,26 @@ export default {
 .detail-value { font-size: 13.5px; color: var(--text-primary); font-weight: 500; }
 .detail-value.mono { font-family: var(--font-mono); font-size: 12.5px; }
 
-/* ── Delete modal ── */
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); }
 .delete-text strong { color: var(--text-primary); }
 
-/* ── Toast ── */
-.toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
-.toast--success { background: #16a34a; color: #fff; }
-.toast--error   { background: var(--danger); color: #fff; }
-
-/* ── Spinner ── */
-.spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
-.spinner--dark { border-color: rgba(37,99,235,.3); border-top-color: var(--accent); }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── Fade transition ── */
-.fade-enter-active,.fade-leave-active { transition: opacity .15s; }
-.fade-enter-from,.fade-leave-to { opacity: 0; }
-
-/* ── Selected row highlight ── */
-.tr-selected td { background: #eff6ff !important; }
-.tr-selected:hover td { background: #dbeafe !important; }
-
-/* ── Detail footer ── */
-.pay-detail-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
-
-/* ── Add Detail Panel ── */
 .add-detail-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .add-detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .add-detail-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .add-detail-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 20px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; }
 
+.toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
+.toast--success { background: #16a34a; color: #fff; }
+.toast--error   { background: var(--danger); color: #fff; }
+
+.type-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.type-badge--invoice { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+.type-badge--order   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+.spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+.spinner--dark { border-color: rgba(37,99,235,.3); border-top-color: var(--accent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fade-enter-active,.fade-leave-active { transition: opacity .15s; }
+.fade-enter-from,.fade-leave-to { opacity: 0; }
 </style>

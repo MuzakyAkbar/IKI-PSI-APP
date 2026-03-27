@@ -6,6 +6,7 @@ import COAView from '@/views/COA.vue'
 import SalesOrderView from '@/views/SalesOrder.vue'
 import GoodsShipmentView from '@/views/GoodsShipment.vue'
 import CustomerInvoiceView from '@/views/CustomerInvoice.vue'
+import VendorInvoiceView from '@/views/VendorInvoice.vue'
 import WarehouseView from '@/views/Warehouse.vue'
 import StorageBinView from '@/views/StorageBin.vue'
 import PurchaseOrderView from '@/views/PurchaseOrder.vue'
@@ -15,6 +16,8 @@ import GLJournalView from '@/views/GLJournal.vue'
 import TrialBalanceView from '@/views/TrialBalance.vue'
 import APAgingView from '@/views/APAgingView.vue'
 import GeneralLedgerView from '@/views/GeneralLedger.vue'
+import BalanceSheetView from '@/views/BalanceSheet.vue'
+import ProfitAndLossView from '@/views/ProfitAndLoss.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -25,6 +28,7 @@ const routes = [
   { path: '/sales-order', component: SalesOrderView },
   { path: '/goods-shipment', component: GoodsShipmentView },
   { path: '/customer-invoice', component: CustomerInvoiceView },
+  { path: '/vendor-invoice', component: VendorInvoiceView },
   { path: '/warehouse', component: WarehouseView },
   { path: '/storage-bin', component: StorageBinView },
   { path: '/purchase-order', component: PurchaseOrderView },
@@ -34,6 +38,8 @@ const routes = [
   { path: '/trial-balance', component: TrialBalanceView },
   { path: '/ap-aging', component: APAgingView },
   { path: '/general-ledger', component: GeneralLedgerView },
+  { path: '/balance-sheet', component: BalanceSheetView },
+  { path: '/profit-and-loss', component: ProfitAndLossView },
 ]
 
 const router = createRouter({

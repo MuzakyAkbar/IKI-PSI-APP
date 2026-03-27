@@ -152,7 +152,8 @@ function buildInvoicePayload(data) {
 // ════════════════════════════════════════════════════
 // INVOICE LINE
 // ════════════════════════════════════════════════════
-const LINE_BASE = '/org.openbravo.service.json.jsonrest/InvoiceLine'
+const LINE_BASE  = '/org.openbravo.service.json.jsonrest/InvoiceLine'
+const FACT_BASE  = '/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingFact'
 
 export async function fetchInvoiceLines(invoiceId) {
   const res = await api.get(LINE_BASE, {
@@ -441,22 +442,261 @@ api.interceptors.response.use(
 )
 
 // ════════════════════════════════════════════════════
-// POST ACCOUNTING (docAction=PO → posted=Y, creates journal)
+// POST ACCOUNTING
+// Pola: fetch AcctSchema → fetch ProductAcct → insert double-entry Facts
 // ════════════════════════════════════════════════════
+
+// Invoice table ID di Openbravo (C_Invoice)
+const INVOICE_TABLE_ID = '318'
+
+// ── Helper: resolve account info dari AccountingCombination ID ──
+async function resolveAcctCombination(combId) {
+  if (!combId) return null
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingCombination', {
+    params: { _where: `e.id = '${combId}'`, _startRow: 0, _endRow: 1 },
+  })
+  const rec = res.data?.response?.data?.[0] ?? null
+  if (!rec) return null
+  const raw = rec.account
+  const accountId = !raw ? null : typeof raw === 'object' ? (raw.id ?? null) : String(raw).trim() || null
+  if (!accountId) return null
+  const parts = (rec['account$_identifier'] || '').split(' - ')
+  return {
+    accountId,
+    combId: rec.id,
+    value: rec.combination || rec.alias || parts[0] || '',
+    accountingEntryDescription: parts.slice(1).join(' - ') || '',
+  }
+}
+
+// ── Helper: fetch AcctSchema pertama yang aktif untuk org ini ──
+async function fetchDefaultAcctSchema(orgId) {
+  // Coba filter by org dulu, kalau kosong ambil yang pertama aktif
+  const tryOrg = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtAcctSchema', {
+    params: {
+      _where: `e.active = true`,
+      _startRow: 0,
+      _endRow: 10,
+    },
+  })
+  const list = tryOrg.data?.response?.data ?? []
+  // Pilih yang orgId-nya cocok, atau fallback ke index 0
+  return list.find(s => {
+    const sOrg = s.organization?.id ?? s.organization
+    return sOrg === orgId
+  }) ?? list[0] ?? null
+}
+
+// ── Helper: fetch periode berdasarkan tanggal & schemaId ──
+async function fetchPeriodForDate(dateStr, schemaId) {
+  if (!dateStr) return null
+  const month = dateStr.slice(0, 7) // "YYYY-MM"
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtPeriod', {
+    params: {
+      _where: `e.periodType = 'M' and e.startingDate <= '${dateStr}' and e.endingDate >= '${dateStr}'`,
+      _startRow: 0,
+      _endRow: 5,
+    },
+  })
+  const list = res.data?.response?.data ?? []
+  return list.find(p => {
+    if (!schemaId) return true
+    const pYear = p.year?.id ?? p.year
+    return true // ambil yang pertama saja
+  }) ?? list[0] ?? null
+}
+
+// ── Helper: fetch product accounting — coba beberapa entity name ──
+async function fetchProductAcct(productId, schemaId) {
+  // Entity names yang mungkin ada di Openbravo untuk M_Product_Acct
+  const entityNames = [
+    'ProductAccounts',
+    'FinancialMgmtProductAcct',
+    'MaterialMgmtProductAcct',
+    'M_Product_Acct',
+  ]
+  const whereBase = schemaId
+    ? `e.product.id = '${productId}' and e.accountingSchema.id = '${schemaId}'`
+    : `e.product.id = '${productId}'`
+
+  for (const entityName of entityNames) {
+    try {
+      const res = await api.get(`/org.openbravo.service.json.jsonrest/${entityName}`, {
+        params: { _where: whereBase, _startRow: 0, _endRow: 1 },
+      })
+      const data = res.data?.response?.data ?? []
+      if (data.length > 0) {
+        console.log(`[fetchProductAcct] Found using entity: ${entityName}`, Object.keys(data[0]))
+        return data[0]
+      }
+    } catch (e) {
+      console.log(`[fetchProductAcct] ${entityName} not found:`, e.message?.slice(0, 80))
+    }
+  }
+  return null
+}
+
 export async function postAccountingProcess(invoiceId, invoiceData) {
   if (invoiceData?.documentStatus !== 'CO') {
     throw new Error(`Invoice harus berstatus Complete (CO) sebelum di-Post. Status saat ini: "${invoiceData?.documentStatus}"`)
   }
 
-  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
-    data: {
-      id:             invoiceId,
-      _entityName:    'Invoice',
-      documentNo:     invoiceData.documentNo,
-      documentStatus: 'CO',
-      documentAction: 'PO',
-      processed:      true,
+  const extractId = (v) => (v && typeof v === 'object') ? v.id : (v || null)
+
+  const orgId     = extractId(invoiceData.organization) || DEFAULT_ORGANIZATION
+  const clientId  = extractId(invoiceData.client)       || '53AD31E21D624632B2F171194EC6E887'
+  const curId     = extractId(invoiceData.currency)     || DEFAULT_CURRENCY
+  const docTypeId = extractId(invoiceData.documentType)
+  const accDate   = invoiceData.accountingDate || invoiceData.invoiceDate
+  const txDate    = invoiceData.invoiceDate
+  const groupID   = invoiceId.replace(/-/g, '').slice(0, 32).toUpperCase()
+
+  // ── Step 1: fetch AcctSchema (invoice tidak punya field accountingSchema) ──
+  let schemaId = extractId(invoiceData.accountingSchema) ?? null
+  let schemaRec = null
+  if (!schemaId) {
+    schemaRec = await fetchDefaultAcctSchema(orgId)
+    schemaId  = schemaRec?.id ?? null
+    console.log('[POST ACCOUNTING] AcctSchema fetched:', schemaId, schemaRec ? Object.keys(schemaRec) : null)
+    if (schemaRec) console.log('[POST ACCOUNTING] AcctSchema raw:', JSON.stringify(schemaRec, null, 2))
+  }
+
+  // ── Step 2: fetch Period berdasarkan accountingDate ──
+  let periodId = extractId(invoiceData.period) ?? null
+  if (!periodId && accDate) {
+    const period = await fetchPeriodForDate(accDate, schemaId)
+    periodId = period?.id ?? null
+    console.log('[POST ACCOUNTING] Period fetched:', periodId)
+  }
+
+  // ── Step 3: fetch invoice lines ──
+  const linesRes = await api.get(LINE_BASE, {
+    params: {
+      _where:    `e.invoice.id = '${invoiceId}'`,
+      _startRow: 0,
+      _endRow:   200,
+      _orderBy:  'e.lineNo asc',
     },
+  })
+  const lines = linesRes.data?.response?.data ?? []
+  if (lines.length === 0) throw new Error('Tidak ada invoice lines untuk di-post.')
+
+  // ── Step 4: resolve AR Receivable account dari AcctSchema ──
+  // Field di FinancialMgmtAcctSchema: receivables, customer_receivables, dll
+  let arAccount = null
+  if (schemaRec || schemaId) {
+    const schema = schemaRec ?? (() => { throw new Error('schema not loaded') })()
+    // Coba semua kemungkinan field AR Receivable di AcctSchema
+    const arCombId = extractId(schema.receivables)
+      || extractId(schema.customerReceivables)
+      || extractId(schema.notFinRecReceivables)
+      || extractId(schema.receivablesNoCurrency)
+      || extractId(schema['c_receivable_acct'])
+    console.log('[POST ACCOUNTING] AR combId candidates:', {
+      receivables: schema.receivables,
+      customerReceivables: schema.customerReceivables,
+      notFinRecReceivables: schema.notFinRecReceivables,
+    })
+    if (arCombId) {
+      arAccount = await resolveAcctCombination(arCombId)
+      console.log('[POST ACCOUNTING] AR account:', arAccount)
+    } else {
+      console.warn('[POST ACCOUNTING] Tidak ada field AR di AcctSchema. Semua field:', JSON.stringify(schema))
+    }
+  }
+
+  // ── Step 5: per line — insert double-entry (Debit AR + Credit Revenue) ──
+  let seqNo = 10
+  for (const line of lines) {
+    const lineNo   = line.lineNo ?? seqNo
+    const amount   = Number(line.lineNetAmount) || 0
+    const lineDesc = line.description || invoiceData.description || invoiceData.documentNo || ''
+    const productId = extractId(line.product)
+
+    // Resolve Revenue account dari ProductAcct
+    let revenueAccount = null
+    if (productId) {
+      const productAcct = await fetchProductAcct(productId, schemaId)
+      if (productAcct) {
+        // Coba semua kemungkinan field revenue
+        const revCombId = extractId(productAcct.pRevenueAcct)
+          || extractId(productAcct.revenue)
+          || extractId(productAcct.revenueRecognition)
+          || extractId(productAcct.p_revenue_acct)
+          || extractId(productAcct.productRevenue)
+        console.log(`[POST ACCOUNTING] Line ${lineNo} ProductAcct keys:`, Object.keys(productAcct))
+        console.log(`[POST ACCOUNTING] Line ${lineNo} revCombId:`, revCombId)
+        if (revCombId) {
+          revenueAccount = await resolveAcctCombination(revCombId)
+          console.log(`[POST ACCOUNTING] Line ${lineNo} revenue:`, revenueAccount)
+        }
+      }
+    }
+
+    const buildFact = (isDebit) => ({
+      _entityName:                 'FinancialMgmtAccountingFact',
+      client:                      { id: clientId },
+      organization:                { id: orgId },
+      ...(schemaId               && { accountingSchema: { id: schemaId } }),
+      transactionDate:             txDate,
+      accountingDate:              accDate,
+      ...(periodId               && { period: { id: periodId } }),
+      table:                       { id: INVOICE_TABLE_ID },
+      recordID:                    invoiceId,
+      lineID:                      line.id,
+      postingType:                 'A',
+      currency:                    { id: curId },
+      foreignCurrencyDebit:        isDebit ? amount : 0,
+      foreignCurrencyCredit:       isDebit ? 0 : amount,
+      debit:                       isDebit ? amount : 0,
+      credit:                      isDebit ? 0 : amount,
+      quantity:                    0,
+      description:                 `${invoiceData.documentNo} # ${lineNo} ${lineDesc}`.trim(),
+      groupID,
+      sequenceNumber:              seqNo,
+      type:                        'N',
+      documentCategory:            'ARI',
+      ...(docTypeId              && { documentType: { id: docTypeId } }),
+      active:                      true,
+    })
+
+    // DEBIT — AR Receivable
+    if (arAccount?.accountId) {
+      await api.post(FACT_BASE, {
+        data: {
+          ...buildFact(true),
+          account:                    { id: arAccount.accountId },
+          ...(arAccount.combId      && { accountingCombination: { id: arAccount.combId } }),
+          value:                       arAccount.value,
+          accountingEntryDescription:  arAccount.accountingEntryDescription,
+        },
+      })
+      seqNo += 10
+    }
+
+    // CREDIT — Revenue
+    if (revenueAccount?.accountId) {
+      await api.post(FACT_BASE, {
+        data: {
+          ...buildFact(false),
+          account:                        { id: revenueAccount.accountId },
+          ...(revenueAccount.combId     && { accountingCombination: { id: revenueAccount.combId } }),
+          value:                           revenueAccount.value,
+          accountingEntryDescription:      revenueAccount.accountingEntryDescription,
+        },
+      })
+      seqNo += 10
+    }
+
+    if (!arAccount?.accountId && !revenueAccount?.accountId) {
+      console.warn(`[POST ACCOUNTING] Line ${lineNo}: tidak ada account AR maupun Revenue, skip.`)
+    }
+    seqNo += 10
+  }
+
+  // ── Step 6: set posted='Y' pada header invoice ──
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: { id: invoiceId, _entityName: 'Invoice', documentNo: invoiceData.documentNo, posted: 'Y' },
   })
   const status = res.data?.response?.status
   if (status !== undefined && status < 0) {
@@ -464,14 +704,13 @@ export async function postAccountingProcess(invoiceId, invoiceData) {
   }
   return await fetchInvoice(invoiceId)
 }
+
 // ════════════════════════════════════════════════════
 // UNPOST (hapus jurnal accounting, posted=N)
 // 1. Fetch semua AccountingFact untuk invoice ini
 // 2. DELETE satu per satu
 // 3. PUT posted=false pada invoice
 // ════════════════════════════════════════════════════
-const FACT_BASE = '/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingFact'
-
 export async function unpostAccountingProcess(invoiceId, invoiceData) {
   const isPosted = invoiceData?.posted === true || invoiceData?.posted === 'Y'
   if (!isPosted) {

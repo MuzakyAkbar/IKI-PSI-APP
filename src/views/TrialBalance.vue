@@ -320,63 +320,271 @@ function resetFilters() {
 }
 
 // ════════════════════════════════════════════════════
-// EXPORT XLSX — SheetJS (xlsx via CDN)
+// EXPORT XLSX — ExcelJS (styled, same template as GL)
 // ════════════════════════════════════════════════════
 async function exportXlsx() {
   exporting.value = 'xlsx'
   try {
-    // dynamic import SheetJS from CDN
-    const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs')
+    await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')
+    const ExcelJS = window.ExcelJS
 
-    const schemaName = accountingSchemas.value.find(s => s.id === filters.value.accountingSchema)?.name || 'All'
-    const orgName    = organizations.value.find(o => o.id === filters.value.organization)?.name || 'All'
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'NexERP Financial Management'
+    workbook.created = new Date()
 
-    // Header info rows
-    const info = [
-      ['Trial Balance'],
-      [`Period: ${formatDate(filters.value.dateFrom)} - ${formatDate(filters.value.dateTo)}`],
-      [`General Ledger: ${schemaName}`, '', `Organization: ${orgName}`],
-      [],
-      ['Account No.', 'Name',
-       `Balance As Of ${formatDate(filters.value.dateFrom)}`,
-       'Debit', 'Credit',
-       `Balance As Of ${formatDate(filters.value.dateTo)}`],
+    const schemaName  = accountingSchemas.value.find(s => s.id === filters.value.accountingSchema)?.name || 'All'
+    const orgName     = organizations.value.find(o => o.id === filters.value.organization)?.name || 'All'
+    const periodLabel = `${formatDate(filters.value.dateFrom)}  —  ${formatDate(filters.value.dateTo)}`
+    const yearLabel   = new Date(filters.value.dateFrom).getFullYear().toString()
+
+    // ── Color palette (same as GL) ──
+    const C = {
+      headerBg:    '1E3A5F',
+      headerFg:    'FFFFFF',
+      subHeaderBg: '2563EB',
+      subHeaderFg: 'FFFFFF',
+      metaBg:      'F8FAFC',
+      totalBg:     'F0FDF4',
+      totalFg:     '15803D',
+      debitFg:     '1D4ED8',
+      creditFg:    '15803D',
+      balanceFg:   '1E40AF',
+      borderColor: 'CBD5E1',
+      altRow:      'F8FAFF',
+      white:       'FFFFFF',
+    }
+
+    const numFmt = '#,##0.00'
+    const thinBorder = (color = C.borderColor) => ({
+      top:    { style: 'thin',   color: { argb: color } },
+      bottom: { style: 'thin',   color: { argb: color } },
+      left:   { style: 'thin',   color: { argb: color } },
+      right:  { style: 'thin',   color: { argb: color } },
+    })
+    const medBorder = (color = C.borderColor) => ({
+      top:    { style: 'medium', color: { argb: color } },
+      bottom: { style: 'medium', color: { argb: color } },
+      left:   { style: 'medium', color: { argb: color } },
+      right:  { style: 'medium', color: { argb: color } },
+    })
+    const solidFill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } })
+    const applyStyle = (row, style) => {
+      row.eachCell({ includeEmpty: true }, cell => {
+        if (style.fill)      cell.fill      = style.fill
+        if (style.font)      cell.font      = { ...cell.font, ...style.font }
+        if (style.border)    cell.border    = style.border
+        if (style.alignment) cell.alignment = style.alignment
+      })
+    }
+
+    const ws = workbook.addWorksheet('Trial Balance', {
+      pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+      views: [{ state: 'frozen', xSplit: 0, ySplit: 7 }],
+    })
+
+    // Column widths: A=AccNo, B=Name, C=OpenBal, D=Debit, E=Credit, F=CloseBal
+    ws.columns = [
+      { key: 'no',      width: 16 },
+      { key: 'name',    width: 44 },
+      { key: 'opening', width: 22 },
+      { key: 'debit',   width: 22 },
+      { key: 'credit',  width: 22 },
+      { key: 'closing', width: 22 },
     ]
+    const LAST_COL = 'F'
 
-    // Data rows
-    const data = displayRows.value.map(r => [
-      r.accountNo,
-      r.accountName,
-      num(r.openingBalance),
-      num(r.debit),
-      num(r.credit),
-      num(r.closingBalance),
-    ])
+    // ══ ROW 1: Big Title ══
+    const r1 = ws.addRow([`TRIAL BALANCE  ·  ${orgName}  ·  IDR`])
+    ws.mergeCells(`A1:${LAST_COL}1`)
+    r1.height = 32
+    applyStyle(r1, {
+      fill:      solidFill(C.headerBg),
+      font:      { name: 'Calibri', bold: true, size: 14, color: { argb: C.headerFg } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border:    thinBorder(C.headerBg),
+    })
 
-    // Totals row
-    const tot = [
-      'Totals', '',
+    // ══ ROW 2: Meta label row ══
+    const r2 = ws.addRow(['Period', '', 'General Ledger', '', 'Organization', ''])
+    r2.height = 16
+    applyStyle(r2, {
+      fill:      solidFill(C.metaBg),
+      font:      { name: 'Calibri', bold: true, size: 9, color: { argb: '64748B' } },
+      alignment: { vertical: 'middle' },
+      border:    thinBorder(),
+    })
+    ;['A2','C2','E2'].forEach(addr => {
+      ws.getCell(addr).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    })
+
+    // ══ ROW 3: Meta value row ══
+    const r3 = ws.addRow([periodLabel, '', schemaName, '', orgName, ''])
+    r3.height = 18
+    applyStyle(r3, {
+      fill:      solidFill(C.white),
+      font:      { name: 'Calibri', bold: true, size: 10, color: { argb: '1E293B' } },
+      border:    thinBorder(),
+      alignment: { vertical: 'middle' },
+    })
+    ws.mergeCells('A3:B3'); ws.mergeCells('C3:D3'); ws.mergeCells('E3:F3')
+    ;['A3','C3','E3'].forEach(addr => {
+      ws.getCell(addr).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    })
+
+    // ══ ROW 4: Generated info ══
+    const r4 = ws.addRow(['Generated', '', new Date().toLocaleDateString('en-GB'), '', `Fiscal Year: ${yearLabel}`, ''])
+    r4.height = 16
+    applyStyle(r4, {
+      fill:      solidFill(C.metaBg),
+      font:      { name: 'Calibri', size: 9, color: { argb: '64748B' } },
+      border:    thinBorder(),
+      alignment: { vertical: 'middle' },
+    })
+    ws.mergeCells('A4:B4'); ws.mergeCells('C4:D4'); ws.mergeCells('E4:F4')
+    ;['A4','C4','E4'].forEach(addr => {
+      ws.getCell(addr).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    })
+    ws.getCell('A4').font = { name: 'Calibri', bold: true, size: 9, color: { argb: '64748B' } }
+
+    // ══ ROW 5: Spacer ══
+    const r5 = ws.addRow([])
+    r5.height = 8
+    applyStyle(r5, { fill: solidFill(C.white), border: thinBorder(C.white) })
+
+    // ══ ROW 6: Summary bar labels ══
+    const r6 = ws.addRow(['', '', 'Opening Balance', 'Period Debit', 'Period Credit', 'Closing Balance'])
+    r6.height = 16
+    applyStyle(r6, {
+      fill:      solidFill(C.metaBg),
+      font:      { name: 'Calibri', bold: true, size: 9, color: { argb: '64748B' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border:    thinBorder(),
+    })
+
+    // ══ ROW 7: Summary bar values ══
+    const r7 = ws.addRow(['', '', totals.value.openingBalance, totals.value.debit, totals.value.credit, totals.value.closingBalance])
+    r7.height = 20
+    applyStyle(r7, {
+      fill:      solidFill(C.white),
+      font:      { name: 'Calibri', bold: true, size: 11 },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border:    thinBorder(),
+    })
+    ;[['C7', C.balanceFg], ['D7', C.debitFg], ['E7', C.creditFg], ['F7', C.balanceFg]].forEach(([addr, color]) => {
+      ws.getCell(addr).numFmt    = numFmt
+      ws.getCell(addr).font      = { name: 'Calibri', bold: true, size: 11, color: { argb: color } }
+      ws.getCell(addr).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+    })
+
+    // ══ ROW 8: Column Headers ══
+    const r8 = ws.addRow(['Account No.', 'Account Name',
+      `Opening Balance\n${formatDate(filters.value.dateFrom)}`,
+      'Debit', 'Credit',
+      `Closing Balance\n${formatDate(filters.value.dateTo)}`])
+    r8.height = 30
+    applyStyle(r8, {
+      fill:      solidFill(C.subHeaderBg),
+      font:      { name: 'Calibri', bold: true, size: 10, color: { argb: C.subHeaderFg } },
+      alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+      border:    thinBorder(C.subHeaderBg),
+    })
+    ;['A8','B8'].forEach(addr => {
+      ws.getCell(addr).alignment = { vertical: 'middle', horizontal: 'left', indent: 1, wrapText: false }
+    })
+
+    // ══ Data rows ══
+    displayRows.value.forEach((row, i) => {
+      const isAlt = i % 2 === 1
+      const dr = ws.addRow([
+        row.accountNo,
+        row.accountName,
+        num(row.openingBalance),
+        num(row.debit),
+        num(row.credit),
+        num(row.closingBalance),
+      ])
+      dr.height = 18
+      applyStyle(dr, {
+        fill:      solidFill(isAlt ? C.altRow : C.white),
+        font:      { name: 'Calibri', size: 10, color: { argb: '374151' } },
+        border:    thinBorder(),
+        alignment: { vertical: 'middle' },
+      })
+
+      // Account No — mono style
+      const rowIdx = 8 + i + 1
+      const noCell = ws.getCell(`A${rowIdx}`)
+      noCell.font      = { name: 'Courier New', size: 9, bold: true, color: { argb: '1D4ED8' } }
+      noCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+      noCell.fill      = solidFill(isAlt ? 'E8F0FE' : 'EFF6FF')
+
+      ws.getCell(`B${rowIdx}`).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+      // Number cells
+      const openCell  = ws.getCell(`C${rowIdx}`)
+      openCell.numFmt    = numFmt
+      openCell.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      if (num(row.openingBalance) === 0) { openCell.value = '—'; openCell.font = { name: 'Calibri', size: 10, color: { argb: 'CBD5E1' } } }
+      else openCell.font = { name: 'Calibri', size: 10, color: { argb: C.balanceFg } }
+
+      const debitCell = ws.getCell(`D${rowIdx}`)
+      debitCell.numFmt    = numFmt
+      debitCell.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      if (num(row.debit) === 0) { debitCell.value = '—'; debitCell.font = { name: 'Calibri', size: 10, color: { argb: 'CBD5E1' } } }
+      else debitCell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: C.debitFg } }
+
+      const creditCell = ws.getCell(`E${rowIdx}`)
+      creditCell.numFmt    = numFmt
+      creditCell.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      if (num(row.credit) === 0) { creditCell.value = '—'; creditCell.font = { name: 'Calibri', size: 10, color: { argb: 'CBD5E1' } } }
+      else creditCell.font = { name: 'Calibri', bold: true, size: 10, color: { argb: C.creditFg } }
+
+      const closeCell = ws.getCell(`F${rowIdx}`)
+      closeCell.numFmt    = numFmt
+      closeCell.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      closeCell.font      = { name: 'Calibri', bold: true, size: 10, color: { argb: C.balanceFg } }
+    })
+
+    // ══ Totals Row ══
+    const totalRowIdx = 8 + displayRows.value.length + 1
+    const rTot = ws.addRow([
+      '', 'TOTAL',
       num(totals.value.openingBalance),
       num(totals.value.debit),
       num(totals.value.credit),
       num(totals.value.closingBalance),
-    ]
+    ])
+    rTot.height = 22
+    applyStyle(rTot, {
+      fill:      solidFill(C.totalBg),
+      font:      { name: 'Calibri', bold: true, size: 11, color: { argb: C.totalFg } },
+      border:    medBorder('86EFAC'),
+      alignment: { vertical: 'middle' },
+    })
+    ws.getCell(`B${totalRowIdx}`).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+    ;[
+      [`C${totalRowIdx}`, C.balanceFg],
+      [`D${totalRowIdx}`, C.debitFg],
+      [`E${totalRowIdx}`, C.creditFg],
+      [`F${totalRowIdx}`, C.balanceFg],
+    ].forEach(([addr, color]) => {
+      ws.getCell(addr).numFmt    = numFmt
+      ws.getCell(addr).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      ws.getCell(addr).font      = { name: 'Calibri', bold: true, size: 11, color: { argb: color } }
+    })
 
-    const sheetData = [...info, ...data, [], tot]
-    const ws = XLSX.utils.aoa_to_sheet(sheetData)
-
-    // Column widths
-    ws['!cols'] = [
-      { wch: 14 }, { wch: 36 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
-    ]
-
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Trial Balance')
-
-    const filename = `TrialBalance_${filters.value.dateFrom}_${filters.value.dateTo}.xlsx`
-    XLSX.writeFile(wb, filename)
+    // ── Write & download ──
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url    = URL.createObjectURL(blob)
+    const a      = document.createElement('a')
+    a.href       = url
+    a.download   = `TrialBalance_${filters.value.dateFrom}_${filters.value.dateTo}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
   } catch (e) {
     alert('Export Excel gagal: ' + e.message)
+    console.error(e)
   } finally { exporting.value = '' }
 }
 

@@ -14,7 +14,7 @@
           @click="activeTab = 'filter'"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Filter & Pilih COA
+          Filter & Select COA
         </button>
         <button
           :class="['tab', activeTab === 'result' ? 'tab--active' : '']"
@@ -22,7 +22,7 @@
           :disabled="selectedCOAs.length === 0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          Hasil
+          Results
           <span v-if="selectedCOAs.length > 0" class="tab-badge">{{ selectedCOAs.length }}</span>
         </button>
       </div>
@@ -33,11 +33,11 @@
         <div class="toolbar">
           <div class="toolbar-left">
             <div class="field-group">
-              <label class="field-label">Tanggal Dari</label>
+              <label class="field-label">Date From</label>
               <input v-model="dateFrom" type="date" class="field-input" />
             </div>
             <div class="field-group">
-              <label class="field-label">Tanggal Sampai</label>
+              <label class="field-label">Date To</label>
               <input v-model="dateTo" type="date" class="field-input" />
             </div>
           </div>
@@ -45,7 +45,7 @@
             <button class="btn btn--primary" @click="fetchCOAList" :disabled="loading">
               <span v-if="loading" class="spinner"></span>
               <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              {{ loading ? 'Mencari...' : 'Cari Data' }}
+              {{ loading ? 'Searching...' : 'Search' }}
             </button>
           </div>
         </div>
@@ -59,7 +59,7 @@
         <!-- Empty hint -->
         <div v-if="!loading && selectedCOAs.length === 0 && !errorMessage" class="empty-hint">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <p>Pilih rentang tanggal lalu klik <strong>Cari Data</strong> untuk menampilkan data general ledger</p>
+          <p>Select a date range and click <strong>Search</strong> to display general ledger data</p>
         </div>
 
         <!-- Summary setelah data loaded -->
@@ -69,7 +69,7 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               {{ formatDateDisplay(dateFrom) }} — {{ formatDateDisplay(dateTo) }}
             </span>
-            <span class="summary-count-badge">{{ selectedCOAs.length }} akun dipilih</span>
+            <span class="summary-count-badge">{{ selectedCOAs.length }} accounts selected</span>
           </div>
           <div class="summary-coa-list">
             <div v-for="coa in selectedCOAs" :key="coa.accountId" class="summary-coa-row">
@@ -81,10 +81,10 @@
           <div class="summary-actions">
             <button class="btn btn--outline" @click="showModal = true">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Ubah Pilihan COA
+              Change COA Selection
             </button>
             <button class="btn btn--primary" @click="activeTab = 'result'">
-              Lihat Hasil
+              View Results
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
@@ -99,7 +99,7 @@
             <div class="result-info">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <span>{{ formatDateDisplay(dateFrom) }} — {{ formatDateDisplay(dateTo) }}</span>
-              <span class="result-count-badge">{{ selectedCOAs.length }} Akun</span>
+              <span class="result-count-badge">{{ selectedCOAs.length }} Accounts</span>
             </div>
           </div>
           <div class="toolbar-right">
@@ -150,7 +150,7 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th>TANGGAL</th>
+                    <th>DATE</th>
                     <th>DOCUMENT NO</th>
                     <th>PARTNER</th>
                     <th>DESCRIPTION HEADER</th>
@@ -162,7 +162,7 @@
                 </thead>
                 <tbody>
                   <tr v-if="!coa.transactions || coa.transactions.length === 0">
-                    <td colspan="8" class="td-empty">Tidak ada transaksi dalam periode ini</td>
+                    <td colspan="8" class="td-empty">No transactions in this period</td>
                   </tr>
                   <tr v-for="(trans, idx) in coa.transactions" :key="idx" class="tr-row">
                     <td class="td-date">{{ formatDate(trans.date) }}</td>
@@ -194,9 +194,9 @@
               <div class="modal-breadcrumb">
                 <span>General Ledger</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">Pilih Chart of Account</span>
+                <span class="bc-active">Select Chart of Account</span>
               </div>
-              <div class="modal-title">Pilih Chart of Account</div>
+              <div class="modal-title">Select Chart of Account</div>
             </div>
             <button class="modal-close" @click="closeModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -207,16 +207,16 @@
             <div class="modal-search-row">
               <div class="search-wrap">
                 <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input v-model="searchAccountCode" class="search-inp" placeholder="Search kode akun..." />
+                <input v-model="searchAccountCode" class="search-inp" placeholder="Search account code..." />
               </div>
               <div class="search-wrap">
                 <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input v-model="searchAccountName" class="search-inp" placeholder="Search nama akun..." />
+                <input v-model="searchAccountName" class="search-inp" placeholder="Search account name..." />
               </div>
             </div>
 
             <div class="modal-meta">
-              Menampilkan <strong>{{ filteredCOAList.length }}</strong> dari <strong>{{ coaList.length }}</strong> akun
+              Showing <strong>{{ filteredCOAList.length }}</strong> of <strong>{{ coaList.length }}</strong> accounts
             </div>
 
             <div class="modal-table-wrap">
@@ -234,7 +234,7 @@
                 </thead>
                 <tbody>
                   <tr v-if="filteredCOAList.length === 0">
-                    <td colspan="5" class="td-empty">Tidak ada akun yang ditemukan</td>
+                    <td colspan="5" class="td-empty">No accounts found</td>
                   </tr>
                   <tr
                     v-for="coa in filteredCOAList"
@@ -261,16 +261,16 @@
           </div>
 
           <div class="modal-footer">
-            <span class="sel-count">{{ tempSelectedCOA.length }} COA terpilih</span>
+            <span class="sel-count">{{ tempSelectedCOA.length }} COA selected</span>
             <div class="modal-footer-btns">
-              <button class="btn btn--ghost" @click="closeModal">Batal</button>
+              <button class="btn btn--ghost" @click="closeModal">Cancel</button>
               <button
                 class="btn btn--primary"
                 @click="confirmCOASelection"
                 :disabled="loading || tempSelectedCOA.length === 0"
               >
                 <span v-if="loading" class="spinner"></span>
-                {{ loading ? 'Loading...' : 'Konfirmasi' }}
+                {{ loading ? 'Loading...' : 'Confirm' }}
               </button>
             </div>
           </div>
@@ -367,11 +367,11 @@ const formatCurrency = (amount) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2 }).format(amount)
 
 const formatDate = (dateString) =>
-  new Date(dateString).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })
+  new Date(dateString).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })
 
 const formatDateDisplay = (dateString) => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(dateString).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 const formatDateForFilename = (dateString) => {
@@ -382,11 +382,11 @@ const formatDateForFilename = (dateString) => {
 // ── Fetch COA List ────────────────────────────────────────────────────────────
 const fetchCOAList = async () => {
   if (!dateFrom.value || !dateTo.value) {
-    errorMessage.value = 'Silakan pilih tanggal dari dan sampai terlebih dahulu!'
+    errorMessage.value = 'Please select a date from and date to first!'
     return
   }
   if (dateFrom.value > dateTo.value) {
-    errorMessage.value = 'Tanggal dari harus lebih kecil dari tanggal sampai!'
+    errorMessage.value = 'Date from must be earlier than date to!'
     return
   }
 
@@ -417,7 +417,7 @@ const fetchCOAList = async () => {
     }))
 
     if (coaList.value.length === 0) {
-      errorMessage.value = 'Tidak ada data COA yang ditemukan'
+      errorMessage.value = 'No COA data found'
       return
     }
 
@@ -425,7 +425,7 @@ const fetchCOAList = async () => {
     showModal.value = true
   } catch (err) {
     console.error(err)
-    errorMessage.value = `Gagal mengambil data: ${err.message}`
+    errorMessage.value = `Failed to fetch data: ${err.message}`
   } finally {
     loading.value = false
   }
@@ -450,7 +450,7 @@ const toggleAllCOA = (e) => {
 // ── Confirm & Fetch Transactions ──────────────────────────────────────────────
 const confirmCOASelection = async () => {
   if (tempSelectedCOA.value.length === 0) {
-    errorMessage.value = 'Pilih minimal satu COA'
+    errorMessage.value = 'Please select at least one COA'
     return
   }
 
@@ -512,11 +512,11 @@ const confirmCOASelection = async () => {
 
     closeModal()
     activeTab.value = 'result'
-    showToast('success', `Data untuk ${selectedCOAs.value.length} akun berhasil dimuat`)
+    showToast('success', `Data for ${selectedCOAs.value.length} account(s) loaded successfully`)
   } catch (err) {
     console.error(err)
-    errorMessage.value = `Gagal mengambil data transaksi: ${err.message}`
-    showToast('error', 'Gagal mengambil data transaksi')
+    errorMessage.value = `Failed to fetch transaction data: ${err.message}`
+    showToast('error', 'Failed to fetch transaction data')
   } finally {
     loading.value = false
   }
@@ -580,10 +580,10 @@ const downloadExcel = async () => {
     const ExcelJS = window.ExcelJS
 
     const workbook = new ExcelJS.Workbook()
-    workbook.creator  = 'Openbravo Financial Management'
+    workbook.creator  = 'NexERP Financial Management'
     workbook.created  = new Date()
 
-    const orgName   = 'OPENBRAVO COMPANY'
+    const orgName   = 'NexERP'
     const currency  = 'IDR'
     const yearLabel = new Date(dateFrom.value).getFullYear().toString()
     const periodLabel = `${formatDateDisplay(dateFrom.value)}  —  ${formatDateDisplay(dateTo.value)}`
@@ -694,7 +694,7 @@ const downloadExcel = async () => {
       })
 
       // ══ ROW 3: Meta value row ══
-      const r3 = ws.addRow([yearLabel, '', periodLabel, '', '', selectedCOAs.value.map(c => c.accountCode).join(', '), '', '', new Date().toLocaleDateString('id-ID'), '', ''])
+      const r3 = ws.addRow([yearLabel, '', periodLabel, '', '', selectedCOAs.value.map(c => c.accountCode).join(', '), '', '', new Date().toLocaleDateString('en-GB'), '', ''])
       r3.height = 18
       applyStyle(r3, {
         fill: solidFill(C.white),
@@ -901,10 +901,10 @@ const downloadExcel = async () => {
     a.click()
     URL.revokeObjectURL(url)
 
-    showToast('success', 'File Excel berhasil didownload')
+    showToast('success', 'Excel file downloaded successfully')
   } catch (err) {
     console.error(err)
-    showToast('error', 'Gagal membuat file Excel: ' + err.message)
+    showToast('error', 'Failed to generate Excel file: ' + err.message)
   } finally {
     downloadingExcel.value = false
   }
