@@ -13,16 +13,72 @@ const api = axios.create({
   },
 })
 
+// Error interceptor — must be registered immediately after api creation
+api.interceptors.response.use(
+  (res) => {
+    const s = res.data?.response?.status
+    if (s !== undefined && s < 0) {
+      const msg = res.data?.response?.error?.message
+      if (msg) throw new Error(msg)
+    }
+    return res
+  },
+  (err) => {
+    console.error('[VendorInvoice HTTP error]', err.response?.status, JSON.stringify(err.response?.data))
+    return Promise.reject(err)
+  }
+)
+
 const fkWrap = (val) => (val ? { id: val } : undefined)
+const today = () => new Date().toISOString().slice(0, 10)
+
 
 // ════════════════════════════════════════════════════
 // CONSTANTS
 // ════════════════════════════════════════════════════
-export const AP_INVOICE_DOCTYPE_ID = '9D40D9CF0B334B6FB4B4BDEC3A6ECAE6' // AP Invoice
+export const AP_INVOICE_DOCTYPE_ID = '7C138667263E4818AC96EBDF41557D33' // AP Invoice
 export const DEFAULT_ORGANIZATION  = 'B3FE20F490CF49989D7250C0D3341603'
 export const DEFAULT_CURRENCY      = '303'                               // IDR
 export const DEFAULT_PRICE_LIST    = '90D80A99C19046C3ADC0ED0759E3F648' // Purchase Price IDR
 export const DEFAULT_TAX_ID        = 'F3F273F648784C858549A45FF0A69AFA'
+
+// ════════════════════════════════════════════════════
+// SEQUENCE — ambil & increment nextAssignedNumber dari ADSequence
+// ════════════════════════════════════════════════════
+const SEQ_BASE = '/org.openbravo.service.json.jsonrest/ADSequence'
+
+export async function fetchNextDocumentNo() {
+  // Sequence untuk semua invoice (AR & AP) ada di satu record: DocumentNo_C_Invoice
+  const res = await api.get(SEQ_BASE, {
+    params: {
+      _where: "e.name = 'DocumentNo_C_Invoice' and e.active = true",
+      _startRow: 0,
+      _endRow: 1,
+    },
+  })
+  const seq = res.data?.response?.data?.[0] ?? null
+  if (!seq) throw new Error('Sequence DocumentNo_C_Invoice tidak ditemukan.')
+  return buildDocumentNo(seq)
+}
+
+async function buildDocumentNo(seq) {
+  const nextNo = seq.nextAssignedNumber ?? seq.currentNextSystem ?? seq.startingNo ?? 10000000
+
+  // Increment nextAssignedNumber di server agar nomor berikutnya tidak bentrok
+  await api.put(`${SEQ_BASE}/${seq.id}`, {
+    data: {
+      id:                 seq.id,
+      _entityName:        'ADSequence',
+      nextAssignedNumber: nextNo + 1,
+      currentNextSystem:  nextNo + 1,
+    },
+  })
+
+  // Format: pakai prefix/suffix dari sequence jika ada
+  const prefix = seq.prefix ?? ''
+  const suffix = seq.suffix ?? ''
+  return `${prefix}${nextNo}${suffix}`
+}
 
 // ════════════════════════════════════════════════════
 // INVOICE HEADER
@@ -54,14 +110,41 @@ export async function fetchInvoice(id) {
 }
 
 export async function createInvoice(data) {
-  const payload = buildInvoicePayload(data)
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
+
+  const orgId = xId(data.organization)  || DEFAULT_ORGANIZATION
+  const bpId  = xId(data.businessPartner)
+  const paId  = xId(data.partnerAddress)
+  const ptId  = xId(data.paymentTerms)
+  const pmId  = xId(data.paymentMethod)
+  const curId = xId(data.currency)      || DEFAULT_CURRENCY
+  const plId  = xId(data.priceList)     || DEFAULT_PRICE_LIST
+
+  // Ambil documentNo dari ADSequence terlebih dahulu
+  const documentNo = data.documentNo || await fetchNextDocumentNo()
+
+  // POST header sebagai Draft dengan documentNo yang sudah di-generate
   const res = await api.post(INV_BASE, {
     data: {
-      _entityName:    'Invoice',
-      salesTransaction: false,
-      documentStatus: 'DR',
-      documentAction: 'CO',
-      ...payload,
+      _entityName:         'Invoice',
+      salesTransaction:    false,
+      documentType:        { id: AP_INVOICE_DOCTYPE_ID },
+      transactionDocument: { id: AP_INVOICE_DOCTYPE_ID },
+      organization:        { id: orgId },
+      currency:            { id: curId },
+      priceList:           { id: plId },
+      ...(bpId && { businessPartner: { id: bpId } }),
+      ...(paId && { partnerAddress:  { id: paId } }),
+      ...(ptId && { paymentTerms:    { id: ptId } }),
+      ...(pmId && { paymentMethod:   { id: pmId } }),
+      documentCategory:    'API',
+      documentStatus:      'DR',
+      documentAction:      'CO',
+      documentNo,
+      invoiceDate:         data.invoiceDate    || today(),
+      accountingDate:      data.accountingDate || data.invoiceDate || today(),
+      ...(data.description    && { description:    data.description }),
+      ...(data.orderReference && { orderReference: data.orderReference }),
     },
   })
   const raw = res.data?.response?.data
@@ -124,23 +207,23 @@ export async function postInvoice(data) {
   const curId = getId(data.currency)      || DEFAULT_CURRENCY
   const plId  = getId(data.priceList)     || DEFAULT_PRICE_LIST
 
+  // Openbravo REST expects { id } wrapped objects for FK fields
   const res = await api.post(INV_BASE, {
     data: {
       _entityName:         'Invoice',
-      organization:        orgId,
       salesTransaction:    false,
-      documentType:        AP_INVOICE_DOCTYPE_ID,
-      transactionDocument: AP_INVOICE_DOCTYPE_ID,
-      invoiceDate:         data.invoiceDate,
-      accountingDate:      data.accountingDate || data.invoiceDate,
-      businessPartner:     bpId,
-      ...(paId && { partnerAddress: paId }),
-      currency:            curId,
-      paymentTerms:        ptId,
-      paymentMethod:       pmId,
-      priceList:           plId,
-      documentStatus:      'DR',
-      documentAction:      'CO',
+      documentType:        { id: AP_INVOICE_DOCTYPE_ID },
+      transactionDocument: { id: AP_INVOICE_DOCTYPE_ID },
+      organization:        { id: orgId },
+      currency:            { id: curId },
+      priceList:           { id: plId },
+      ...(bpId && { businessPartner: { id: bpId } }),
+      ...(paId && { partnerAddress:  { id: paId } }),
+      ...(ptId && { paymentTerms:    { id: ptId } }),
+      ...(pmId && { paymentMethod:   { id: pmId } }),
+      documentCategory:    'API',
+      invoiceDate:         data.invoiceDate    || today(),
+      accountingDate:      data.accountingDate || data.invoiceDate || today(),
       ...(data.description    && { description:    data.description }),
       ...(data.orderReference && { orderReference: data.orderReference }),
     },
@@ -159,15 +242,18 @@ function buildInvoicePayload(data) {
   return {
     documentType:        { id: AP_INVOICE_DOCTYPE_ID },
     transactionDocument: { id: transactionDocument || AP_INVOICE_DOCTYPE_ID },
+    documentCategory:    'API',
     organization:        { id: organization || DEFAULT_ORGANIZATION },
-    currency:            { id: currency    || DEFAULT_CURRENCY },
-    priceList:           { id: priceList   || DEFAULT_PRICE_LIST },
+    currency:            { id: currency     || DEFAULT_CURRENCY },
+    priceList:           { id: priceList    || DEFAULT_PRICE_LIST },
     salesTransaction:    false,
+    documentStatus:      'DR',
+    documentAction:      'CO',
     ...(documentNo      && { documentNo }),
     ...(businessPartner && { businessPartner: fkWrap(businessPartner) }),
-    ...(partnerAddress  && { partnerAddress:  fkWrap(partnerAddress) }),
-    ...(paymentTerms    && { paymentTerms:    fkWrap(paymentTerms) }),
-    ...(paymentMethod   && { paymentMethod:   fkWrap(paymentMethod) }),
+    ...(partnerAddress  && { partnerAddress:  fkWrap(partnerAddress)  }),
+    ...(paymentTerms    && { paymentTerms:    fkWrap(paymentTerms)    }),
+    ...(paymentMethod   && { paymentMethod:   fkWrap(paymentMethod)   }),
     ...(invoiceDate     && { invoiceDate, accountingDate: accountingDate || invoiceDate }),
     ...(description     && { description }),
     ...(orderReference  && { orderReference }),
@@ -193,19 +279,21 @@ export async function fetchInvoiceLines(invoiceId) {
 }
 
 export async function createInvoiceLine(invoiceId, data) {
+  // Openbravo JSON REST expects plain string IDs for InvoiceLine fields (not { id: } wrapped)
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
   const res = await api.post(LINE_BASE, {
     data: {
       _entityName:      'InvoiceLine',
       invoice:          invoiceId,
-      organization:     data.organization || DEFAULT_ORGANIZATION,
+      organization:     xId(data.organization) || DEFAULT_ORGANIZATION,
       lineNo:           data.lineNo,
       invoicedQuantity: data.invoicedQuantity,
       unitPrice:        data.unitPrice,
-      ...(data.product         && { product:         data.product }),
-      ...(data.uOM             && { uOM:             data.uOM }),
-      ...(data.tax             && { tax:             data.tax }),
-      ...(data.taxCategory     && { taxCategory:     data.taxCategory }),
-      ...(data.businessPartner && { businessPartner: data.businessPartner }),
+      ...(data.product         && { product:         xId(data.product) }),
+      ...(data.uOM             && { uOM:             xId(data.uOM) }),
+      ...(data.tax             && { tax:             xId(data.tax) }),
+      ...(data.taxCategory     && { taxCategory:     xId(data.taxCategory) }),
+      ...(data.businessPartner && { businessPartner: xId(data.businessPartner) }),
       ...(data.lineNetAmount != null && { lineNetAmount:  data.lineNetAmount }),
       ...(data.listPrice     != null && { listPrice:      data.listPrice }),
       ...(data.grossUnitPrice!= null && { grossUnitPrice: data.grossUnitPrice }),
@@ -343,87 +431,53 @@ export async function fetchUOMs() {
 // ════════════════════════════════════════════════════
 // PROCESS INVOICE (Complete / DocAction)
 // ════════════════════════════════════════════════════
-export async function runInvoiceProcess(invoiceId, invoiceData) {
-  if (invoiceData?.documentStatus !== 'DR') {
-    throw new Error(`Invoice sudah dalam status "${invoiceData?.documentStatus}", tidak bisa di-Complete.`)
-  }
-
-  // Attempt 1: Standard Openbravo process servlet
-  try {
-    const formData = new URLSearchParams({
-      inpTableId:    '318',
-      inpwindowId:   '183',
-      inpcInvoiceId: invoiceId,
-      inpdocAction:  'CO',
-      inpDocStatus:  'DR',
-      inpProcessing: 'Y',
-      processId:     '111',
-      reportId:      'C_Invoice Post',
-      Command:       'OK',
-    })
-    const r1 = await fetch(`${BASE_URL}ad_process/C_InvoicePost`, {
-      method:      'POST',
-      credentials: 'include',
-      headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData.toString(),
-    })
-    const t1 = await r1.text()
-    const isHtml1 = t1.trimStart().startsWith('<')
-    if (r1.ok && !isHtml1 && !t1.includes('Error') && !t1.includes('error')) {
-      return { status: 'ok', raw: t1 }
-    }
-  } catch (e) {
-    console.warn('[Attempt 1 ad_process failed]', e.message)
-  }
-
-  // Attempt 2: servlet C_Invoice_Post
-  try {
-    const formData2 = new URLSearchParams({
-      inpTableId: '318', inpcInvoiceId: invoiceId, inpdocAction: 'CO', Command: 'OK',
-    })
-    const r2 = await fetch(`${BASE_URL}C_Invoice_Post`, {
-      method:      'POST',
-      credentials: 'include',
-      headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData2.toString(),
-    })
-    const t2 = await r2.text()
-    if (r2.ok) return { status: 'ok', raw: t2 }
-  } catch (e) {
-    console.warn('[Attempt 2 servlet failed]', e.message)
-  }
-
-  // Attempt 3: JSON REST PUT fallback
+// ════════════════════════════════════════════════════
+// COMPLETE VIA PUT — dipanggil setelah header+lines berhasil POST
+// ════════════════════════════════════════════════════
+export async function completeInvoiceViaPUT(invoiceId, documentNo) {
   const res = await api.put(`${INV_BASE}/${invoiceId}`, {
     data: {
-      id: invoiceId, _entityName: 'Invoice',
-      documentNo: invoiceData.documentNo,
-      documentStatus: 'CO', documentAction: 'CL', processed: true,
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     documentNo,
+      documentStatus: 'CO',
+      documentAction: 'CL',
+      processed:      true,
     },
   })
   const st = res.data?.response?.status
   if (st !== undefined && st < 0) {
-    throw new Error(res.data?.response?.error?.message || 'Complete Invoice gagal di semua attempt.')
+    throw new Error(res.data?.response?.error?.message || 'Complete Invoice gagal.')
   }
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
 }
 
-// Error interceptor
-api.interceptors.response.use(
-  (res) => {
-    const s = res.data?.response?.status
-    if (s !== undefined && s < 0) {
-      const msg = res.data?.response?.error?.message
-      if (msg) throw new Error(msg)
-    }
-    return res
-  },
-  (err) => {
-    console.error('[VendorInvoice HTTP error]', err.response?.status, JSON.stringify(err.response?.data))
-    return Promise.reject(err)
+export async function runInvoiceProcess(invoiceId, invoiceData) {
+  if (invoiceData?.documentStatus !== 'DR') {
+    throw new Error(`Invoice sudah dalam status "${invoiceData?.documentStatus}", tidak bisa di-Complete.`)
   }
-)
+
+  // Complete via JSON REST PUT — set documentStatus/Action (sama dengan customer)
+  const res = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentStatus: 'CO',
+      documentAction: 'CL',
+      processed:      true,
+    },
+  })
+  const st = res.data?.response?.status
+  if (st !== undefined && st < 0) {
+    throw new Error(res.data?.response?.error?.message || 'Complete Invoice gagal.')
+  }
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+
 
 // ════════════════════════════════════════════════════
 // POST ACCOUNTING
@@ -645,9 +699,12 @@ export async function reactivateInvoice(invoiceId, invoiceData) {
   }
   const res = await api.put(`${INV_BASE}/${invoiceId}`, {
     data: {
-      id: invoiceId, _entityName: 'Invoice',
-      documentNo: invoiceData.documentNo,
-      documentStatus: 'DR', documentAction: 'CO', processed: 'N',
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentStatus: 'DR',
+      documentAction: 'CO',
+      processed:      'N',
     },
   })
   const st = res.data?.response?.status

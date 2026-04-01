@@ -12,17 +12,7 @@
           <h2 class="page-title">Customer</h2>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-          <button :class="['tab', activeTab==='list'?'tab--active':'']" @click="activeTab='list'">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            List Customers
-          </button>
-          <button :class="['tab', activeTab==='linkgl'?'tab--active':'']" @click="switchToLinkGL">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Link GL
-          </button>
-        </div>
+
 
         <!-- ══ LIST TAB ══ -->
         <div v-if="activeTab==='list'">
@@ -106,68 +96,6 @@
           </div>
         </div>
 
-        <!-- ══ LINK GL TAB ══ -->
-        <div v-if="activeTab==='linkgl'">
-          <div class="toolbar">
-            <div class="search-wrap">
-              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="glSearch" class="search-input" placeholder="Search..." />
-            </div>
-            <button class="btn btn--primary" @click="openGLCreatePage">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Link GL
-            </button>
-          </div>
-
-          <div class="table-wrap">
-            <table class="table">
-              <thead><tr>
-                <th>Code/SKU</th>
-                <th>Name Category</th>
-                <th>Account Receivable</th>
-                <th>Pre Payment</th>
-                <th class="th-action">Action</th>
-              </tr></thead>
-              <tbody>
-                <tr v-if="glLoading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-                <tr v-else-if="glError"><td colspan="5" class="td-empty td-error">{{ glError }}</td></tr>
-                <tr v-else-if="filteredGLRows.length===0"><td colspan="5" class="td-empty">No Link GL data found.</td></tr>
-                <template v-else>
-                  <tr v-for="row in filteredGLRows" :key="row.id" class="tr-data">
-                    <td><span class="code-badge">{{ row.searchKey || row['businessPartnerCategory$_identifier'] || '—' }}</span></td>
-                    <td class="td-name">{{ row['businessPartnerCategory$_identifier'] || '—' }}</td>
-                    <td class="td-secondary td-truncate">{{ row['customerReceivablesNo$_identifier'] || '—' }}</td>
-                    <td class="td-secondary td-truncate">{{ row['customerPrepayment$_identifier'] || '—' }}</td>
-                    <td class="td-action-cell">
-                      <div class="action-group">
-                        <div class="dropdown-wrap" v-click-outside="closeGLDropdown">
-                          <button class="action-btn" @click.stop="toggleGLDropdown(row.id, $event)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                          </button>
-                          <div v-if="openGLDropdown===row.id" class="dropdown-menu" :style="{top:glDropdownPos.top+'px',right:glDropdownPos.right+'px'}">
-                            <button class="dropdown-item" @click="openGLViewModal(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
-                            </button>
-                            <button class="dropdown-item" @click="openGLEditPage(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
-                            </button>
-                            <button class="dropdown-item dropdown-item--danger" @click="confirmDeleteGL(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
-                            </button>
-                            <button class="dropdown-item dropdown-item--success" @click="confirmSetGLDefault(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Default
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
     </div>
 
@@ -224,7 +152,7 @@
           </div>
           <div class="form-grid-2" style="margin-top:14px">
             <div class="form-group">
-              <label>Link GL</label>
+              <label>Business Partner Category</label>
               <select v-model="form.linkGL">
                 <option value="">Select</option>
                 <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -237,6 +165,7 @@
           </div>
           <div class="form-checks" style="margin-top:14px">
             <label class="check-label"><input type="checkbox" v-model="form.active" /> Active</label>
+            <label class="check-label"><input type="checkbox" v-model="form.taxExempt" /> Tax Exempt</label>
           </div>
         </div>
 
@@ -274,26 +203,38 @@
           </div>
         </div>
 
-        <!-- Contact Info Card -->
+        <!-- Contact Card (form + list in one card) -->
         <div class="form-card">
           <div class="form-card-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            Contact Info
+            Contact
           </div>
-          <div class="form-grid-3">
+
+          <!-- Form input: always visible -->
+          <div class="form-grid-2">
             <div class="form-group">
-              <label>Name</label>
-              <input v-model="form.contactName" placeholder="Name PIC" />
+              <label>First Name</label>
+              <input v-model="form.contactFirstName" placeholder="First name" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input v-model="form.contactLastName" placeholder="Last name" />
             </div>
             <div class="form-group">
               <label>Email</label>
-              <input v-model="form.contactEmail" placeholder="Email PIC" type="email" />
+              <input v-model="form.contactEmail" placeholder="Email" type="email" />
             </div>
             <div class="form-group">
               <label>Phone</label>
-              <input v-model="form.contactPhone" placeholder="Phone PIC" />
+              <input v-model="form.contactPhone" placeholder="Phone" />
+            </div>
+            <div class="form-group">
+              <label>Position</label>
+              <input v-model="form.contactPosition" placeholder="Position" />
             </div>
           </div>
+
+
         </div>
 
         <div v-if="formError" class="form-api-error">
@@ -312,7 +253,7 @@
     </Transition>
 
     <!-- ══════════════════════════════════════════════════════════
-         CREATE / EDIT LINK GL — FULL PAGE
+         CREATE / EDIT Business Partner Category — FULL PAGE
     ══════════════════════════════════════════════════════════ -->
     <Transition name="slide">
       <div v-if="page.show && page.type==='linkgl'" class="page-wrap">
@@ -320,10 +261,10 @@
         <div class="breadcrumb-row">
           <button class="breadcrumb-back" @click="closePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            Link GL
+            Business Partner Category
           </button>
           <span class="breadcrumb-sep">/</span>
-          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</span>
+          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Business Partner Category' : 'Edit Link GL' }}</span>
         </div>
 
         <div class="form-page-title">{{ page.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</div>
@@ -342,9 +283,9 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Name Category <span class="req">*</span></label>
+              <label>Business Partner Category <span class="req">*</span></label>
               <select v-model="glForm.businessPartnerCategory">
-                <option value="">Select category</option>
+                <option value="">Select Business Partner Category</option>
                 <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
               <span class="field-error" v-if="glFormErrors.businessPartnerCategory">{{ glFormErrors.businessPartnerCategory }}</span>
@@ -398,13 +339,8 @@
             </button>
           </div>
 
-          <div class="detail-tabs">
-            <button :class="['dtab', detailTab==='basic'?'dtab--active':'']" @click="detailTab='basic'">Basic Info</button>
-            <button :class="['dtab', detailTab==='contact'?'dtab--active':'']" @click="detailTab='contact'">Contact</button>
-          </div>
-
           <div class="modal-body">
-            <div v-if="detailTab==='basic'" class="detail-panel">
+            <div class="detail-panel">
               <div class="detail-cols">
                 <div class="detail-col">
                   <div class="detail-item">
@@ -444,7 +380,7 @@
                     <span class="detail-value">{{ viewModal.data?.description || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Link GL</span>
+                    <span class="detail-label">Business Partner Category</span>
                     <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
@@ -458,38 +394,6 @@
                   <div class="detail-item">
                     <span class="detail-label">Payment Method</span>
                     <span class="detail-value">{{ viewModal.data?.['paymentMethod$_identifier'] || '—' }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="detailTab==='contact'" class="detail-panel">
-              <div class="sub-toolbar">
-                <span class="sub-count">{{ contacts.length }} contact(s)</span>
-                <button class="btn btn--sm btn--primary" @click="openContactModal()">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                  Add Contact
-                </button>
-              </div>
-              <div v-if="contactsLoading" class="sub-loading"><div class="loading-dots"><span></span><span></span><span></span></div></div>
-              <div v-else-if="contacts.length===0" class="sub-empty">No contacts yet.</div>
-              <div v-else class="contact-cards">
-                <div v-for="ct in contacts" :key="ct.id" class="contact-card">
-                  <div class="contact-avatar">{{ initials(ct.firstName, ct.lastName) }}</div>
-                  <div class="contact-info">
-                    <div class="contact-name">{{ ct.firstName }} {{ ct.lastName }}</div>
-                    <div class="contact-meta">
-                      <span v-if="ct.email"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {{ ct.email }}</span>
-                      <span v-if="ct.phone"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> {{ ct.phone }}</span>
-                    </div>
-                  </div>
-                  <div class="contact-actions">
-                    <button class="icon-btn icon-btn--edit" @click="openContactModal(ct)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </button>
-                    <button class="icon-btn icon-btn--delete" @click="confirmDeleteContact(ct)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -511,7 +415,7 @@
       <div v-if="viewModal.show && viewModal.type==='linkgl'" class="modal-overlay" @click.self="viewModal.show=false">
         <div class="modal modal--detail">
           <div class="modal-header">
-            <h3 class="modal-title">Link GL Detail</h3>
+            <h3 class="modal-title">Business Partner Category Detail</h3>
             <button class="modal-close" @click="viewModal.show=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -577,8 +481,8 @@
             <button class="modal-close" @click="toggleModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
-            <p class="delete-text" v-if="toggleModal.customer?.active">Yakin ingin menonaktifkan <strong>{{ toggleModal.customer?.name }}</strong>?</p>
-            <p class="delete-text" v-else>Aktifkan kembali <strong>{{ toggleModal.customer?.name }}</strong>?</p>
+            <p class="delete-text" v-if="toggleModal.customer?.active">Are you sure you want to deactivate <strong>{{ toggleModal.customer?.name }}</strong>?</p>
+            <p class="delete-text" v-else>Reactivate <strong>{{ toggleModal.customer?.name }}</strong>?</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="toggleModal.show=false" :disabled="toggleLoading">Cancel</button>
@@ -600,7 +504,7 @@
             <button class="modal-close" @click="glDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Yakin ingin menghapus Link GL <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
+            <p class="delete-text">Are you sure you want to delete Link GL <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
             <div v-if="glDeleteError" class="form-api-error" style="margin-top:10px">{{ glDeleteError }}</div>
           </div>
           <div class="modal-footer">
@@ -614,72 +518,7 @@
       </div>
     </Transition>
 
-    <!-- ══ CONTACT MODAL ══ -->
-    <Transition name="fade">
-      <div v-if="contactModal.show" class="modal-overlay" @click.self="contactModal.show=false">
-        <div class="modal">
-          <div class="modal-header">
-            <h3 class="modal-title">{{ contactModal.mode==='create' ? 'Add Contact' : 'Edit Contact' }}</h3>
-            <button class="modal-close" @click="contactModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-          <div class="modal-body">
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>First Name <span class="req">*</span></label>
-                <input v-model="contactForm.firstName" placeholder="First name" :class="{'input-error':contactErrors.firstName}" />
-                <span class="field-error" v-if="contactErrors.firstName">{{ contactErrors.firstName }}</span>
-              </div>
-              <div class="form-group">
-                <label>Last Name</label>
-                <input v-model="contactForm.lastName" placeholder="Last name" />
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input v-model="contactForm.email" placeholder="Email" type="email" />
-              </div>
-              <div class="form-group">
-                <label>Phone</label>
-                <input v-model="contactForm.phone" placeholder="Phone" />
-              </div>
-              <div class="form-group">
-                <label>Position</label>
-                <input v-model="contactForm.position" placeholder="Position" />
-              </div>
-            </div>
-            <div v-if="contactError" class="form-api-error" style="margin-top:12px">{{ contactError }}</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn--ghost" @click="contactModal.show=false" :disabled="contactLoading">Cancel</button>
-            <button class="btn btn--primary" @click="submitContact" :disabled="contactLoading">
-              <span v-if="contactLoading" class="btn-spinner"></span>
-              {{ contactLoading ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
 
-    <!-- ══ CONTACT DELETE ══ -->
-    <Transition name="fade">
-      <div v-if="contactDeleteModal.show" class="modal-overlay" @click.self="contactDeleteModal.show=false">
-        <div class="modal modal--sm">
-          <div class="modal-header">
-            <h3 class="modal-title">Delete Contact</h3>
-            <button class="modal-close" @click="contactDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-          <div class="modal-body">
-            <p class="delete-text">Yakin ingin menghapus kontak <strong>{{ contactDeleteModal.contact?.firstName }} {{ contactDeleteModal.contact?.lastName }}</strong>?</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn--ghost" @click="contactDeleteModal.show=false" :disabled="contactDeleteLoading">Cancel</button>
-            <button class="btn btn--danger" @click="doDeleteContact" :disabled="contactDeleteLoading">
-              <span v-if="contactDeleteLoading" class="btn-spinner"></span>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
 
     <!-- ══ TOAST ══ -->
     <Transition name="toast">
@@ -698,7 +537,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import {
   fetchCustomers, createCustomer, updateCustomer,
   fetchPaymentTerms, fetchPriceLists, fetchPaymentMethods,
-  fetchContacts, fetchContactsForIds, createContact, updateContact, deleteContact,
+  fetchContacts, fetchContactsForIds, createContact, updateContact,
   fetchBPLocations, fetchBPLocationsForIds,
   createLocation, updateLocation,
   createBPLocation, updateBPLocation, deleteBPLocation,
@@ -770,7 +609,7 @@ async function load() {
     const list = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : [])
     totalRows.value = res.totalRows ?? list.length
     customers.value = await enrichWithLocation(list)
-  } catch (e) { error.value = 'Gagal memuat data customer.' }
+  } catch (e) { error.value = 'Failed to load customer data.' }
   finally { loading.value = false }
 }
 
@@ -863,7 +702,7 @@ async function loadGLRows() {
   try {
     glRows.value = await fetchBPCategoryAccounts()
   } catch (e) {
-    glError.value = 'Gagal memuat data Link GL.'
+    glError.value = 'Failed to load Link GL data.'
   } finally { glLoading.value = false }
 }
 
@@ -933,24 +772,24 @@ function openGLViewModal(row) {
 async function submitGLForm() {
   Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
   if (!glForm.businessPartnerCategory) {
-    glFormErrors.businessPartnerCategory = 'Category wajib dipilih'; return
+    glFormErrors.businessPartnerCategory = 'Category is required'; return
   }
   if (!glForm.accountingSchema) {
-    glFormErrors.accountingSchema = 'Accounting Schema wajib dipilih'; return
+    glFormErrors.accountingSchema = 'Accounting Schema is required'; return
   }
   glFormLoading.value = true; glFormError.value = null
   try {
     if (page.mode === 'create') {
       await createBPCategoryAccount(glForm)
-      showToast('Link GL berhasil dibuat')
+      showToast('Link GL created successfully')
     } else {
       await updateBPCategoryAccount(page.data.id, glForm)
-      showToast('Link GL berhasil diupdate')
+      showToast('Link GL updated successfully')
     }
     page.show = false
     await loadGLRows()
   } catch (e) {
-    glFormError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
+    glFormError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'An error occurred.'
   } finally { glFormLoading.value = false }
 }
 
@@ -968,11 +807,11 @@ async function doDeleteGL() {
   glDeleteLoading.value = true; glDeleteError.value = null
   try {
     await deleteBPCategoryAccount(glDeleteModal.row.id)
-    showToast('Link GL dihapus')
+    showToast('Link GL deleted')
     glDeleteModal.show = false
     await loadGLRows()
   } catch (e) {
-    glDeleteError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Gagal menghapus.'
+    glDeleteError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Failed to delete.'
   } finally { glDeleteLoading.value = false }
 }
 
@@ -980,12 +819,12 @@ async function doDeleteGL() {
 async function confirmSetGLDefault(row) {
   closeGLDropdown()
   try {
-    showToast('Memproses...')
+    showToast('Processing...')
     // Mark this category as default via updating the category
     await loadGLRows()
-    showToast('Default berhasil diset')
+    showToast('Default set successfully')
   } catch (e) {
-    showToast('Gagal set default', 'error')
+    showToast('Failed to set default', 'error')
   }
 }
 
@@ -1000,10 +839,12 @@ const formErrors  = reactive({})
 const defaultForm = () => ({
   searchKey: '', name: '', description: '', province: '', city: '',
   streetAddress: '', otherDetails: '', postalCode: '', linkGL: '',
-  contactName: '', contactEmail: '', contactPhone: '',
+  contactFirstName: '', contactLastName: '', contactEmail: '', contactPhone: '', contactPosition: '',
+  contactId: null, // ADUser id when editing contact
+  taxExempt: false,
   paymentTerms: '', priceList: '', paymentMethod: '',
   creditLimit: 0, active: true,
-  bpLocationId: null, locationId: null // <-- Tambahan untuk mode edit
+  bpLocationId: null, locationId: null
 })
 const form = reactive(defaultForm())
 
@@ -1019,7 +860,9 @@ function openEditPage(c) {
     province: '', city: c.cityName !== '—' ? c.cityName : '', 
     streetAddress: c.streetAddress ?? '', otherDetails: c.otherDetails ?? '',
     postalCode: c.postalCode ?? '', linkGL: extractId(c.businessPartnerCategory),
-    contactName: '', contactEmail: '', contactPhone: c.phone !== '—' ? c.phone : '',
+    contactFirstName: '', contactLastName: '', contactEmail: '', contactPhone: '', contactPosition: '',
+    contactId: null,
+    taxExempt: c.taxExempt ?? false,
     paymentTerms:  extractId(c.paymentTerms),
     priceList:     extractId(c.priceList),
     paymentMethod: extractId(c.paymentMethod),
@@ -1029,16 +872,17 @@ function openEditPage(c) {
   })
   Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; page.type='customer'; page.mode='edit'; page.data=c; page.show=true
+  loadFirstContact(c.id)
 }
 function closePage() { if (formLoading.value || glFormLoading.value) return; page.show=false }
 
 function validateForm() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  if (!form.searchKey.trim())  formErrors.searchKey    = 'Code wajib diisi'
-  if (!form.name.trim())       formErrors.name         = 'Nama customer wajib diisi'
-  if (!form.priceList)         formErrors.priceList    = 'Price List wajib dipilih'
-  if (!form.paymentMethod)     formErrors.paymentMethod= 'Payment Method wajib dipilih'
-  if (!form.paymentTerms)      formErrors.paymentTerms = 'Payment Terms wajib dipilih'
+  if (!form.searchKey.trim())  formErrors.searchKey    = 'Code is required'
+  if (!form.name.trim())       formErrors.name         = 'Customer name is required'
+  if (!form.priceList)         formErrors.priceList    = 'Price List is required'
+  if (!form.paymentMethod)     formErrors.paymentMethod= 'Payment Method is required'
+  if (!form.paymentTerms)      formErrors.paymentTerms = 'Payment Terms is required'
   return Object.keys(formErrors).length === 0
 }
 
@@ -1050,6 +894,7 @@ async function submitForm() {
       searchKey: form.searchKey.trim(), name: form.name.trim(),
       description: form.description.trim() || null,
       creditLimit: Number(form.creditLimit) || 0, active: form.active,
+      taxExempt: form.taxExempt ?? false,
       ...(form.linkGL        && { businessPartnerCategory: form.linkGL }),
       ...(form.paymentTerms  && { paymentTerms:  form.paymentTerms }),
       ...(form.priceList     && { priceList:     form.priceList }),
@@ -1073,8 +918,8 @@ async function submitForm() {
 
         // 3. Create BusinessPartnerLocation
         const bpLocPayload = {
-          name: form.city || 'Utama',
-          phone: form.contactPhone || null,
+          name: form.city || 'Main',
+          phone: null,
           businessPartner: newBp.id,
           locationAddress: newLoc.id,
           invoiceToAddress: true,
@@ -1085,13 +930,26 @@ async function submitForm() {
         await createBPLocation(bpLocPayload)
       }
 
-      showToast('Customer dan Location berhasil dibuat')
+      // 4. Create ADUser (first contact) if contact data is provided
+      if (form.contactFirstName && form.contactFirstName.trim()) {
+        await createContact({
+          firstName:       form.contactFirstName.trim(),
+          lastName:        form.contactLastName.trim() || null,
+          name:            `${form.contactFirstName.trim()} ${form.contactLastName.trim()}`.trim(),
+          email:           form.contactEmail.trim()    || null,
+          phone:           form.contactPhone.trim()    || null,
+          position:        form.contactPosition.trim() || null,
+          businessPartner: newBp.id,
+        })
+      }
+
+      showToast('Customer and location created successfully')
       currentPage.value = 1; load()
     } else {
-      // Mode Edit: 1. Update BusinessPartner
+      // Edit mode: 1. Update BusinessPartner
       await updateCustomer(page.data.id, bpPayload)
 
-      // 2. Update atau Create Location
+      // 2. Update or Create Location
       if (form.streetAddress || form.city || form.province || form.postalCode) {
         const locPayload = {
           addressLine1: form.streetAddress || '-',
@@ -1102,11 +960,11 @@ async function submitForm() {
         }
 
         if (form.locationId && form.bpLocationId) {
-          // Jika sebelumnya SUDAH PUNYA alamat -> UPDATE
+          // If address already exists -> UPDATE
           await updateLocation(form.locationId, locPayload)
           const bpLocPayload = {
-            name: form.city || 'Utama',
-            phone: form.contactPhone || null,
+            name: form.city || 'Main',
+            phone: null,
             businessPartner: page.data.id,
             locationAddress: form.locationId,
             invoiceToAddress: true,
@@ -1116,11 +974,11 @@ async function submitForm() {
           }
           await updateBPLocation(form.bpLocationId, bpLocPayload)
         } else {
-          // Jika sebelumnya KOSONG lalu sekarang diisi -> CREATE
+          // If address was empty and now filled -> CREATE
           const newLoc = await createLocation(locPayload)
           const bpLocPayload = {
-            name: form.city || 'Utama',
-            phone: form.contactPhone || null,
+            name: form.city || 'Main',
+            phone: null,
             businessPartner: page.data.id,
             locationAddress: newLoc.id,
             invoiceToAddress: true,
@@ -1131,12 +989,31 @@ async function submitForm() {
           await createBPLocation(bpLocPayload)
         }
       }
-      showToast('Customer berhasil diupdate')
+
+      // 3. Update or Create Contact if contact data is provided
+      if (form.contactFirstName && form.contactFirstName.trim()) {
+        const contactPayload = {
+          firstName:       form.contactFirstName.trim(),
+          lastName:        form.contactLastName.trim() || null,
+          name:            `${form.contactFirstName.trim()} ${form.contactLastName.trim()}`.trim(),
+          email:           form.contactEmail.trim()    || null,
+          phone:           form.contactPhone.trim()    || null,
+          position:        form.contactPosition.trim() || null,
+          businessPartner: page.data.id,
+        }
+        if (form.contactId) {
+          await updateContact(form.contactId, contactPayload)
+        } else {
+          await createContact(contactPayload)
+        }
+      }
+
+      showToast('Customer updated successfully')
       load()
     }
     page.show = false
   } catch (e) {
-    formError.value = e.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
+    formError.value = e.response?.data?.response?.error?.message ?? e.message ?? 'An error occurred.'
   } finally { formLoading.value = false }
 }
 
@@ -1149,22 +1026,20 @@ async function doToggle() {
   try {
     const newActive = !toggleModal.customer.active
     await updateCustomer(toggleModal.customer.id, { searchKey: toggleModal.customer.searchKey, name: toggleModal.customer.name, active: newActive })
-    showToast(newActive ? 'Customer diaktifkan' : 'Customer dinonaktifkan')
+    showToast(newActive ? 'Customer activated' : 'Customer deactivated')
     toggleModal.show=false; load()
-  } catch (e) { showToast(e.response?.data?.response?.error?.message ?? 'Gagal mengubah status', 'error'); toggleModal.show=false }
+  } catch (e) { showToast(e.response?.data?.response?.error?.message ?? 'Failed to change status', 'error'); toggleModal.show=false }
   finally { toggleLoading.value=false }
 }
 
 // ── View Modal ───────────────────────────────────────────────
 const viewModal      = reactive({ show: false, data: null, type: 'customer' })
-const detailTab      = ref('basic')
 const primaryAddress = ref('')
 
 async function openViewModal(c) {
   closeDropdown()
-  viewModal.type='customer'; viewModal.data = c; viewModal.show = true; detailTab.value = 'basic'
+  viewModal.type='customer'; viewModal.data = c; viewModal.show = true
   primaryAddress.value = ''
-  loadContacts(c.id)
   try {
     const locs = await fetchBPLocations(c.id)
     if (locs.length) primaryAddress.value = locs[0]['locationAddress$_identifier'] || ''
@@ -1177,55 +1052,21 @@ function editFromView() {
 }
 
 // ── Contacts ─────────────────────────────────────────────────
-const contacts        = ref([])
-const contactsLoading = ref(false)
-async function loadContacts(bpId) {
-  contactsLoading.value=true
-  try { contacts.value = await fetchContacts(bpId) }
-  catch (e) { contacts.value=[] }
-  finally { contactsLoading.value=false }
-}
-
-const contactModal       = reactive({ show: false, mode: 'create', id: null })
-const contactLoading     = ref(false)
-const contactError       = ref(null)
-const contactErrors      = reactive({})
-const contactForm        = reactive({ firstName:'', lastName:'', email:'', phone:'', position:'' })
-const contactDeleteModal = reactive({ show: false, contact: null })
-const contactDeleteLoading = ref(false)
-
-function openContactModal(ct=null) {
-  contactError.value=null; Object.keys(contactErrors).forEach(k => delete contactErrors[k])
-  if (ct) {
-    Object.assign(contactForm, { firstName:ct.firstName??'', lastName:ct.lastName??'', email:ct.email??'', phone:ct.phone??'', position:ct.position??'' })
-    contactModal.mode='edit'; contactModal.id=ct.id
-  } else {
-    Object.assign(contactForm, { firstName:'', lastName:'', email:'', phone:'', position:'' })
-    contactModal.mode='create'; contactModal.id=null
-  }
-  contactModal.show=true
-}
-async function submitContact() {
-  Object.keys(contactErrors).forEach(k => delete contactErrors[k])
-  if (!contactForm.firstName.trim()) { contactErrors.firstName='First name wajib diisi'; return }
-  contactLoading.value=true; contactError.value=null
+// Load first contact and prefill form fields
+async function loadFirstContact(bpId) {
   try {
-    const payload = { firstName:contactForm.firstName.trim(), lastName:contactForm.lastName.trim()||null, name:`${contactForm.firstName.trim()} ${contactForm.lastName.trim()}`.trim(), email:contactForm.email.trim()||null, phone:contactForm.phone.trim()||null, position:contactForm.position.trim()||null, businessPartner:viewModal.data?.id }
-    if (contactModal.mode==='create') { await createContact(payload); showToast('Contact berhasil ditambahkan') }
-    else { await updateContact(contactModal.id, payload); showToast('Contact berhasil diupdate') }
-    contactModal.show=false; await loadContacts(viewModal.data?.id)
-  } catch (e) { contactError.value = e.message ?? 'Terjadi kesalahan.' }
-  finally { contactLoading.value=false }
+    const list = await fetchContacts(bpId)
+    if (list.length) {
+      const ct = list[0]
+      form.contactFirstName = ct.firstName ?? ''
+      form.contactLastName  = ct.lastName  ?? ''
+      form.contactEmail     = ct.email     ?? ''
+      form.contactPhone     = ct.phone     ?? ''
+      form.contactPosition  = ct.position  ?? ''
+      form.contactId        = ct.id
+    }
+  } catch (e) {}
 }
-function confirmDeleteContact(ct) { contactDeleteModal.contact=ct; contactDeleteModal.show=true }
-async function doDeleteContact() {
-  contactDeleteLoading.value=true
-  try { await deleteContact(contactDeleteModal.contact.id); showToast('Contact dihapus'); contactDeleteModal.show=false; await loadContacts(viewModal.data?.id) }
-  catch (e) { showToast(e.message??'Gagal menghapus', 'error'); contactDeleteModal.show=false }
-  finally { contactDeleteLoading.value=false }
-}
-
-function initials(first, last) { return `${(first?.[0]||'').toUpperCase()}${(last?.[0]||'').toUpperCase()}` || '?' }
 
 onMounted(() => { load(); loadLookups() })
 </script>
@@ -1391,23 +1232,6 @@ onMounted(() => { load(); loadLookups() })
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; }
 .status-pill--active { background: #f0fdf4; color: #16a34a; }
 .status-pill--inactive { background: #fff1f2; color: var(--danger); }
-
-/* ── Contact cards ────────────────────────────────────── */
-.sub-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.sub-count { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-.sub-loading { display: flex; justify-content: center; padding: 32px; }
-.sub-empty { text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px; }
-.contact-cards { display: flex; flex-direction: column; gap: 8px; }
-.contact-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); }
-.contact-avatar { width: 36px; height: 36px; background: var(--accent-light); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-.contact-info { flex: 1; min-width: 0; }
-.contact-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.contact-meta { display: flex; gap: 12px; margin-top: 2px; }
-.contact-meta span { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
-.contact-actions { display: flex; gap: 6px; }
-.icon-btn { width: 28px; height: 28px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
-.icon-btn--edit { background: #f0fdf4; color: #16a34a; } .icon-btn--edit:hover { background: #dcfce7; }
-.icon-btn--delete { background: #fff1f2; color: var(--danger); } .icon-btn--delete:hover { background: #ffe4e6; }
 
 /* ── Delete confirm ───────────────────────────────────── */
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); margin: 0; }

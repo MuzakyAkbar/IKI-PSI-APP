@@ -8,7 +8,6 @@
           <p class="page-subtitle">Laporan Posisi Keuangan (Neraca)</p>
         </div>
 
-        <!-- ══ FILTER PANEL ══ -->
         <div class="filter-panel">
           <div class="filter-section">
             <div class="filter-section-title">Parameter Laporan</div>
@@ -38,7 +37,6 @@
             </div>
           </div>
 
-          <!-- Filter Lanjutan -->
           <div class="filter-section">
             <div class="filter-section-title adv-toggle" @click="showAdvanced = !showAdvanced">
               Filter Lanjutan
@@ -79,7 +77,6 @@
             </div>
           </div>
 
-          <!-- Actions -->
           <div class="filter-actions">
             <button class="btn btn--search" :disabled="loading" @click="runSearch">
               <span v-if="loading" class="spinner"></span>
@@ -110,15 +107,12 @@
           </div>
         </div>
 
-        <!-- ══ ERROR ══ -->
         <div v-if="error" class="tb-error">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           {{ error }}
         </div>
 
-        <!-- ══ RESULTS ══ -->
         <div v-if="searched && !loading">
-          <!-- Summary Cards -->
           <div class="summary-cards">
             <div class="summary-card">
               <span class="summary-label">Per Tanggal</span>
@@ -147,10 +141,8 @@
             </div>
           </div>
 
-          <!-- ══ PRINT AREA ══ -->
           <div id="bs-print-area">
 
-            <!-- Print Header (hanya tampil saat print) -->
             <div class="print-header">
               <div class="print-company">Balance Sheet</div>
               <div class="print-subtitle">Laporan Posisi Keuangan (Neraca)</div>
@@ -158,7 +150,6 @@
               <div class="print-currency">(Dalam Rupiah)</div>
             </div>
 
-            <!-- ══ TABLE ══ -->
             <div class="table-wrap" v-if="reportGroups.length > 0">
               <table class="table bs-table" id="bs-table">
                 <thead>
@@ -171,7 +162,6 @@
                 </thead>
                 <tbody>
 
-                  <!-- ── ASET ── -->
                   <template v-if="assetGroups.length > 0">
                     <tr class="tr-category-header">
                       <td colspan="99">
@@ -215,7 +205,6 @@
                     </tr>
                   </template>
 
-                  <!-- ── LIABILITAS ── -->
                   <template v-if="liabGroups.length > 0">
                     <tr class="tr-spacer"><td colspan="99"></td></tr>
                     <tr class="tr-category-header">
@@ -260,7 +249,6 @@
                     </tr>
                   </template>
 
-                  <!-- ── EKUITAS ── -->
                   <template v-if="equityGroups.length > 0">
                     <tr class="tr-spacer"><td colspan="99"></td></tr>
                     <tr class="tr-category-header">
@@ -308,14 +296,12 @@
                 </tbody>
                 <tfoot>
                   <tr class="tr-spacer"><td colspan="99"></td></tr>
-                  <!-- Total Liabilitas + Ekuitas -->
                   <tr class="tr-liab-equity">
                     <td class="liab-equity-label">TOTAL LIABILITAS DAN EKUITAS</td>
                     <td class="tb-num liab-equity-val">{{ fmt(totalLiabilitas + totalEkuitas) }}</td>
                     <td v-if="showRef" class="tb-num liab-equity-val">{{ fmt(refTotalLiabilitas + refTotalEkuitas) }}</td>
                     <td v-if="showRef" class="tb-num liab-equity-diff">{{ fmt((totalLiabilitas + totalEkuitas) - (refTotalLiabilitas + refTotalEkuitas)) }}</td>
                   </tr>
-                  <!-- Balance check -->
                   <tr class="tr-balance-check" :class="isBalanced ? 'tr-balanced' : 'tr-unbalanced'">
                     <td class="balance-check-label" colspan="2">
                       <span v-if="isBalanced">✓ Neraca Seimbang &nbsp;(Aset = Liabilitas + Ekuitas)</span>
@@ -332,8 +318,7 @@
               <p>Tidak ada data neraca untuk parameter yang dipilih.</p>
             </div>
 
-          </div><!-- end print-area -->
-        </div>
+          </div></div>
 
         <div v-else-if="loading" class="tb-empty-state">
           <div class="loading-dots"><span></span><span></span><span></span></div>
@@ -487,151 +472,273 @@ function printReport() {
 }
 
 // ════════════════════════════════════════════════════
-// EXPORT EXCEL
+// EXPORT EXCEL (Menggunakan ExcelJS & Template Kustom)
 // ════════════════════════════════════════════════════
 async function exportXlsx() {
   exporting.value = 'xlsx'
   try {
-    const XLSXmod = await import('xlsx')
-    const XLSX = XLSXmod.default || XLSXmod
-    const { utils, writeFile } = XLSX
+    // Load ExcelJS from CDN
+    await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')
+    const ExcelJS = window.ExcelJS
 
-    const wb = utils.book_new()
-    const ws = {}
-    let r = 0
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'NexERP System' // Sesuaikan jika perlu
+    workbook.created = new Date()
 
-    const col1    = formatDate(filters.value.asOfDate)
-    const col2    = showRef.value ? formatDate(filters.value.asOfRefDate) : null
-    const numCols = col2 ? 3 : 1
+    const ws = workbook.addWorksheet('Balance Sheet', {
+      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 },
+      views: [{ state: 'frozen', xSplit: 0, ySplit: 6 }], // Bekukan baris header
+    })
 
-    ws['!merges'] = []
-    const setMerge = (r1, c1, r2, c2) => ws['!merges'].push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } })
-
-    // ── Title rows
-    ws['A1'] = { v: 'BALANCE SHEET', s: { font: { bold: true, sz: 13 }, alignment: { horizontal: 'center' } } }
-    setMerge(0, 0, 0, numCols)
-    ws['A2'] = { v: 'Laporan Posisi Keuangan (Neraca)', s: { font: { sz: 10 }, alignment: { horizontal: 'center' } } }
-    setMerge(1, 0, 1, numCols)
-    ws['A3'] = { v: `Per Tanggal: ${col1}`, s: { font: { sz: 10 }, alignment: { horizontal: 'center' } } }
-    setMerge(2, 0, 2, numCols)
-    ws['A4'] = { v: '(Dalam Rupiah)', s: { font: { italic: true, sz: 9 }, alignment: { horizontal: 'center' } } }
-    setMerge(3, 0, 3, numCols)
-    r = 4
-
-    const numFmt   = '#,##0.00'
-    const hdrStyle = { font: { bold: true, sz: 10, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1E3A8A' } }, alignment: { horizontal: 'center' } }
-    ws[`A${r+1}`] = { v: 'Akun', s: hdrStyle }
-    ws[`B${r+1}`] = { v: col1,   s: { ...hdrStyle, alignment: { horizontal: 'right' } } }
-    if (col2) {
-      ws[`C${r+1}`] = { v: col2,      s: { ...hdrStyle, alignment: { horizontal: 'right' } } }
-      ws[`D${r+1}`] = { v: 'Selisih', s: { ...hdrStyle, alignment: { horizontal: 'right' } } }
+    const hasRef = showRef.value
+    const col1Date = formatDate(filters.value.asOfDate)
+    const col2Date = hasRef ? formatDate(filters.value.asOfRefDate) : ''
+    
+    // ── Columns Setup ──
+    if (hasRef) {
+      ws.columns = [
+        { key: 'akun', width: 45 },
+        { key: 'bal1', width: 22 },
+        { key: 'bal2', width: 22 },
+        { key: 'diff', width: 22 },
+      ]
+    } else {
+      ws.columns = [
+        { key: 'akun', width: 55 },
+        { key: 'bal1', width: 30 },
+      ]
     }
-    r++
 
-    const numStyle  = (bold = false, rgb = '0F172A') => ({ font: { sz: 10, bold, color: { rgb } }, numFmt, alignment: { horizontal: 'right' }, border: { bottom: { style: 'thin', color: { rgb: 'E2E8F0' } } } })
-    const textStyle = (bold = false, rgb = '0F172A', bg = null) => {
-      const s = { font: { sz: 10, bold, color: { rgb } }, alignment: { horizontal: 'left', indent: bold ? 0 : 1 }, border: { bottom: { style: 'thin', color: { rgb: 'E2E8F0' } } } }
-      if (bg) s.fill = { fgColor: { rgb: bg } }
-      return s
-    }
-    const addCategoryHeader = (label, bgRgb, textRgb) => {
-      r++
-      const cols = col2 ? 4 : 2
-      const s = { font: { bold: true, sz: 11, color: { rgb: textRgb } }, fill: { fgColor: { rgb: bgRgb } }, alignment: { horizontal: 'left' } }
-      ws[`A${r}`] = { v: label, s }
-      for (let c = 1; c < cols; c++) ws[`${String.fromCharCode(65+c)}${r}`] = { v: '', s }
-      setMerge(r-1, 0, r-1, cols-1)
-    }
-    const addGroupHeader = (label, desc, bgRgb, textRgb) => {
-      r++
-      const cols = col2 ? 4 : 2
-      const s = { font: { bold: true, sz: 10, color: { rgb: textRgb } }, fill: { fgColor: { rgb: bgRgb } }, alignment: { horizontal: 'left', indent: 1 } }
-      ws[`A${r}`] = { v: desc ? `${label} — ${desc}` : label, s }
-      for (let c = 1; c < cols; c++) ws[`${String.fromCharCode(65+c)}${r}`] = { v: '', s }
-      setMerge(r-1, 0, r-1, cols-1)
-    }
-    const addLine = (kode, nama, amt, refAmt) => {
-      r++
-      ws[`A${r}`] = { v: `${kode}  ${nama}`, s: textStyle(false) }
-      ws[`B${r}`] = { v: amt, s: numStyle() }
-      if (col2) { ws[`C${r}`] = { v: refAmt || 0, s: numStyle() }; ws[`D${r}`] = { v: (amt||0)-(refAmt||0), s: numStyle() } }
-    }
-    const addGroupTotal = (label, total, refTotal, bgRgb, textRgb) => {
-      r++
-      ws[`A${r}`] = { v: label, s: textStyle(true, textRgb, bgRgb) }
-      ws[`B${r}`] = { v: total, s: { ...numStyle(true, textRgb), fill: { fgColor: { rgb: bgRgb } } } }
-      if (col2) { ws[`C${r}`] = { v: refTotal||0, s: { ...numStyle(true, textRgb), fill: { fgColor: { rgb: bgRgb } } } }; ws[`D${r}`] = { v: (total||0)-(refTotal||0), s: { ...numStyle(true, textRgb), fill: { fgColor: { rgb: bgRgb } } } } }
-    }
-    const addSectionTotal = (label, total, refTotal, bgRgb, textRgb) => {
-      r++
-      const s = { font: { bold: true, sz: 10, color: { rgb: textRgb } }, fill: { fgColor: { rgb: bgRgb } }, numFmt, alignment: { horizontal: 'right' }, border: { top: { style: 'medium', color: { rgb: textRgb } }, bottom: { style: 'medium', color: { rgb: textRgb } } } }
-      const ls = { font: { bold: true, sz: 10, color: { rgb: textRgb } }, fill: { fgColor: { rgb: bgRgb } }, alignment: { horizontal: 'left' }, border: { top: { style: 'medium', color: { rgb: textRgb } }, bottom: { style: 'medium', color: { rgb: textRgb } } } }
-      ws[`A${r}`] = { v: label, s: ls }
-      ws[`B${r}`] = { v: total, s }
-      if (col2) { ws[`C${r}`] = { v: refTotal||0, s }; ws[`D${r}`] = { v: (total||0)-(refTotal||0), s } }
-    }
-    const addSpacer = () => { r++; ws[`A${r}`] = { v: '' } }
+    const lastCol = hasRef ? 'D' : 'B'
+    const numCols = hasRef ? 4 : 2
 
-    // ═ ASET
-    addCategoryHeader('ASET', 'DBEAFE', '1E3A8A')
-    for (const g of assetGroups.value) {
-      addGroupHeader(g.name, g.description, 'EFF6FF', '1D4ED8')
-      for (const n of g.nodes) addLine(n.searchKey, n.name, n.balance, n.refBalance)
-      addGroupTotal(`Total ${g.name}`, g.total, g.refTotal, 'DBEAFE', '1E40AF')
+    // ── Color Palette ──
+    const C = {
+      titleBg:    '1E3A8A', titleFg:    'FFFFFF',
+      metaBg:     'F8FAFC', metaLabel:  '64748B', metaVal: '1E293B',
+      hdrBg:      '2563EB', hdrFg:      'FFFFFF',
+      
+      assetCatBg: 'DBEAFE', assetCatFg: '1E3A8A', assetGrpBg: 'EFF6FF', assetGrpFg: '1D4ED8',
+      liabCatBg:  'FEE2E2', liabCatFg:  '991B1B', liabGrpBg:  'FFF1F2', liabGrpFg:  'DC2626',
+      eqCatBg:    'D1FAE5', eqCatFg:    '065F46', eqGrpBg:    'ECFDF5', eqGrpFg:    '059669',
+      
+      secTotalBg: '1E3A8A', secTotalFg: 'FFFFFF',
+      border:     'CBD5E1', white:      'FFFFFF', text: '374151'
     }
-    addSectionTotal('TOTAL ASET', totalAset.value, refTotalAset.value, '1E3A8A', 'FFFFFF')
-    addSpacer()
 
-    // ═ LIABILITAS
-    addCategoryHeader('LIABILITAS', 'FEE2E2', '991B1B')
-    for (const g of liabGroups.value) {
-      addGroupHeader(g.name, g.description, 'FFF1F2', 'DC2626')
-      for (const n of g.nodes) addLine(n.searchKey, n.name, n.balance, n.refBalance)
-      addGroupTotal(`Total ${g.name}`, g.total, g.refTotal, 'FECACA', '991B1B')
+    // ── Helpers ──
+    const numFmt = '#,##0.00'
+    const solidFill = (argb) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } })
+    const thinBorder = () => ({
+      top: { style: 'thin', color: { argb: C.border } }, bottom: { style: 'thin', color: { argb: C.border } },
+      left: { style: 'thin', color: { argb: C.border } }, right: { style: 'thin', color: { argb: C.border } }
+    })
+    const applyStyle = (row, style) => {
+      row.eachCell({ includeEmpty: true }, cell => {
+        if (style.fill) cell.fill = style.fill
+        if (style.font) cell.font = { ...cell.font, ...style.font }
+        if (style.border) cell.border = style.border
+        if (style.alignment) cell.alignment = style.alignment
+      })
     }
-    addSectionTotal('TOTAL LIABILITAS', totalLiabilitas.value, refTotalLiabilitas.value, '991B1B', 'FFFFFF')
-    addSpacer()
 
-    // ═ EKUITAS
-    addCategoryHeader('EKUITAS', 'D1FAE5', '065F46')
-    for (const g of equityGroups.value) {
-      addGroupHeader(g.name, g.description, 'ECFDF5', '059669')
-      for (const n of g.nodes) addLine(n.searchKey, n.name, n.balance, n.refBalance)
-      addGroupTotal(`Total ${g.name}`, g.total, g.refTotal, 'A7F3D0', '065F46')
+    // ══ ROW 1 & 2: Main Title ══
+    const r1 = ws.addRow(['BALANCE SHEET'])
+    ws.mergeCells(`A1:${lastCol}1`)
+    r1.height = 24
+    applyStyle(r1, {
+      fill: solidFill(C.titleBg),
+      font: { name: 'Calibri', bold: true, size: 14, color: { argb: C.titleFg } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    })
+
+    const r2 = ws.addRow(['Laporan Posisi Keuangan (Neraca)'])
+    ws.mergeCells(`A2:${lastCol}2`)
+    r2.height = 18
+    applyStyle(r2, {
+      fill: solidFill(C.titleBg),
+      font: { name: 'Calibri', bold: false, size: 11, color: { argb: 'BFDBFE' } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+    })
+
+    // ══ ROW 3 & 4: Meta Info ══
+    const r3 = ws.addRow(hasRef ? ['Per Tanggal', 'Pembanding', 'Mata Uang', ''] : ['Per Tanggal', 'Mata Uang'])
+    r3.height = 16
+    applyStyle(r3, { fill: solidFill(C.metaBg), font: { name: 'Calibri', bold: true, size: 9, color: { argb: C.metaLabel } }, alignment: { vertical: 'middle', horizontal: 'center' }, border: thinBorder() })
+
+    const r4 = ws.addRow(hasRef ? [col1Date, col2Date, 'IDR (Rupiah)', ''] : [col1Date, 'IDR (Rupiah)'])
+    r4.height = 20
+    applyStyle(r4, { fill: solidFill(C.white), font: { name: 'Calibri', bold: true, size: 11, color: { argb: C.metaVal } }, alignment: { vertical: 'middle', horizontal: 'center' }, border: thinBorder() })
+    if (hasRef) ws.mergeCells('C4:D4')
+
+    // ══ ROW 5: Spacer ══
+    const r5 = ws.addRow([])
+    r5.height = 8
+
+    // ══ ROW 6: Table Headers ══
+    const headers = hasRef ? ['Akun', col1Date, col2Date, 'Selisih'] : ['Akun', col1Date]
+    const r6 = ws.addRow(headers)
+    r6.height = 22
+    applyStyle(r6, {
+      fill: solidFill(C.hdrBg),
+      font: { name: 'Calibri', bold: true, size: 11, color: { argb: C.hdrFg } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border: thinBorder()
+    })
+    ws.getCell('A6').alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+
+    let rowIdx = 7
+
+    // ── Function to render sections ──
+    const addCategoryHdr = (name, bg, fg) => {
+      const row = ws.addRow([name])
+      ws.mergeCells(`A${rowIdx}:${lastCol}${rowIdx}`)
+      row.height = 22
+      applyStyle(row, { fill: solidFill(bg), font: { name: 'Calibri', bold: true, size: 11, color: { argb: fg } }, alignment: { vertical: 'middle', horizontal: 'left', indent: 1 }, border: thinBorder() })
+      rowIdx++
     }
-    addSectionTotal('TOTAL EKUITAS', totalEkuitas.value, refTotalEkuitas.value, '065F46', 'FFFFFF')
-    addSpacer()
 
-    // ═ TOTAL LIABILITAS & EKUITAS
-    addSectionTotal('TOTAL LIABILITAS DAN EKUITAS',
-      totalLiabilitas.value + totalEkuitas.value,
-      refTotalLiabilitas.value + refTotalEkuitas.value,
-      '1E3A8A', 'FFFFFF'
-    )
+    const addGroupHdr = (name, desc, bg, fg) => {
+      const title = desc ? `${name} — ${desc}` : name
+      const row = ws.addRow([title])
+      ws.mergeCells(`A${rowIdx}:${lastCol}${rowIdx}`)
+      row.height = 18
+      applyStyle(row, { fill: solidFill(bg), font: { name: 'Calibri', bold: true, size: 10, color: { argb: fg } }, alignment: { vertical: 'middle', horizontal: 'left', indent: 2 }, border: thinBorder() })
+      rowIdx++
+    }
 
-    // ═ BALANCE CHECK ROW
-    r++
-    const selisih   = totalAset.value - (totalLiabilitas.value + totalEkuitas.value)
-    const balanced  = Math.abs(selisih) < 1
-    const chkBg     = balanced ? 'DCFCE7' : 'FEE2E2'
-    const chkText   = balanced ? '166534' : '991B1B'
-    const chkLabel  = balanced
-      ? '✓ Neraca Seimbang  (Aset = Liabilitas + Ekuitas)'
-      : `✗ Neraca Tidak Seimbang  —  Selisih: ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2 }).format(Math.abs(selisih))}`
-    const chkStyle  = { font: { bold: true, sz: 10, color: { rgb: chkText } }, fill: { fgColor: { rgb: chkBg } }, alignment: { horizontal: 'center' } }
-    const chkCols   = col2 ? 4 : 2
-    ws[`A${r}`] = { v: chkLabel, s: chkStyle }
-    for (let ci = 1; ci < chkCols; ci++) ws[`${String.fromCharCode(65 + ci)}${r}`] = { v: '', s: chkStyle }
-    ws['!merges'].push({ s: { r: r - 1, c: 0 }, e: { r: r - 1, c: chkCols - 1 } })
+    const addNodeLine = (node) => {
+      const data = hasRef 
+        ? [`${node.searchKey}  ${node.name}`, node.balance || 0, node.refBalance || 0, (node.balance || 0) - (node.refBalance || 0)]
+        : [`${node.searchKey}  ${node.name}`, node.balance || 0]
+      const row = ws.addRow(data)
+      row.height = 16
+      applyStyle(row, { fill: solidFill(C.white), font: { name: 'Calibri', size: 10, color: { argb: C.text } }, alignment: { vertical: 'middle' }, border: thinBorder() })
+      
+      ws.getCell(`A${rowIdx}`).alignment = { vertical: 'middle', horizontal: 'left', indent: 3 }
+      ;['B','C','D'].slice(0, numCols - 1).forEach((col, i) => {
+        const cell = ws.getCell(`${col}${rowIdx}`)
+        cell.numFmt = numFmt
+        cell.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+        // Warnai selisih jika ada
+        if (col === 'D') {
+          const val = (node.balance || 0) - (node.refBalance || 0)
+          if (val > 0) cell.font = { name: 'Calibri', size: 10, color: { argb: '1D4ED8' } } // Biru
+          else if (val < 0) cell.font = { name: 'Calibri', size: 10, color: { argb: 'DC2626' } } // Merah
+        }
+      })
+      rowIdx++
+    }
 
-    ws['!cols'] = [{ wch: 46 }, { wch: 20 }, ...(col2 ? [{ wch: 20 }, { wch: 18 }] : [])]
-    ws['!rows'] = [{ hpt: 22 }, { hpt: 14 }, { hpt: 14 }, { hpt: 12 }]
-    ws['!ref']  = `A1:${col2 ? 'D' : 'B'}${r}`
+    const addGroupTot = (name, total, refTotal, bg, fg) => {
+      const data = hasRef ? [`Total ${name}`, total || 0, refTotal || 0, (total || 0) - (refTotal || 0)] : [`Total ${name}`, total || 0]
+      const row = ws.addRow(data)
+      row.height = 18
+      applyStyle(row, { fill: solidFill(bg), font: { name: 'Calibri', bold: true, size: 10, color: { argb: fg } }, alignment: { vertical: 'middle' }, border: thinBorder() })
+      ws.getCell(`A${rowIdx}`).alignment = { vertical: 'middle', horizontal: 'left', indent: 2 }
+      ;['B','C','D'].slice(0, numCols - 1).forEach(col => {
+        ws.getCell(`${col}${rowIdx}`).numFmt = numFmt
+        ws.getCell(`${col}${rowIdx}`).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      })
+      rowIdx++
+    }
 
-    utils.book_append_sheet(wb, ws, 'Balance Sheet')
-    writeFile(wb, bsFileName('xlsx'))
-  } catch (e) { alert('Export Excel gagal: ' + e.message) }
-  finally { exporting.value = '' }
+    const addSectionTot = (name, total, refTotal, bg, fg) => {
+      const data = hasRef ? [name, total || 0, refTotal || 0, (total || 0) - (refTotal || 0)] : [name, total || 0]
+      const row = ws.addRow(data)
+      row.height = 22
+      applyStyle(row, { fill: solidFill(bg), font: { name: 'Calibri', bold: true, size: 11, color: { argb: fg } }, alignment: { vertical: 'middle' }, border: thinBorder() })
+      ws.getCell(`A${rowIdx}`).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+      ;['B','C','D'].slice(0, numCols - 1).forEach(col => {
+        ws.getCell(`${col}${rowIdx}`).numFmt = numFmt
+        ws.getCell(`${col}${rowIdx}`).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 }
+      })
+      
+      const spacer = ws.addRow([])
+      spacer.height = 8
+      rowIdx += 2 // Termasuk spacer
+    }
+
+    // ── RENDER DATA ──
+
+    // 1. ASET
+    if (assetGroups.value.length > 0) {
+      addCategoryHdr('ASET', C.assetCatBg, C.assetCatFg)
+      assetGroups.value.forEach(g => {
+        addGroupHdr(g.name, g.description, C.assetGrpBg, C.assetGrpFg)
+        g.nodes.forEach(n => addNodeLine(n))
+        addGroupTot(g.name, g.total, g.refTotal, C.assetCatBg, C.assetCatFg)
+      })
+      addSectionTot('TOTAL ASET', totalAset.value, refTotalAset.value, C.secTotalBg, C.secTotalFg)
+    }
+
+    // 2. LIABILITAS
+    if (liabGroups.value.length > 0) {
+      addCategoryHdr('LIABILITAS', C.liabCatBg, C.liabCatFg)
+      liabGroups.value.forEach(g => {
+        addGroupHdr(g.name, g.description, C.liabGrpBg, C.liabGrpFg)
+        g.nodes.forEach(n => addNodeLine(n))
+        addGroupTot(g.name, g.total, g.refTotal, C.liabCatBg, C.liabCatFg)
+      })
+      addSectionTot('TOTAL LIABILITAS', totalLiabilitas.value, refTotalLiabilitas.value, C.liabCatBg, C.white)
+    }
+
+    // 3. EKUITAS
+    if (equityGroups.value.length > 0) {
+      addCategoryHdr('EKUITAS', C.eqCatBg, C.eqCatFg)
+      equityGroups.value.forEach(g => {
+        addGroupHdr(g.name, g.description, C.eqGrpBg, C.eqGrpFg)
+        g.nodes.forEach(n => addNodeLine(n))
+        addGroupTot(g.name, g.total, g.refTotal, C.eqCatBg, C.eqCatFg)
+      })
+      addSectionTot('TOTAL EKUITAS', totalEkuitas.value, refTotalEkuitas.value, C.eqCatBg, C.eqCatFg)
+    }
+
+    // ── TOTAL LIABILITAS & EKUITAS ──
+    const totLiabEq = totalLiabilitas.value + totalEkuitas.value
+    const refTotLiabEq = refTotalLiabilitas.value + refTotalEkuitas.value
+    addSectionTot('TOTAL LIABILITAS DAN EKUITAS', totLiabEq, refTotLiabEq, C.secTotalBg, C.secTotalFg)
+
+    // ── BALANCE CHECK BAR ──
+    const selisih = totalAset.value - totLiabEq
+    const isBal = Math.abs(selisih) < 1
+    const chkBg = isBal ? 'DCFCE7' : 'FEE2E2' // Green or Red
+    const chkFg = isBal ? '166534' : '991B1B'
+    const chkMsg = isBal 
+      ? '✓ NERACA SEIMBANG  (Aset = Liabilitas + Ekuitas)' 
+      : `✗ NERACA TIDAK SEIMBANG  —  Selisih: ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2 }).format(Math.abs(selisih))}`
+
+    const rCheck = ws.addRow([chkMsg])
+    ws.mergeCells(`A${rowIdx}:${lastCol}${rowIdx}`)
+    rCheck.height = 24
+    applyStyle(rCheck, {
+      fill: solidFill(chkBg),
+      font: { name: 'Calibri', bold: true, size: 11, color: { argb: chkFg } },
+      alignment: { vertical: 'middle', horizontal: 'center' },
+      border: {
+        top: { style: 'medium', color: { argb: chkFg } },
+        bottom: { style: 'medium', color: { argb: chkFg } },
+        left: { style: 'medium', color: { argb: chkFg } },
+        right: { style: 'medium', color: { argb: chkFg } }
+      }
+    })
+
+    // ── Download File ──
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = bsFileName('xlsx') // menggunakan fungsi bsFileName yang sudah ada
+    a.click()
+    URL.revokeObjectURL(url)
+
+  } catch (e) { 
+    alert('Export Excel gagal: ' + e.message) 
+    console.error(e)
+  } finally { 
+    exporting.value = '' 
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -787,6 +894,14 @@ async function exportPdf() {
   } catch (e) { alert('Export PDF gagal: ' + e.message) }
   finally { exporting.value = '' }
 }
+
+// ── Load external script helper ───────────────────────────────────────────────
+const loadScript = (src) => new Promise((resolve, reject) => {
+  if (document.querySelector(`script[src="${src}"]`)) { resolve(); return }
+  const s = document.createElement('script')
+  s.src = src; s.onload = resolve; s.onerror = reject
+  document.head.appendChild(s)
+})
 </script>
 
 <style scoped>

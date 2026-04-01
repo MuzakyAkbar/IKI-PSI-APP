@@ -519,13 +519,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import {
-  fetchAllInvoices, fetchInvoice, createInvoice, updateInvoice, deleteInvoice,
+  fetchAllInvoices, fetchInvoice, createInvoice, updateInvoice, deleteInvoice, postInvoice,
   fetchInvoiceLines, createInvoiceLine, updateInvoiceLine, deleteInvoiceLine,
   fetchAccountingFacts,
   fetchVendors, fetchVendorById, fetchPartnerLocations,
   fetchPaymentTerms, fetchPaymentTermLines, fetchPaymentMethods,
   fetchPriceLists, fetchProducts, fetchUOMs,
-  runInvoiceProcess, postAccountingProcess,
+  completeInvoiceViaPUT, runInvoiceProcess, postAccountingProcess,
   unpostAccountingProcess, reactivateInvoice, voidInvoice,
   DEFAULT_TAX_ID,
   DEFAULT_ORGANIZATION,
@@ -916,44 +916,51 @@ async function saveInvoice() {
   if (!form.value.businessPartner) { formError.value = 'Vendor wajib dipilih.'; return }
   if (!form.value.paymentTerms)    { formError.value = 'Payment Term tidak ditemukan. Pastikan vendor memiliki Payment Term.'; return }
   saving.value = true; formError.value = ''
+  let invoiceId = null
   try {
-    let invoiceId
     if (isEdit.value) {
       await updateInvoice(editId.value, form.value)
       invoiceId = editId.value
     } else {
+      // Step 1: POST header
       const created = await createInvoice(form.value)
       invoiceId = created?.id
+      if (!invoiceId) throw new Error('Gagal membuat invoice — ID tidak diterima dari server.')
     }
 
-    if (invoiceId) {
-      for (let idx = 0; idx < lines.value.length; idx++) {
-        const line = lines.value[idx]
-        if (!line.product) continue
-        const linePayload = {
-          lineNo:           (idx + 1) * 10,
-          product:          line.product,
-          invoicedQuantity: line.invoicedQuantity,
-          uOM:              line.uOM,
-          unitPrice:        line.unitPrice,
-          listPrice:        line.unitPrice,
-          lineNetAmount:    line.lineNetAmount,
-          grossUnitPrice:   line.unitPrice,
-          discount:         0,
-          tax:              line.tax || DEFAULT_TAX_ID,
-          businessPartner:  form.value.businessPartner,
-          organization:     DEFAULT_ORGANIZATION,
-        }
-        if (line.id) await updateInvoiceLine(line.id, linePayload)
-        else         await createInvoiceLine(invoiceId, linePayload)
+    // Step 2: POST semua lines
+    for (let idx = 0; idx < lines.value.length; idx++) {
+      const line = lines.value[idx]
+      if (!line.product) continue
+      const linePayload = {
+        lineNo:           (idx + 1) * 10,
+        product:          line.product,
+        invoicedQuantity: line.invoicedQuantity,
+        uOM:              line.uOM,
+        unitPrice:        line.unitPrice,
+        listPrice:        line.unitPrice,
+        lineNetAmount:    line.lineNetAmount,
+        grossUnitPrice:   line.unitPrice,
+        discount:         0,
+        tax:              line.tax || DEFAULT_TAX_ID,
+        businessPartner:  form.value.businessPartner,
+        organization:     DEFAULT_ORGANIZATION,
       }
+      if (line.id) await updateInvoiceLine(line.id, linePayload)
+      else         await createInvoiceLine(invoiceId, linePayload)
     }
 
     showFormModal.value = false
-    showToast(isEdit.value ? 'Invoice updated!' : 'Invoice created!')
+    showToast(isEdit.value ? 'Invoice updated!' : 'Invoice berhasil dibuat sebagai Draft!')
     await loadInvoices()
   } catch (e) {
-    formError.value = e?.response?.data?.response?.error?.message || e.message
+    if (invoiceId && !isEdit.value) {
+      showFormModal.value = false
+      showToast('Invoice tersimpan, ada error di lines. Silakan cek dan edit.', 'warning')
+      await loadInvoices()
+    } else {
+      formError.value = e?.response?.data?.response?.error?.message || e.message || 'Gagal menyimpan invoice.'
+    }
   } finally { saving.value = false }
 }
 
@@ -972,6 +979,62 @@ async function doCompleteInvoice() {
   } catch (e) {
     showToast(e?.message || 'Failed to complete invoice', 'error')
   } finally { completing.value = false }
+}
+
+// ── create invoice baru via postInvoice (POST header + lines)
+async function doPostInvoice() {
+  if (!viewRow.value) return
+  posting.value = true
+  try {
+    const created = await postInvoice(viewRow.value)
+    const newInvoiceId = created?.id
+    if (!newInvoiceId) throw new Error('Gagal mendapatkan ID invoice baru.')
+
+    const getId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
+    const bpId  = getId(viewRow.value.businessPartner)
+    const orgId = getId(viewRow.value.organization) || DEFAULT_ORGANIZATION
+    const currentLines = viewLines.value.length > 0 ? viewLines.value : await fetchInvoiceLines(viewRow.value.id)
+    for (let idx = 0; idx < currentLines.length; idx++) {
+      const l = currentLines[idx]
+      const prodId = getId(l.product)
+      if (!prodId) continue
+      await createInvoiceLine(newInvoiceId, {
+        lineNo:           (idx + 1) * 10,
+        product:          prodId,
+        invoicedQuantity: l.invoicedQuantity || 1,
+        uOM:              getId(l.uOM),
+        unitPrice:        l.unitPrice || 0,
+        listPrice:        l.unitPrice || 0,
+        lineNetAmount:    l.lineNetAmount || 0,
+        grossUnitPrice:   l.unitPrice || 0,
+        discount:         0,
+        tax:              getId(l.tax) || DEFAULT_TAX_ID,
+        businessPartner:  bpId,
+        organization:     orgId,
+      })
+    }
+    showToast('Invoice created successfully!')
+    showViewModal.value = false
+    await loadInvoices()
+  } catch (e) {
+    showToast(e?.response?.data?.response?.error?.message || e.message || 'Failed to create invoice', 'error')
+  } finally { posting.value = false }
+}
+
+// ── void invoice
+async function doVoidInvoice() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  voiding.value = true
+  try {
+    const updated = await voidInvoice(invoiceId, viewRow.value)
+    showToast('Invoice voided.')
+    await loadInvoices()
+    const refreshed = rows.value.find(r => r.id === invoiceId)
+    viewRow.value = refreshed || updated
+  } catch (e) {
+    showToast(e?.message || 'Failed to void invoice', 'error')
+  } finally { voiding.value = false }
 }
 
 // ── post accounting

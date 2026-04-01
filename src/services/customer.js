@@ -507,6 +507,7 @@ export async function fetchBPLocationsForIds(idsInClause) {
 // BP LOCATION — POST (create)
 // ==============================
 export async function createBPLocation(data) {
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
   const payload = {
     data: {
       _entityName: 'BusinessPartnerLocation',
@@ -521,8 +522,8 @@ export async function createBPLocation(data) {
       payFromAddress: data.payFromAddress ?? true,
       remitToAddress: data.remitToAddress ?? true,
       taxLocation: false,
-      businessPartner: data.businessPartner,
-      locationAddress: data.locationAddress,
+      businessPartner: { id: xId(data.businessPartner) },
+      locationAddress: { id: xId(data.locationAddress) },
     },
   }
   const res = await api.post(BPLOC_REST, payload)
@@ -535,6 +536,7 @@ export async function createBPLocation(data) {
 // BP LOCATION — PUT (update)
 // ==============================
 export async function updateBPLocation(id, data) {
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
   const payload = {
     data: {
       id,
@@ -550,8 +552,8 @@ export async function updateBPLocation(id, data) {
       payFromAddress: data.payFromAddress ?? true,
       remitToAddress: data.remitToAddress ?? true,
       taxLocation: false,
-      businessPartner: data.businessPartner,
-      locationAddress: data.locationAddress,
+      businessPartner: { id: xId(data.businessPartner) },
+      locationAddress: { id: xId(data.locationAddress) },
     },
   }
   const res = await api.put(`${BPLOC_REST}/${id}`, payload)

@@ -24,16 +24,6 @@ export const DEFAULT_PAYMETHOD_ID   = '075FF4E8F87E448F9E4E3828F1E91180' // Tran
 
 // ════════════════════════════════════════════════════
 // PAYMENT HEADER (FIN_Payment)
-// Kolom kunci: Fin_Financial_Account_ID -> "account" di JSON
-//              Fin_Paymentmethod_ID     -> "paymentMethod"
-//              C_Bpartner_ID            -> "businessPartner"
-//              Paymentdate              -> "paymentDate"
-//              DocumentNo               -> "documentNo"
-//              Referenceno              -> "referenceNo"
-//              Status                   -> "status"  (list: RPAP, RDNC, RPVD, RPAE)
-//              Generated_Credit         -> "generatedCredit"
-//              Used_Credit              -> "usedCredit"
-//              Writeoffamt              -> "writeOffAmt"
 // ════════════════════════════════════════════════════
 const PAY_BASE = '/org.openbravo.service.json.jsonrest/FIN_Payment'
 
@@ -61,13 +51,6 @@ export async function fetchPayment(id) {
   return Array.isArray(raw) ? raw[0] : raw
 }
 
-/**
- * Buat Payment Header.
- * FIX: field "account" (Fin_Financial_Account_ID) — field JSON yang benar
- *      "paymentMethod" (Fin_Paymentmethod_ID)
- *      "writeOffAmt" (Writeoffamt) eksplisit 0
- *      "generatedCredit" (Generated_Credit) eksplisit 0
- */
 export async function createPaymentHeader(data) {
   const res = await api.post(PAY_BASE, {
     data: {
@@ -86,33 +69,38 @@ export async function createPaymentHeader(data) {
       writeOffAmt:     0,
       generatedCredit: 0,
       usedCredit:      0,
-      ...(data.referenceNo && { referenceNo: data.referenceNo }),
-      ...(data.description && { description: data.description }),
+      ...(data.referenceNo  && { referenceNo:  data.referenceNo }),
+      ...(data.description  && { description:  data.description }),
     },
   })
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
 }
 
+// FIX #5: handle dua format key (financialAccount dari form, account dari viewRow)
 export async function updatePaymentHeader(id, data) {
+  const finAccId = data.financialAccount ?? data.account
   const res = await api.put(`${PAY_BASE}/${id}`, {
     data: {
       id,
-      _entityName: 'FIN_Payment',
-      ...(data.referenceNo  !== undefined && { referenceNo:  data.referenceNo }),
-      ...(data.description  !== undefined && { description:  data.description }),
-      ...(data.paymentDate  !== undefined && { paymentDate:  data.paymentDate }),
-      ...(data.amount       !== undefined && { amount:       data.amount }),
+      _entityName:      'FIN_Payment',
+      ...(data.referenceNo        !== undefined && { referenceNo:      data.referenceNo }),
+      ...(data.description        !== undefined && { description:      data.description }),
+      ...(data.paymentDate        !== undefined && { paymentDate:      data.paymentDate }),
+      ...(data.amount             !== undefined && { amount:           data.amount }),
+      ...(data.status             !== undefined && { status:           data.status }),
+      ...(data.processed          !== undefined && { processed:        data.processed }),
+      ...(data.processProcedure   !== undefined && { processProcedure: data.processProcedure }),
+      ...(finAccId                !== undefined && { account:          finAccId }),
+      ...(data.paymentMethod      !== undefined && { paymentMethod:    data.paymentMethod }),
+      ...(data.writeOffAmt        !== undefined && { writeOffAmt:      data.writeOffAmt }),
     },
   })
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
 }
 
-/**
- * Soft-delete: set active=false.
- * Hanya bisa jika status masih RPAP (Awaiting Payment).
- */
+// Soft-delete: set active=false. Hanya jika status masih RPAP.
 export async function deletePaymentHeader(id) {
   const res = await api.put(`${PAY_BASE}/${id}`, {
     data: { id, _entityName: 'FIN_Payment', active: false },
@@ -129,7 +117,7 @@ export async function searchBusinessPartners(q) {
   const s = q.trim().replace(/'/g, "''")
   const res = await api.get(BP_BASE, {
     params: {
-      _where:    `e.customer = true and (upper(e.name) like upper('%${s}%') or upper(e.searchKey) like upper('%${s}%'))`,
+      _where:    `e.customer = true and e.active = true and (upper(e.name) like upper('%${s}%') or upper(e.searchKey) like upper('%${s}%'))`,
       _startRow: 0,
       _endRow:   30,
       _orderBy:  'e.name asc',
@@ -140,66 +128,50 @@ export async function searchBusinessPartners(q) {
 
 // ════════════════════════════════════════════════════
 // OUTSTANDING INVOICES
-// Query Invoice dengan status 'CO' (Completed) yang belum lunas.
-// Gunakan FIN_Payment_Schedule untuk mendapat scheduleId.
+// FIX #1 & #2: outstandingAmount diambil dari FIN_Payment_Schedule.outstanding (bukan grandTotal-totalPaid)
 // ════════════════════════════════════════════════════
 const INV_BASE_PAY = '/org.openbravo.service.json.jsonrest/Invoice'
 
-/**
- * Fetch outstanding invoices milik customer.
- * FIX: Filter outstanding sekarang berdasarkan outstandingAmount dari FIN_Payment_Schedule,
- *      bukan grandTotalAmount - totalPaid (karena totalPaid kadang null).
- *      Field yang di-map: grandTotalAmount, dueDate, outstandingAmount, scheduleId.
- */
 export async function fetchOutstandingInvoices(businessPartnerId) {
   const invRes = await api.get(INV_BASE_PAY, {
     params: {
-      _where:    `e.businessPartner.id = '${businessPartnerId}' and e.salesTransaction = true and e.documentStatus = 'CO'`,
+      _where:    `e.businessPartner.id = '${businessPartnerId}' and e.salesTransaction = true and e.documentStatus = 'CO' and e.paymentComplete = false`,
       _startRow: 0,
       _endRow:   200,
       _orderBy:  'e.invoiceDate asc',
     },
   })
   const invRows = invRes.data?.response?.data ?? []
+  if (!invRows.length) return []
 
-  // Filter: hanya yang ada outstanding
-  const outstanding = invRows.filter(r => {
-    const grand = Number(r.grandTotalAmount) || 0
-    const paid  = Number(r.totalPaid) || 0
-    return grand > paid
-  })
-
-  if (!outstanding.length) return []
-
-  // Resolve scheduleId dari FIN_Payment_Schedule
-  const invoiceIds = outstanding.map(r => r.id)
+  // FIX: Resolve scheduleId DAN outstandingAmount dari FIN_Payment_Schedule
+  const invoiceIds = invRows.map(r => r.id)
   const scheduleMap = await resolveScheduleIdsDirectly(invoiceIds)
 
-  return outstanding.map(r => {
-    const grand = Number(r.grandTotalAmount) || 0
-    const paid  = Number(r.totalPaid) || 0
-    return {
-      ...r,
-      _type: 'invoice',
-      outstandingAmount: grand - paid,
-      scheduleId: scheduleMap[r.id] ?? null,
-      orderReference: r['order$documentNo'] || null,
-    }
-  })
+  // Filter: hanya invoice yang punya outstanding > 0 di schedule
+  return invRows
+    .map(r => {
+      const sched = scheduleMap[r.id]
+      // Fallback ke grandTotal - totalPaid jika schedule tidak ditemukan
+      const grand = Number(r.grandTotalAmount) || 0
+      const paid  = Number(r.totalPaid) || 0
+      const outstandingAmount = sched
+        ? sched.outstandingAmount
+        : Math.max(0, grand - paid)
+      if (outstandingAmount <= 0) return null
+      return {
+        ...r,
+        _type:             'invoice',
+        outstandingAmount,
+        scheduleId:        sched?.scheduleId ?? null,
+        orderReference:    r['order$documentNo'] || null,
+      }
+    })
+    .filter(Boolean)
 }
 
-/**
- * Fetch outstanding orders untuk customer tertentu.
- *
- * Strategi dua tahap (Openbravo tidak support deep-path di _where):
- * 1. Query Order entity — filter by businessPartner.id, salesTransaction=true,
- *    documentStatus='CO' (Completed), dan grandTotalAmount > 0.
- * 2. Resolve FIN_Payment_Schedule per order ID untuk cek outstandingAmount
- *    (field `outstanding` di FIN_Payment_Schedule).
- */
 export async function fetchOutstandingOrders(businessPartnerId) {
   try {
-    // Step 1 — ambil completed sales orders untuk BP ini
     const orderRes = await api.get(
       '/org.openbravo.service.json.jsonrest/Order',
       {
@@ -215,7 +187,6 @@ export async function fetchOutstandingOrders(businessPartnerId) {
     const orders = orderRes.data?.response?.data ?? []
     if (!orders.length) return []
 
-    // Filter: hanya order yang belum lunas (grandTotalAmount > totalPaid)
     const unpaid = orders.filter(o => {
       const grand = Number(o.grandTotalAmount) || 0
       const paid  = Number(o.totalPaid) || 0
@@ -223,7 +194,6 @@ export async function fetchOutstandingOrders(businessPartnerId) {
     })
     if (!unpaid.length) return []
 
-    // Step 2 — resolve FIN_Payment_Schedule per order
     const orderIds = unpaid.map(o => o.id)
     const idList   = orderIds.map(id => `'${id}'`).join(',')
 
@@ -241,35 +211,42 @@ export async function fetchOutstandingOrders(businessPartnerId) {
     )
     const schedRows = schedRes.data?.response?.data ?? []
 
-    // Build map: orderId → schedule (ambil yang outstanding > 0)
     const schedMap = {}
     for (const s of schedRows) {
       const oid = typeof s.order === 'object' ? s.order?.id : s.order
       if (!oid) continue
-      const outstanding = Number(s.outstanding) || Number(s.amount) || 0
+      // FIX: gunakan field `outstanding` dari schedule, bukan amount
+      // Cek semua kemungkinan nama field outstanding
+      const rawOutstanding =
+        s.outstanding       !== undefined ? s.outstanding :
+        s.outstandingAmount !== undefined ? s.outstandingAmount :
+        s.pendingAmount     !== undefined ? s.pendingAmount :
+        null
+      const outstanding = rawOutstanding !== null
+        ? Math.max(0, Number(rawOutstanding) || 0)
+        : Math.max(0, Number(s.amount) || 0)
       if (outstanding > 0 && !schedMap[oid]) {
         schedMap[oid] = { scheduleId: s.id, dueDate: s.dueDate, outstandingAmount: outstanding }
       }
     }
 
-    // Jika tidak ada schedule sama sekali, fallback ke order amount - totalPaid
     return unpaid
       .map(o => {
         const sched = schedMap[o.id]
         const grand = Number(o.grandTotalAmount) || 0
         const paid  = Number(o.totalPaid) || 0
-        const outstanding = sched ? sched.outstandingAmount : (grand - paid)
+        const outstanding = sched ? sched.outstandingAmount : Math.max(0, grand - paid)
         if (outstanding <= 0) return null
         return {
           id:                o.id,
           _type:             'order',
           scheduleId:        sched?.scheduleId || null,
-          documentNo:        null,           // order tidak punya invoice no
+          documentNo:        null,
           invoiceDate:       o.orderDate || null,
           dueDate:           sched?.dueDate || null,
           grandTotalAmount:  grand,
           outstandingAmount: outstanding,
-          orderReference:    o.documentNo,   // Order No. tampil di kolom Order No.
+          orderReference:    o.documentNo,
         }
       })
       .filter(Boolean)
@@ -279,10 +256,9 @@ export async function fetchOutstandingOrders(businessPartnerId) {
   }
 }
 
-/**
- * Resolve FIN_Payment_Schedule.id untuk setiap invoice.
- * Entity: FIN_Payment_Schedule, relasi: e.invoice.id
- */
+// resolveScheduleIdsDirectly: return { invoiceId: { scheduleId, outstandingAmount } }
+// Tidak pakai _selectedProperties agar semua field dikembalikan OB —
+// beberapa versi OB tidak mengembalikan field tertentu saat _selectedProperties dipakai.
 async function resolveScheduleIdsDirectly(invoiceIds) {
   if (!invoiceIds.length) return {}
   const idList = invoiceIds.map(id => `'${id}'`).join(',')
@@ -296,6 +272,7 @@ async function resolveScheduleIdsDirectly(invoiceIds) {
           _startRow: 0,
           _endRow:   invoiceIds.length * 5,
           _orderBy:  'e.dueDate asc',
+          // Tidak pakai _selectedProperties agar OB return semua field
         },
       }
     )
@@ -305,48 +282,35 @@ async function resolveScheduleIdsDirectly(invoiceIds) {
       return {}
     }
     const rows = res.data?.response?.data ?? []
-    console.info('[paymentIn] FIN_Payment_Schedule rows found:', rows.length)
     for (const r of rows) {
       const invId = typeof r.invoice === 'object' ? r.invoice?.id : r.invoice
-      if (invId && !map[invId]) map[invId] = r.id
+      if (!invId || map[invId]) continue
+
+      // Cek semua kemungkinan nama field outstanding di berbagai versi OB.
+      // Operator ?? tidak cukup karena Number(undefined) = NaN (bukan null/undefined).
+      const rawOutstanding =
+        r.outstanding       !== undefined ? r.outstanding :
+        r.outstandingAmount !== undefined ? r.outstandingAmount :
+        r.pendingAmount     !== undefined ? r.pendingAmount :
+        null
+
+      // Jika tidak ada field outstanding sama sekali, fallback ke amount (total tagihan schedule)
+      const outstandingAmount = rawOutstanding !== null
+        ? Math.max(0, Number(rawOutstanding) || 0)
+        : Math.max(0, Number(r.amount) || 0)
+
+      map[invId] = { scheduleId: r.id, outstandingAmount }
     }
   } catch (e) {
     console.warn('[paymentIn] resolveScheduleIds failed:', e.message)
   }
-  console.info('[paymentIn] scheduleMap:', map)
   return map
 }
 
 // ════════════════════════════════════════════════════
-// PAYMENT LINES — baris FIN_Payment_ScheduleDetail
-// Kolom kunci di FIN_Payment_ScheduleDetail:
-//   FIN_Payment_Detail_ID       -> "paymentDetails" (link ke parent)
-//   FIN_Payment_Schedule_Invoice-> "invoicePaymentSchedule"
-//   FIN_Payment_Schedule_Order  -> "orderPaymentSchedule"
-//   Amount                      -> "amount"
-//   Writeoffamt                 -> "writeOffAmt"
-//   InvoiceAmount               -> "invoiceAmount"
-//   ExpectedAmount              -> "expectedAmount"
-//   DueDate                     -> "dueDate"
-//   C_Bpartner_ID               -> "businessPartner"
-//   Isinvoicepaid               -> "invoicePaid"
-//   Iscanceled                  -> "canceled"
-//   EM_APRM_FinancialAccount    -> "aPRMFinancialAccount"
-//   EM_APRM_PaymentMethod       -> "aPRMPaymentMethod"
+// PAYMENT LINES — FIN_Payment_ScheduleDetail
 // ════════════════════════════════════════════════════
-
-/**
- * Fetch payment lines (FIN_Payment_ScheduleDetail) untuk satu payment.
- *
- * Strategi dua tahap:
- * 1. Query ScheduleDetail dengan _selectedProperties agar Openbravo menyertakan
- *    nested fields invoice (documentNo, invoiceDate, grandTotalAmount, dueDate).
- * 2. Jika nested fields masih kosong (Openbravo kadang tidak support semua path),
- *    lakukan secondary fetch ke FIN_Payment_Schedule menggunakan invoicePaymentSchedule IDs
- *    lalu join hasilnya untuk dapat invoice documentNo dan invoiceDate.
- */
 export async function fetchPaymentLines(paymentId) {
-  // Step 1 — query ScheduleDetail dengan _selectedProperties
   const res = await api.get(
     '/org.openbravo.service.json.jsonrest/FIN_Payment_ScheduleDetail',
     {
@@ -384,33 +348,24 @@ export async function fetchPaymentLines(paymentId) {
   const rows = res.data?.response?.data ?? []
   if (!rows.length) return []
 
-  // Petakan dulu dari nested properties (dengan fallback _identifier parsing)
   let lines = rows.map(r => {
     let documentNo   = r['invoicePaymentSchedule$invoice$documentNo'] || null
     let invoiceDate  = r['invoicePaymentSchedule$invoice$invoiceDate'] || null
     let grandTotal   = r['invoicePaymentSchedule$invoice$grandTotalAmount'] ?? null
 
-    // Cek apakah ini order-based payment (punya orderPaymentSchedule tapi tidak punya invoicePaymentSchedule)
     const hasOrder   = !!(r.orderPaymentSchedule || r['orderPaymentSchedule$order$documentNo'])
     const orderDocNo = r['orderPaymentSchedule$order$documentNo'] || null
     const orderDate  = r['orderPaymentSchedule$order$orderDate'] || null
 
-    // Parse invoicePaymentSchedule$_identifier sebagai fallback:
-    // format: "1000022 - 27-03-2026 - 25000.00"  (documentNo - date - amount)
-    // atau FIN_Payment_Schedule _identifier: "11-04-2026 - 0.00" (date - outstandingAmount)
     const invSchedIdentifier = r['invoicePaymentSchedule$_identifier'] || ''
     if (invSchedIdentifier && (!documentNo || !invoiceDate)) {
       const parts = invSchedIdentifier.split(' - ')
-      // If first part looks like a document number (not a date), use it
       if (parts.length >= 3 && !/^\d{2}-\d{2}-\d{4}$/.test(parts[0].trim())) {
         if (!documentNo)  documentNo  = parts[0].trim()
         if (!invoiceDate) invoiceDate = parts[1].trim()
         if (grandTotal == null) grandTotal = parseFloat((parts[2] || '').replace(/,/g, '')) || 0
       }
     }
-
-    // If still missing invoiceDate, try FIN_Payment_Schedule _identifier (date-first format)
-    const ordSchedIdentifier = r['orderPaymentSchedule$_identifier'] || ''
 
     return {
       ...r,
@@ -457,12 +412,6 @@ export async function fetchPaymentLines(paymentId) {
   return lines
 }
 
-/**
- * Secondary lookup: ambil FIN_Payment_Schedule (+ invoice info) berdasarkan IDs.
- * Openbravo sering mengembalikan info invoice via _identifier field:
- *   "1000022 - 27-03-2026 - 25000.00"  →  documentNo - invoiceDate - amount
- * Kita parse _identifier sebagai fallback jika nested properties kosong.
- */
 async function resolveScheduleDetails(scheduleIds) {
   if (!scheduleIds.length) return {}
   const idList = scheduleIds.map(id => `'${id}'`).join(',')
@@ -490,18 +439,16 @@ async function resolveScheduleDetails(scheduleIds) {
     )
     const rows = res.data?.response?.data ?? []
     for (const r of rows) {
-      // Try nested properties first, fallback to _identifier parsing
-      let documentNo      = r['invoice$documentNo'] || r.invoice?.documentNo || null
-      let invoiceDate     = r['invoice$invoiceDate'] || r.invoice?.invoiceDate || null
+      let documentNo       = r['invoice$documentNo'] || r.invoice?.documentNo || null
+      let invoiceDate      = r['invoice$invoiceDate'] || r.invoice?.invoiceDate || null
       let grandTotalAmount = r['invoice$grandTotalAmount'] ?? r.invoice?.grandTotalAmount ?? null
 
-      // Parse _identifier: "1000022 - 27-03-2026 - 25000.00"
       const identifier = r['invoice$_identifier'] || r.invoice?._identifier || ''
       if (identifier && (!documentNo || !invoiceDate)) {
         const parts = identifier.split(' - ')
         if (parts.length >= 3) {
           if (!documentNo)      documentNo      = parts[0].trim()
-          if (!invoiceDate)     invoiceDate     = parts[1].trim()  // "27-03-2026" or ISO
+          if (!invoiceDate)     invoiceDate     = parts[1].trim()
           if (grandTotalAmount == null) grandTotalAmount = parseFloat(parts[2].replace(/,/g, '')) || 0
         }
       }
@@ -521,14 +468,8 @@ async function resolveScheduleDetails(scheduleIds) {
 
 // ════════════════════════════════════════════════════
 // FIN_PAYMENT_DETAIL
-// Jembatan antara FIN_Payment (header) dan FIN_Payment_ScheduleDetail (lines).
+// FIX #4: field reference pakai string ID langsung (bukan object)
 // ════════════════════════════════════════════════════
-
-/**
- * Ambil FIN_Payment_Detail untuk payment ini.
- * Jika belum ada, buat dengan POST.
- * Jika POST juga gagal, return { id: null }.
- */
 export async function fetchPaymentDetail(paymentId) {
   // 1. GET first
   const getRes = await api.get(
@@ -541,8 +482,8 @@ export async function fetchPaymentDetail(paymentId) {
     return existing[0]
   }
 
-  // 2. Not found — POST minimal payload
-  console.info('[paymentIn] fetchPaymentDetail: not found, trying POST for', paymentId)
+  // 2. Not found — POST
+  console.info('[paymentIn] fetchPaymentDetail: creating for', paymentId)
   try {
     const postRes = await api.post(
       '/org.openbravo.service.json.jsonrest/FIN_Payment_Detail',
@@ -550,7 +491,7 @@ export async function fetchPaymentDetail(paymentId) {
         data: {
           _entityName:  'FIN_Payment_Detail',
           organization: DEFAULT_ORGANIZATION,
-          finPayment:   paymentId,
+          finPayment:   paymentId,  // plain string ID sudah cukup di OB REST
           refund:       false,
           amount:       0,
           writeOffAmt:  0,
@@ -563,29 +504,21 @@ export async function fetchPaymentDetail(paymentId) {
       console.info('[paymentIn] fetchPaymentDetail created:', created.id)
       return created
     }
-    console.warn('[paymentIn] fetchPaymentDetail POST response:', JSON.stringify(postRes.data))
   } catch (e) {
     console.warn('[paymentIn] fetchPaymentDetail POST failed:', e.message)
   }
 
-  // 3. Fallback
-  console.warn('[paymentIn] fetchPaymentDetail: no paymentDetail found, will use finPayment ref')
-  return { id: null }
+  // 3. Fallback — kembalikan object dengan finPayment agar caller bisa fallback
+  console.warn('[paymentIn] fetchPaymentDetail: returning fallback')
+  return { id: null, finPayment: paymentId }
 }
 
-/**
- * Buat FIN_Payment_ScheduleDetail (satu baris invoice yang dibayar).
- *
- * FIX: Nama field yang benar sesuai skema Openbravo:
- *   - "expectedAmount"   (bukan "expected")
- *   - "invoiceAmount"    ✓ (sudah benar)
- *   - "writeOffAmt"      (bukan "writeoffAmount") — sesuai kolom Writeoffamt
- *   - "doubtfulDebtAmount" ✓
- *   - "invoicePaymentSchedule" ✓
- *   - "paymentDetails"   ✓ (link ke FIN_Payment_Detail)
- *   - "aPRMFinancialAccount" (dari EM_APRM_FinancialAccount)
- *   - "aPRMPaymentMethod"    (dari EM_APRM_PaymentMethod)
- */
+// ════════════════════════════════════════════════════
+// FIN_PAYMENT_SCHEDULEDETAIL
+// FIX #3: field `paymentDetails` sudah benar, hapus aPRMFinancialAccount/aPRMPaymentMethod
+//         karena field custom APRM tersebut tidak selalu ada di semua instalasi.
+//         Jika ingin tetap dikirim, pastikan nama field sesuai modul APRM yang terpasang.
+// ════════════════════════════════════════════════════
 export async function addPaymentScheduleDetail(
   paymentDetailId,
   scheduleId,
@@ -596,7 +529,7 @@ export async function addPaymentScheduleDetail(
   financialAccountId = null,
   paymentMethodId    = null,
   paymentId          = null,
-  itemType           = 'invoice',  // 'invoice' | 'order'
+  itemType           = 'invoice',
 ) {
   if (!scheduleId) {
     throw new Error(
@@ -607,31 +540,29 @@ export async function addPaymentScheduleDetail(
 
   const schedId = typeof scheduleId === 'object' ? scheduleId.id : scheduleId
 
+  // FIX #9: jika paymentDetailId null, gunakan finPayment sebagai referensi langsung
+  const linkField = paymentDetailId
+    ? { paymentDetails: paymentDetailId }
+    : paymentId
+      ? { finPayment: paymentId }
+      : {}
+
   const payload = {
-    _entityName:          'FIN_Payment_ScheduleDetail',
-    organization:         organizationId || DEFAULT_ORGANIZATION,
-    businessPartner:      businessPartnerId,
-    amount:               amount,
-    expectedAmount:       amount,
-    invoiceAmount:        amount,
-    writeOffAmt:          0,
-    doubtfulDebtAmount:   0,
-    canceled:             false,
-    invoicePaid:          false,
-    // Gunakan field yang tepat berdasarkan tipe item
+    _entityName:        'FIN_Payment_ScheduleDetail',
+    organization:       organizationId || DEFAULT_ORGANIZATION,
+    businessPartner:    businessPartnerId,
+    amount:             amount,
+    expectedAmount:     amount,
+    invoiceAmount:      amount,
+    writeOffAmt:        0,
+    doubtfulDebtAmount: 0,
+    canceled:           false,
+    invoicePaid:        false,
     ...(itemType === 'order'
       ? { orderPaymentSchedule: schedId }
       : { invoicePaymentSchedule: schedId }
     ),
-    // Link ke FIN_Payment_Detail (atau fallback ke finPayment langsung)
-    ...(paymentDetailId
-      ? { paymentDetails: paymentDetailId }
-      : paymentId
-        ? { finPayment: paymentId }
-        : {}),
-    // Extended fields dari APRM
-    ...(financialAccountId && { aPRMFinancialAccount: financialAccountId }),
-    ...(paymentMethodId    && { aPRMPaymentMethod:    paymentMethodId }),
+    ...linkField,
   }
 
   const res = await api.post(
@@ -642,17 +573,16 @@ export async function addPaymentScheduleDetail(
   return Array.isArray(raw) ? raw[0] : raw
 }
 
-/**
- * Update total amount di payment header setelah semua detail ditambahkan.
- * FIX: Juga update writeOffAmt = 0 secara eksplisit.
- */
 export async function finalizePaymentAmount(paymentId, totalAmount) {
   const res = await api.put(`${PAY_BASE}/${paymentId}`, {
     data: {
-      id:          paymentId,
-      _entityName: 'FIN_Payment',
-      amount:      totalAmount,
-      writeOffAmt: 0,
+      id:               paymentId,
+      _entityName:      'FIN_Payment',
+      amount:           totalAmount,
+      writeOffAmt:      0,
+      status:           'RDNC',
+      processed:        true,
+      processProcedure: 'P',
     },
   })
   const raw = res.data?.response?.data
@@ -660,18 +590,116 @@ export async function finalizePaymentAmount(paymentId, totalAmount) {
 }
 
 // ════════════════════════════════════════════════════
-// BHM_CASHFLOW_WIP — Tab Cashflow (custom)
-// Kolom: BHM_Cashflow_Wip_ID, FIN_Payment_Scheduledetail_ID,
-//        GL_Journalline_ID, BHM_Wip_ID, BHM_Cashflow_Category_ID,
-//        AD_Client_ID, AD_Org_ID, Isactive
+// RESOLVE FINANCIAL ACCOUNT dari FIN_Payment_Schedule
 // ════════════════════════════════════════════════════
+export async function resolveFinancialAccountFromSchedules(scheduleIds) {
+  if (!scheduleIds?.length) return DEFAULT_FIN_ACCOUNT_ID
+  const idList = scheduleIds.filter(Boolean).map(id => `'${id}'`).join(',')
+  if (!idList) return DEFAULT_FIN_ACCOUNT_ID
+  try {
+    const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_Payment_Schedule', {
+      params: { _where: `e.id in (${idList})`, _startRow: 0, _endRow: scheduleIds.length, _selectedProperties: 'id,finFinancialAccount' },
+    })
+    const rows = res.data?.response?.data ?? []
+    for (const r of rows) {
+      const accId = typeof r.finFinancialAccount === 'object' ? r.finFinancialAccount?.id : r.finFinancialAccount
+      if (accId) return accId
+    }
+  } catch (e) { console.warn('[paymentIn] resolveFinancialAccountFromSchedules failed:', e.message) }
+  return DEFAULT_FIN_ACCOUNT_ID
+}
 
+// ════════════════════════════════════════════════════
+// FIN_FINACC_TRANSACTION
+// FIX #6: hapus `isReconciled` — bukan field standar OB. Gunakan `reconciled` saja.
+// ════════════════════════════════════════════════════
+const FINACC_TXN_BASE = '/org.openbravo.service.json.jsonrest/FIN_Finacc_Transaction'
+
+export async function createFinaccTransaction({
+  paymentId, financialAccountId, paymentDate, amount,
+  businessPartnerId, organizationId, currencyId, description,
+}) {
+  const accId = financialAccountId || DEFAULT_FIN_ACCOUNT_ID
+
+  let lineNo = 10
+  try {
+    const countRes = await api.get(FINACC_TXN_BASE, {
+      params: { _where: `e.account.id = '${accId}'`, _startRow: 0, _endRow: 1, _noCount: false, _selectedProperties: 'id' },
+    })
+    lineNo = (Number(countRes.data?.response?.totalRows ?? 0) + 1) * 10
+  } catch (e) { console.warn('[paymentIn] lineNo fetch failed:', e.message) }
+
+  const res = await api.post(FINACC_TXN_BASE, {
+    data: {
+      _entityName:     'FIN_Finacc_Transaction',
+      organization:    organizationId || DEFAULT_ORGANIZATION,
+      account:         accId,
+      finPayment:      paymentId,
+      businessPartner: businessPartnerId,
+      paymentDate:     paymentDate,
+      dateAcct:        paymentDate,
+      transactionDate: paymentDate,
+      depositAmount:   amount,
+      paymentAmount:   0,
+      currency:        currencyId || DEFAULT_CURRENCY,
+      lineNo:          lineNo,
+      processed:       false,
+      reconciled:      false,           // FIX: hapus isReconciled, pakai reconciled saja
+      ...(description && { description }),
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+// ════════════════════════════════════════════════════
+// FIN_PAYMENT_SCHEDULE — Update setelah payment
+// ════════════════════════════════════════════════════
+const PAY_SCHED_BASE_PAYIN = '/org.openbravo.service.json.jsonrest/FIN_Payment_Schedule'
+
+export async function updatePaymentSchedulePaid(scheduleId, paidNow, currentPaid = 0, expectedAmt = 0) {
+  const newPaid        = Number(currentPaid) + Number(paidNow)
+  const newOutstanding = Math.max(0, Number(expectedAmt) - newPaid)
+  const res = await api.put(`${PAY_SCHED_BASE_PAYIN}/${scheduleId}`, {
+    data: {
+      id:                scheduleId,
+      _entityName:       'FIN_Payment_Schedule',
+      paidAmount:        newPaid,
+      outstanding:       newOutstanding,  // FIX: field yang benar adalah `outstanding`, bukan `outstandingAmount`
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+// ════════════════════════════════════════════════════
+// INVOICE — Update paymentComplete
+// ════════════════════════════════════════════════════
+const INV_BASE_PAYIN = '/org.openbravo.service.json.jsonrest/Invoice'
+
+export async function updateInvoicePaymentComplete(invoiceId, paymentComplete) {
+  const res = await api.put(`${INV_BASE_PAYIN}/${invoiceId}`, {
+    data: {
+      id:              invoiceId,
+      _entityName:     'Invoice',
+      paymentComplete: paymentComplete,
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+export async function fetchPaymentScheduleById(scheduleId) {
+  const res = await api.get(`${PAY_SCHED_BASE_PAYIN}/${scheduleId}`)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+// ════════════════════════════════════════════════════
+// BHM_CASHFLOW_WIP
+// ════════════════════════════════════════════════════
 const CASHFLOW_BASE = '/org.openbravo.service.json.jsonrest/BHM_Cashflow_Wip'
 
-/**
- * Fetch cashflow entries untuk payment ini (via FIN_Payment_ScheduleDetail IDs).
- * @param {string[]} scheduleDetailIds - array of FIN_Payment_ScheduleDetail IDs
- */
 export async function fetchCashflowByScheduleDetails(scheduleDetailIds) {
   if (!scheduleDetailIds?.length) return []
   const idList = scheduleDetailIds.map(id => `'${id}'`).join(',')
@@ -691,15 +719,12 @@ export async function fetchCashflowByScheduleDetails(scheduleDetailIds) {
   }
 }
 
-/**
- * Update BHM_Cashflow_Category untuk satu cashflow entry.
- */
 export async function updateCashflowCategory(cashflowId, categoryId) {
   const res = await api.put(`${CASHFLOW_BASE}/${cashflowId}`, {
     data: {
-      id:                    cashflowId,
-      _entityName:           'BHM_Cashflow_Wip',
-      bhmCashflowCategory:   categoryId,
+      id:                  cashflowId,
+      _entityName:         'BHM_Cashflow_Wip',
+      bhmCashflowCategory: categoryId,
     },
   })
   const raw = res.data?.response?.data
@@ -716,9 +741,6 @@ const customApi = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-/**
- * POST payment ke custom Spring Boot service (full settlement).
- */
 export async function postPayment(c_bpartner_id, amount) {
   try {
     const res = await customApi.post('/payment', {
@@ -740,24 +762,36 @@ export async function postPayment(c_bpartner_id, amount) {
 
 // ════════════════════════════════════════════════════
 // FINANCIAL ACCOUNT
+// FIX #7: tambahkan filter active=true
 // ════════════════════════════════════════════════════
 const FIN_ACC_BASE = '/org.openbravo.service.json.jsonrest/FIN_Financial_Account'
 
 export async function fetchFinancialAccounts() {
   const res = await api.get(FIN_ACC_BASE, {
-    params: { _startRow: 0, _endRow: 50, _orderBy: 'e.name asc' },
+    params: {
+      _where:    `e.active = true`,
+      _startRow: 0,
+      _endRow:   50,
+      _orderBy:  'e.name asc',
+    },
   })
   return res.data?.response?.data ?? []
 }
 
 // ════════════════════════════════════════════════════
 // PAYMENT METHOD
+// FIX #7: tambahkan filter active=true
 // ════════════════════════════════════════════════════
 const PAY_METHOD_BASE = '/org.openbravo.service.json.jsonrest/FIN_PaymentMethod'
 
 export async function fetchPaymentMethods() {
   const res = await api.get(PAY_METHOD_BASE, {
-    params: { _startRow: 0, _endRow: 50, _orderBy: 'e.name asc' },
+    params: {
+      _where:    `e.active = true`,
+      _startRow: 0,
+      _endRow:   50,
+      _orderBy:  'e.name asc',
+    },
   })
   return res.data?.response?.data ?? []
 }

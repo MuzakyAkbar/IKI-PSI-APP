@@ -225,12 +225,15 @@
           </div>
           <div class="form-grid-2" style="margin-top:14px">
             <div class="form-group">
-              <label>Postal Code</label>
-              <input v-model="form.postalCode" placeholder="Postal Code" />
+              <label>Link GL</label>
+              <select v-model="form.linkGL">
+                <option value="">Select</option>
+                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              </select>
             </div>
             <div class="form-group">
-              <label>Phone</label>
-              <input v-model="form.phone" placeholder="Phone" />
+              <label>Postal Code</label>
+              <input v-model="form.postalCode" placeholder="Postal Code" />
             </div>
           </div>
           <div class="form-checks" style="margin-top:14px">
@@ -238,10 +241,44 @@
           </div>
         </div>
 
+        <!-- Payment Info Card -->
+        <div class="form-card">
+          <div class="form-card-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Payment Info
+          </div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Price List <span class="req">*</span></label>
+              <select v-model="form.priceList" :class="{'input-error': formErrors.priceList}">
+                <option value="">Select Price List</option>
+                <option v-for="pl in lookups.priceLists" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
+              </select>
+              <span class="field-error" v-if="formErrors.priceList">{{ formErrors.priceList }}</span>
+            </div>
+            <div class="form-group">
+              <label>Payment Method <span class="req">*</span></label>
+              <select v-model="form.paymentMethod" :class="{'input-error': formErrors.paymentMethod}">
+                <option value="">Select Payment Method</option>
+                <option v-for="pm in lookups.paymentMethods" :key="pm.id" :value="pm.id">{{ pm['_identifier'] || pm.name }}</option>
+              </select>
+              <span class="field-error" v-if="formErrors.paymentMethod">{{ formErrors.paymentMethod }}</span>
+            </div>
+            <div class="form-group">
+              <label>Payment Terms <span class="req">*</span></label>
+              <select v-model="form.paymentTerms" :class="{'input-error': formErrors.paymentTerms}">
+                <option value="">Select Payment Terms</option>
+                <option v-for="pt in lookups.paymentTerms" :key="pt.id" :value="pt.id">{{ pt.name }}</option>
+              </select>
+              <span class="field-error" v-if="formErrors.paymentTerms">{{ formErrors.paymentTerms }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Contact Info Card -->
         <div class="form-card">
           <div class="form-card-title">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             Contact Info
           </div>
           <div class="form-grid-3">
@@ -678,39 +715,29 @@ import {
   createLocation,
   createBPLocation,
   updateLocation,
-  updateBPLocation
+  updateBPLocation,
+  deleteBPLocation,
+  fetchContacts,
+  fetchContactsForIds,
+  createContact,
+  updateContact,
+  deleteContact,
 } from '@/services/vendor'
 
-// ── Contacts — reuse customer's ADUser endpoints ─────────────
+// ── BusinessPartnerLocation helpers (inline axios) ───────────
 import axios from 'axios'
-const BASE_URL = window.APP_CONFIG?.API_BASE_URL || '/openbravo/'
-const _token = btoa('APIService:wrt')
-const _api = axios.create({ baseURL: BASE_URL, headers: { Authorization: `Basic ${_token}`, 'Content-Type': 'application/json' } })
-const USER_BASE   = '/org.openbravo.service.json.jsonrest/ADUser'
-const BPLOC_REST  = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
+const _bplocApi = axios.create({
+  baseURL: window.APP_CONFIG?.API_BASE_URL || '/openbravo/',
+  headers: { Authorization: `Basic ${btoa('APIService:wrt')}`, 'Content-Type': 'application/json' },
+})
+const BPLOC_REST = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
 
-async function fetchContacts(bpId) {
-  const res = await _api.get(USER_BASE, { params: { _startRow: 0, _endRow: 200, _where: `e.businessPartner.id = '${bpId}' and e.active = true` } })
-  return res.data?.response?.data ?? []
-}
-async function createContact(data) {
-  const res = await _api.post(USER_BASE, { data: { _entityName: 'ADUser', organization: '0', active: true, firstName: data.firstName, lastName: data.lastName || null, name: data.name, email: data.email || null, phone: data.phone || null, position: data.position || null, businessPartner: { id: data.businessPartner } } })
-  const raw = res.data?.response?.data; return Array.isArray(raw) ? raw[0] : raw ?? res.data
-}
-async function updateContact(id, data) {
-  const res = await _api.put(`${USER_BASE}/${id}`, { data: { id, _entityName: 'ADUser', organization: '0', firstName: data.firstName, lastName: data.lastName || null, name: data.name, email: data.email || null, phone: data.phone || null, position: data.position || null } })
-  const raw = res.data?.response?.data; return Array.isArray(raw) ? raw[0] : raw ?? res.data
-}
-async function deleteContact(id) {
-  const res = await _api.put(`${USER_BASE}/${id}`, { data: { id, _entityName: 'ADUser', organization: '0', active: false } })
-  const raw = res.data?.response?.data; return Array.isArray(raw) ? raw[0] : raw ?? res.data
-}
 async function fetchBPLocations(bpId) {
-  const res = await _api.get(BPLOC_REST, { params: { _startRow: 0, _endRow: 200, _where: `e.businessPartner.id = '${bpId}'` } })
+  const res = await _bplocApi.get(BPLOC_REST, { params: { _startRow: 0, _endRow: 10, _where: `e.businessPartner.id = '${bpId}'` } })
   return res.data?.response?.data ?? []
 }
 async function fetchBPLocationsForIds(idsInClause) {
-  const res = await _api.get(BPLOC_REST, { params: { _startRow: 0, _endRow: 500, _where: `e.businessPartner.id in (${idsInClause}) and e.active = true` } })
+  const res = await _bplocApi.get(BPLOC_REST, { params: { _startRow: 0, _endRow: 500, _where: `e.businessPartner.id in (${idsInClause}) and e.active = true` } })
   return res.data?.response?.data ?? []
 }
 
@@ -855,6 +882,7 @@ const defaultForm = () => ({
   province: '', city: '', streetAddress: '', otherDetails: '', postalCode: '',
   phone: '', contactName: '', contactEmail: '', contactPhone: '',
   paymentTerms: '', priceList: '', paymentMethod: '',
+  linkGL: '',
   active: true,
   bpLocationId: null, locationId: null
 })
@@ -878,9 +906,10 @@ function openEditPage(v) {
     postalCode:   v.postalCode ?? '',
     phone:        v.hp ?? v.phone ?? '',
     contactName:  '', contactEmail: '', contactPhone: '',
-    paymentTerms: v.paymentTerms ?? '',
-    priceList:    v.priceList ?? '',
-    paymentMethod:v.paymentMethod ?? '',
+    paymentTerms: typeof v.paymentTerms === 'object' ? (v.paymentTerms?.id ?? '') : (v.paymentTerms ?? ''),
+    priceList:    typeof v.priceList    === 'object' ? (v.priceList?.id    ?? '') : (v.priceList    ?? ''),
+    paymentMethod:typeof v.paymentMethod=== 'object' ? (v.paymentMethod?.id?? '') : (v.paymentMethod?? ''),
+    linkGL:       typeof v.businessPartnerCategory === 'object' ? (v.businessPartnerCategory?.id ?? '') : (v.businessPartnerCategory ?? ''),
     active:       v.active ?? true,
     bpLocationId: v.bpLocationId ?? null,
     locationId:   v.locationId ?? null
@@ -893,8 +922,11 @@ function closePage() { if (formLoading.value) return; page.show = false }
 
 function validateForm() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  if (!form.searchKey.trim()) formErrors.searchKey = 'Code wajib diisi'
-  if (!form.name.trim()) formErrors.name = 'Nama vendor wajib diisi'
+  if (!form.searchKey.trim())  formErrors.searchKey    = 'Code wajib diisi'
+  if (!form.name.trim())       formErrors.name         = 'Nama vendor wajib diisi'
+  if (!form.priceList)         formErrors.priceList    = 'Price List wajib dipilih'
+  if (!form.paymentMethod)     formErrors.paymentMethod= 'Payment Method wajib dipilih'
+  if (!form.paymentTerms)      formErrors.paymentTerms = 'Payment Terms wajib dipilih'
   return Object.keys(formErrors).length === 0
 }
 
@@ -908,6 +940,7 @@ async function submitForm() {
       description:  form.description.trim() || null,
       phone:        form.phone.trim() || null,
       active:       form.active,
+      ...(form.linkGL        && { businessPartnerCategory: form.linkGL }),
       ...(form.paymentTerms  && { paymentTerms:  form.paymentTerms }),
       ...(form.priceList     && { priceList:     form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
@@ -940,6 +973,31 @@ async function submitForm() {
           remitToAddress: true
         }
         await createBPLocation(bpLocPayload)
+      }
+
+      // 4. Create ADUser (contact pertama) jika ada data contact
+      if (form.contactName && form.contactName.trim()) {
+        const nameParts = form.contactName.trim().split(' ')
+        const firstName = nameParts[0]
+        const lastName  = nameParts.slice(1).join(' ') || null
+        await createContact({
+          firstName,
+          lastName,
+          name:            form.contactName.trim(),
+          email:           form.contactEmail  || null,
+          phone:           form.contactPhone  || null,
+          businessPartner: newVendor.id,
+        })
+      }
+
+      // 5. Update BusinessPartner dengan nomor HP di field hp
+      if (form.contactPhone && form.contactPhone.trim()) {
+        const bpId = newVendor.id
+        await updateVendor(bpId, {
+          searchKey: form.searchKey.trim(),
+          name:      form.name.trim(),
+          hp:        form.contactPhone.trim(),
+        })
       }
 
       showToast('Vendor dan Location berhasil dibuat')

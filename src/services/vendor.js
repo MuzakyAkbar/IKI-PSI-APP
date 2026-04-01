@@ -118,7 +118,8 @@ export async function createVendor(data) {
   }
 
   const res = await api.post(BASE, payload)
-  return res.data?.response?.data ?? res.data
+  const raw = res.data?.response?.data ?? res.data
+  return Array.isArray(raw) ? raw[0] : raw
 }
 
 // ==============================
@@ -142,7 +143,8 @@ export async function updateVendor(id, data) {
   }
 
   const res = await api.put(`${BASE}/${id}`, payload)
-  return res.data?.response?.data ?? res.data
+  const raw = res.data?.response?.data ?? res.data
+  return Array.isArray(raw) ? raw[0] : raw
 }
 
 // ==============================
@@ -163,7 +165,7 @@ export async function toggleVendorActive(id, active) {
 // Lookup: Payment Terms
 // ==============================
 export async function fetchPaymentTerms() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/PaymentTerm', {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtPaymentTerm', {
     params: { _startRow: 0, _endRow: 100 },
   })
   return res.data?.response?.data ?? []
@@ -173,7 +175,7 @@ export async function fetchPaymentTerms() {
 // Lookup: Price List (hanya purchase)
 // ==============================
 export async function fetchPriceLists() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/PriceList', {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/PricingPriceList', {
     params: {
       _startRow: 0,
       _endRow: 100,
@@ -187,7 +189,7 @@ export async function fetchPriceLists() {
 // Lookup: Payment Method
 // ==============================
 export async function fetchPaymentMethods() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_Payment_Method', {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_PaymentMethod', {
     params: { _startRow: 0, _endRow: 100 },
   })
   return res.data?.response?.data ?? []
@@ -403,6 +405,7 @@ export async function createLocation(data) {
 }
 
 export async function createBPLocation(data) {
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
   const payload = {
     data: {
       _entityName: 'BusinessPartnerLocation',
@@ -410,12 +413,14 @@ export async function createBPLocation(data) {
       active: true,
       name: data.name,
       phone: data.phone || null,
+      alternativePhone: data.alternativePhone || null,
+      fax: null,
       invoiceToAddress: data.invoiceToAddress ?? true,
       shipToAddress: data.shipToAddress ?? true,
       payFromAddress: data.payFromAddress ?? true,
       remitToAddress: data.remitToAddress ?? true,
-      businessPartner: data.businessPartner,
-      locationAddress: data.locationAddress,
+      businessPartner: { id: xId(data.businessPartner) },
+      locationAddress: { id: xId(data.locationAddress) },
     },
   }
   const res = await api.post(BPLOC_REST, payload)
@@ -443,6 +448,7 @@ export async function updateLocation(id, data) {
 }
 
 export async function updateBPLocation(id, data) {
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
   const payload = {
     data: {
       id,
@@ -451,15 +457,126 @@ export async function updateBPLocation(id, data) {
       active: data.active ?? true,
       name: data.name,
       phone: data.phone || null,
+      alternativePhone: data.alternativePhone || null,
+      fax: null,
       invoiceToAddress: data.invoiceToAddress ?? true,
       shipToAddress: data.shipToAddress ?? true,
       payFromAddress: data.payFromAddress ?? true,
       remitToAddress: data.remitToAddress ?? true,
-      businessPartner: data.businessPartner,
-      locationAddress: data.locationAddress,
+      businessPartner: { id: xId(data.businessPartner) },
+      locationAddress: { id: xId(data.locationAddress) },
     },
   }
   const res = await api.put(`${BPLOC_REST}/${id}`, payload)
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw ?? res.data
 }
+
+// ==============================
+// CONTACT — ADUser
+// ==============================
+const USER_BASE = '/org.openbravo.service.json.jsonrest/ADUser'
+
+export async function fetchContacts(bpId) {
+  const res = await api.get(USER_BASE, {
+    params: { _startRow: 0, _endRow: 200, _where: `e.businessPartner.id = '${bpId}' and e.active = true` },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function fetchContactsForIds(idsInClause) {
+  const res = await api.get(USER_BASE, {
+    params: { _startRow: 0, _endRow: 500, _where: `e.businessPartner.id in (${idsInClause}) and e.active = true` },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function createContact(data) {
+  const res = await api.post(USER_BASE, {
+    data: {
+      _entityName: 'ADUser',
+      organization: '0',
+      active: true,
+      firstName: data.firstName,
+      lastName: data.lastName || null,
+      name: data.name || `${data.firstName} ${data.lastName || ''}`.trim(),
+      email: data.email || null,
+      phone: data.phone || null,
+      position: data.position || null,
+      businessPartner: fkWrap(data.businessPartner),
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateContact(id, data) {
+  const res = await api.put(`${USER_BASE}/${id}`, {
+    data: {
+      id,
+      _entityName: 'ADUser',
+      organization: '0',
+      firstName: data.firstName,
+      lastName: data.lastName || null,
+      name: data.name || `${data.firstName} ${data.lastName || ''}`.trim(),
+      email: data.email || null,
+      phone: data.phone || null,
+      position: data.position || null,
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function deleteContact(id) {
+  const res = await api.put(`${USER_BASE}/${id}`, {
+    data: { id, _entityName: 'ADUser', organization: '0', active: false },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+// ==============================
+// BP LOCATION — deactivate
+// ==============================
+export async function deleteBPLocation(id, oldRecord = null) {
+  const xId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
+  const res = await api.put(`${BPLOC_REST}/${id}`, {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerLocation',
+      organization: ORG_ID,
+      active: false,
+      ...(oldRecord ? {
+        name: oldRecord.name,
+        phone: oldRecord.phone || null,
+        invoiceToAddress: oldRecord.invoiceToAddress,
+        shipToAddress: oldRecord.shipToAddress,
+        payFromAddress: oldRecord.payFromAddress,
+        remitToAddress: oldRecord.remitToAddress,
+        taxLocation: oldRecord.taxLocation ?? false,
+        businessPartner: { id: xId(oldRecord.businessPartner) },
+        locationAddress: { id: xId(oldRecord.locationAddress) },
+      } : {}),
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+// ==============================
+// Axios response interceptor
+// ==============================
+api.interceptors.response.use(
+  (res) => {
+    const s = res.data?.response?.status
+    if (s !== undefined && s < 0) {
+      console.error('[Openbravo API error body]', JSON.stringify(res.data?.response))
+    }
+    return res
+  },
+  (err) => {
+    console.error('[Openbravo HTTP error]', err.response?.status, JSON.stringify(err.response?.data))
+    return Promise.reject(err)
+  }
+)

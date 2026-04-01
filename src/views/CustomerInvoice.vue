@@ -26,15 +26,16 @@
               <th>Invoice No.</th>
               <th>Invoice Date</th>
               <th>Customer</th>
-              <th>Kode Pelanggan</th>
+              <th>Customer Code</th>
               <th>Grand Total</th>
               <th>Status</th>
+              <th>Payment</th>
               <th class="th-action">Action</th>
             </tr></thead>
             <tbody>
-              <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-              <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">No customer invoices found.</td></tr>
+              <tr v-if="loading"><td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              <tr v-else-if="error"><td colspan="8" class="td-empty td-error">{{ error }}</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="8" class="td-empty">No customer invoices found.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -43,6 +44,7 @@
                   <td class="td-secondary">{{ r.kodePelanggan || (r['businessPartner$_identifier']?.includes(' - ') ? r['businessPartner$_identifier'].split(' - ')[0] : '—') }}</td>
                   <td class="td-secondary">{{ formatCurrency(r.grandTotalAmount) }}</td>
                   <td><span :class="['status-pill', statusClass(r.documentStatus)]">{{ statusLabel(r.documentStatus) }}</span></td>
+                  <td><span :class="['pay-pill', paymentStatusClass(r)]">{{ paymentStatusLabel(r) }}</span></td>
                   <td class="td-action-cell">
                     <div class="action-group">
                       <div class="dropdown-wrap" v-click-outside="closeDropdown">
@@ -380,6 +382,57 @@
                 <div class="totals-row"><span>Total Pajak</span><span>{{ formatCurrency((viewRow.grandTotalAmount ?? 0) - (viewRow.summedLineAmount ?? 0)) }}</span></div>
                 <div class="totals-row totals-row--grand"><span>Total Invoice</span><span>{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
               </div>
+
+              <!-- Payment Plan -->
+              <div class="section-divider" style="margin-top:20px">
+                Payment Plan
+                <span v-if="paymentSchedules.length" class="pp-badge">{{ paymentSchedules.length }} instalment{{ paymentSchedules.length > 1 ? 's' : '' }}</span>
+              </div>
+              <div v-if="paymentSchedulesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+              <div v-else-if="paymentSchedules.length === 0" class="pp-empty">No payment plan found.</div>
+              <div v-else class="table-wrap" style="margin-bottom:0">
+                <table class="table">
+                  <thead><tr>
+                    <th>#</th>
+                    <th>Due Date</th>
+                    <th>Expected Date</th>
+                    <th>Payment Method</th>
+                    <th style="text-align:right">Expected Amount</th>
+                    <th style="text-align:right">Received</th>
+                    <th style="text-align:right">Outstanding</th>
+                    <th>Status</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr v-for="(ps, idx) in paymentSchedules" :key="ps.id" class="tr-data">
+                      <td class="td-secondary" style="text-align:center">{{ idx + 1 }}</td>
+                      <td>{{ formatDate(ps.dueDate) }}</td>
+                      <td class="td-secondary">{{ formatDate(ps.expectedDate) }}</td>
+                      <td class="td-secondary">{{ ps['finPaymentmethod$_identifier'] || '—' }}</td>
+                      <td style="text-align:right;font-variant-numeric:tabular-nums">{{ formatCurrency(ps.amount) }}</td>
+                      <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span :class="ps.paidAmount > 0 ? 'pp-paid' : 'td-muted'">{{ ps.paidAmount > 0 ? formatCurrency(ps.paidAmount) : '—' }}</span>
+                      </td>
+                      <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span :class="ps.outstandingAmount > 0 ? 'pp-outstanding' : 'pp-paid'">{{ formatCurrency(ps.outstandingAmount) }}</span>
+                      </td>
+                      <td>
+                        <span :class="['pp-status', ps.outstandingAmount <= 0 ? 'pp-status--paid' : (ps.paidAmount > 0 ? 'pp-status--partial' : 'pp-status--unpaid')]">
+                          {{ ps.outstandingAmount <= 0 ? 'Paid' : (ps.paidAmount > 0 ? 'Partial' : 'Unpaid') }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot v-if="paymentSchedules.length > 1">
+                    <tr class="acc-totals-row">
+                      <td colspan="4" style="text-align:right;font-size:12px;font-weight:600;color:var(--text-muted);padding:10px 16px">TOTAL</td>
+                      <td style="text-align:right;padding:10px 16px;font-weight:700;color:var(--text-primary)">{{ formatCurrency(paymentSchedules.reduce((s, p) => s + (p.amount || 0), 0)) }}</td>
+                      <td style="text-align:right;padding:10px 16px;font-weight:700;color:#16a34a">{{ formatCurrency(paymentSchedules.reduce((s, p) => s + (p.paidAmount || 0), 0)) }}</td>
+                      <td style="text-align:right;padding:10px 16px;font-weight:700;color:#dc2626">{{ formatCurrency(paymentSchedules.reduce((s, p) => s + (p.outstandingAmount || 0), 0)) }}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
 
             <!-- ── Accounting Tab ── -->
@@ -559,6 +612,7 @@ import {
   fetchPriceLists, fetchProducts, fetchUOMs,
   runInvoiceProcess, postAccountingProcess,
   unpostAccountingProcess, reactivateInvoice, voidInvoice,
+  createPaymentPlan, fetchPaymentSchedules,
   DEFAULT_TAX_ID,
   DEFAULT_ORGANIZATION,
 } from '@/services/customerInvoice.js'
@@ -639,6 +693,10 @@ const viewTab = ref('basic')
 const viewLines = ref([])
 const viewLinesLoading = ref(false)
 
+// ── payment schedules
+const paymentSchedules = ref([])
+const paymentSchedulesLoading = ref(false)
+
 // ── accounting
 const accountingFacts = ref([])
 const accountingLoading = ref(false)
@@ -697,6 +755,32 @@ function statusClass(s) {
   if (s === 'CO') return 'status-pill--completed'
   if (s === 'CL') return 'status-pill--open'
   return 'status-pill--draft'
+}
+
+// Payment status: rely solely on outstandingAmount from the API.
+// NOTE: Openbravo sets paymentComplete=Y when invoice is Completed (not when paid),
+// so paymentComplete cannot be used to determine payment status.
+function paymentStatusLabel(r) {
+  if (r.documentStatus === 'DR') return '—'
+  if (r.documentStatus === 'VO') return '—'
+  // outstandingAmount is the only reliable field
+  const outstanding = r.outstandingAmount != null ? Number(r.outstandingAmount) : null
+  const paid = r.paidAmount != null ? Number(r.paidAmount) : null
+  if (outstanding != null) {
+    if (outstanding <= 0) return 'Paid'
+    if (paid != null && paid > 0) return 'Partial'
+    return 'Unpaid'
+  }
+  // outstandingAmount not returned by API — show nothing rather than guess
+  return '—'
+}
+
+function paymentStatusClass(r) {
+  const label = paymentStatusLabel(r)
+  if (label === 'Paid')    return 'pay-pill--paid'
+  if (label === 'Partial') return 'pay-pill--partial'
+  if (label === 'Unpaid')  return 'pay-pill--unpaid'
+  return 'pay-pill--none'
 }
 
 const pageNumbers = computed(() => {
@@ -941,10 +1025,21 @@ async function openViewModal(r) {
   viewTab.value = 'basic'
   accountingFacts.value = []
   accountingError.value = ''
+  paymentSchedules.value = []
   showViewModal.value = true
   viewLinesLoading.value = true
-  viewLines.value = await fetchInvoiceLines(r.id)
-  viewLinesLoading.value = false
+  paymentSchedulesLoading.value = true
+
+  // Run both fetches independently so each updates as soon as it resolves
+  fetchInvoiceLines(r.id)
+    .then(lines => { viewLines.value = lines })
+    .catch(() => { viewLines.value = [] })
+    .finally(() => { viewLinesLoading.value = false })
+
+  fetchPaymentSchedules(r.id)
+    .then(schedules => { paymentSchedules.value = schedules })
+    .catch(() => { paymentSchedules.value = [] })
+    .finally(() => { paymentSchedulesLoading.value = false })
 }
 
 function openEditFromView() {
@@ -1052,18 +1147,40 @@ async function doPostInvoice() {
 }
 
 // ── complete invoice via RunProcess (DocAction)
-// Setelah Complete, user harus klik Post secara manual (sama seperti GL Journal)
+// Setelah Complete, otomatis membentuk Payment Plan, lalu user klik Post untuk jurnal accounting.
 async function doCompleteInvoice() {
   if (!viewRow.value) return
   const invoiceId = viewRow.value.id
   completing.value = true
   try {
+    // Step 1: Complete invoice (ubah status DR → CO)
     await runInvoiceProcess(invoiceId, viewRow.value)
-    showToast('Invoice completed! Klik Post untuk membentuk jurnal accounting.')
+
+    // Step 2: Ambil data invoice terbaru (grandTotalAmount, paymentMethod, dll sudah final)
+    let freshInvoice = null
+    try { freshInvoice = await fetchInvoice(invoiceId) } catch (_) {}
+    const invoiceForPlan = freshInvoice || viewRow.value
+
+    // Step 3: Buat Payment Plan (FIN_Payment_Schedule) secara otomatis
+    try {
+      await createPaymentPlan(invoiceId, invoiceForPlan)
+      showToast('Invoice completed & payment plan terbentuk! Klik Post untuk membentuk jurnal accounting.')
+    } catch (planErr) {
+      console.error('[doCompleteInvoice] Payment plan gagal:', planErr.message)
+      showToast('Invoice completed, tapi payment plan gagal: ' + planErr.message, 'error')
+    }
+
+    // Step 4: Reload list, view & payment schedules
     await loadInvoices()
-    const fresh = await fetchInvoice(invoiceId)
-    if (fresh) viewRow.value = fresh
+    if (freshInvoice) viewRow.value = freshInvoice
     else { const updated = rows.value.find(r => r.id === invoiceId); if (updated) viewRow.value = updated; else showViewModal.value = false }
+
+    // Step 5: Reload payment schedules so they appear immediately
+    paymentSchedulesLoading.value = true
+    fetchPaymentSchedules(invoiceId)
+      .then(s => { paymentSchedules.value = s })
+      .catch(() => {})
+      .finally(() => { paymentSchedulesLoading.value = false })
   } catch (e) {
     showToast(e?.message || 'Failed to complete invoice', 'error')
   } finally { completing.value = false }
@@ -1146,6 +1263,7 @@ async function doReactivateInvoice() {
   reactivating.value = true
   try {
     const updated = await reactivateInvoice(invoiceId, viewRow.value)
+    paymentSchedules.value = []
     showToast('Invoice reactivated. Status kembali ke Draft.')
     await loadInvoices()
     const refreshed = rows.value.find(r => r.id === invoiceId)
@@ -1405,4 +1523,21 @@ onMounted(() => { loadInvoices(); loadLookups() })
 /* Spinner */
 .spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Payment status pill (list table) */
+.pay-pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.pay-pill--paid    { background: #dcfce7; color: #16a34a; }
+.pay-pill--partial { background: #fef9c3; color: #b45309; }
+.pay-pill--unpaid  { background: #fee2e2; color: #dc2626; }
+.pay-pill--none    { background: transparent; color: var(--text-muted); }
+
+/* Payment Plan */
+.pp-badge { display: inline-flex; align-items: center; background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; text-transform: none; letter-spacing: 0; }
+.pp-empty { padding: 16px 0; font-size: 13px; color: var(--text-muted); font-style: italic; }
+.pp-paid { color: #16a34a; font-weight: 600; }
+.pp-outstanding { color: #dc2626; font-weight: 600; }
+.pp-status { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pp-status--paid    { background: #dcfce7; color: #16a34a; } /* Paid */
+.pp-status--partial { background: #fef9c3; color: #b45309; }
+.pp-status--unpaid  { background: #fee2e2; color: #dc2626; }
 </style>

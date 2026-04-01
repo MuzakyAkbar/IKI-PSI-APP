@@ -18,6 +18,7 @@ import APAgingView from '@/views/APAgingView.vue'
 import GeneralLedgerView from '@/views/GeneralLedger.vue'
 import BalanceSheetView from '@/views/BalanceSheet.vue'
 import ProfitAndLossView from '@/views/ProfitAndLoss.vue'
+import FinancialAccountView from '@/views/FinancialAccount.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -34,6 +35,7 @@ const routes = [
   { path: '/purchase-order', component: PurchaseOrderView },
   { path: '/ar-aging', component: ARAgingView },
   { path: '/payment-in', component: PaymentInView },
+  { path: '/financial-account', component: FinancialAccountView },
   { path: '/gl-journal', component: GLJournalView },
   { path: '/trial-balance', component: TrialBalanceView },
   { path: '/ap-aging', component: APAgingView },

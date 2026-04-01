@@ -70,15 +70,15 @@
         </div>
 
         <!-- ══ PAGINATION ══ -->
-        <div v-if="totalPages > 1" class="pagination">
-          <button class="page-btn" :disabled="currentPage === 1" @click="goPage(currentPage - 1)">
+        <div v-if="totalPages > 1 || currentPage > 1" class="pagination">
+          <button class="page-btn" :disabled="currentPage === 1 || loading" @click="goPage(currentPage - 1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <template v-for="p in pageNumbers" :key="p">
+          <template v-for="p in pageNumbers" :key="String(p) + '-' + currentPage">
             <span v-if="p === '...'" class="page-ellipsis">…</span>
-            <button v-else :class="['page-btn', p === currentPage ? 'page-btn--active' : '']" @click="goPage(p)">{{ p }}</button>
+            <button v-else :class="['page-btn', Number(p) === currentPage ? 'page-btn--active' : '']" :disabled="loading" @click="goPage(Number(p))">{{ p }}</button>
           </template>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="goPage(currentPage + 1)">
+          <button class="page-btn" :disabled="currentPage >= totalPages || loading" @click="goPage(currentPage + 1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
@@ -291,19 +291,20 @@
                     <th>Date</th>
                     <th style="text-align:right">Amount</th>
                     <th style="text-align:right">Outstanding</th>
+                    <th style="text-align:right;min-width:140px">Actual Payment</th>
                   </tr></thead>
                   <tbody>
                     <tr v-if="invoiceLoading">
-                      <td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td>
+                      <td colspan="9" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td>
                     </tr>
                     <tr v-else-if="!invoicesLoaded">
-                      <td colspan="8" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load" untuk melihat tagihan outstanding.</td>
+                      <td colspan="9" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load" untuk melihat tagihan outstanding.</td>
                     </tr>
                     <tr v-else-if="outstandingInvoices.length === 0">
-                      <td colspan="8" class="td-empty">No items to show.</td>
+                      <td colspan="9" class="td-empty">No items to show.</td>
                     </tr>
                     <tr v-else v-for="inv in outstandingInvoices" :key="inv.id + (inv._type||'')" class="tr-data" :class="{ 'tr-selected': inv.selected }">
-                      <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onInvoiceSelect" /></td>
+                      <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onInvoiceSelect(inv)" /></td>
                       <td class="td-secondary">{{ inv.orderReference || '—' }}</td>
                       <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
                       <td class="td-secondary"><span :class="['type-badge', inv._type === 'order' ? 'type-badge--order' : 'type-badge--invoice']">{{ inv._type === 'order' ? 'Order' : 'Invoice' }}</span></td>
@@ -311,6 +312,17 @@
                       <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
                       <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
                       <td class="td-secondary" style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
+                      <td style="text-align:right;padding:6px 16px">
+                        <input
+                          v-if="inv.selected"
+                          type="number" min="0" :max="inv.outstandingAmount" step="1"
+                          class="form-input form-input--sm actual-pay-input"
+                          v-model.number="inv.actualPayment"
+                          @input="clampActualPayment(inv)"
+                          @focus="$event.target.select()"
+                        />
+                        <span v-else class="td-secondary">—</span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -400,95 +412,9 @@
             <!-- ── Lines Tab ── -->
             <div v-if="viewTab === 'lines'">
 
-              <!-- Add Detail panel -->
-              <div v-if="showAddDetail && viewRow.status === 'RPAP'" class="add-detail-panel">
-                <div class="add-detail-header">
-                  <span class="add-detail-title">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                    Add Detail — Link Invoice
-                  </span>
-                  <button class="modal-close" @click="showAddDetail = false">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                  </button>
-                </div>
-
-                <div class="add-detail-summary">
-                  <div class="pay-ds-item"><span class="pay-ds-label">Payment Doc No.</span><span class="pay-ds-val mono">{{ viewRow.documentNo }}</span></div>
-                  <div class="pay-ds-item"><span class="pay-ds-label">Received From</span><span class="pay-ds-val">{{ bpName(viewRow) }}</span></div>
-                  <div class="pay-ds-item"><span class="pay-ds-label">Payment Method</span><span class="pay-ds-val">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
-                  <div class="pay-ds-item"><span class="pay-ds-label">Payment Date</span><span class="pay-ds-val">{{ formatDate(viewRow.paymentDate) }}</span></div>
-                  <div class="pay-ds-item"><span class="pay-ds-label">Deposit To</span><span class="pay-ds-val">{{ viewRow['account$_identifier'] || '—' }}</span></div>
-                  <div class="pay-ds-item pay-ds-item--amount">
-                    <span class="pay-ds-label">Actual Payment</span>
-                    <span class="pay-ds-val pay-ds-val--amount">{{ formatCurrency(addDetailSelected.reduce((s,i) => s+(Number(i.outstandingAmount)||0),0)) }}</span>
-                  </div>
-                </div>
-
-                <div class="pay-detail-filter" style="margin-top:12px">
-                  <label class="pay-ds-label" style="white-space:nowrap">Transaction Type</label>
-                  <select class="form-input" style="max-width:180px;height:32px;font-size:12.5px" v-model="addDetailTransactionType" @change="addDetailInvoices = []">
-                    <option value="invoices">Invoices</option>
-                    <option value="orders">Orders</option>
-                    <option value="orders_and_invoices">Orders and Invoices</option>
-                  </select>
-                  <button class="btn-add-line" @click="loadAddDetailInvoices" :disabled="addDetailLoading" style="margin-left:8px">
-                    <span v-if="addDetailLoading" class="spinner spinner--dark"></span>
-                    <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.22-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
-                    {{ addDetailLoading ? 'Loading...' : (addDetailInvoices.length ? 'Refresh' : 'Load') }}
-                  </button>
-                </div>
-
-                <div class="table-wrap" style="margin:8px 0 0">
-                  <table class="table">
-                    <thead><tr>
-                      <th style="width:36px;text-align:center"><input type="checkbox" v-model="addDetailSelectAll" @change="toggleAddDetailAll" :disabled="addDetailInvoices.length===0" /></th>
-                      <th>Order No.</th>
-                      <th>Invoice No.</th>
-                      <th>Type</th>
-                      <th>Date</th>
-                      <th>Due Date</th>
-                      <th style="text-align:right">Amount</th>
-                      <th style="text-align:right">Outstanding</th>
-                      <th>Business Partner</th>
-                    </tr></thead>
-                    <tbody>
-                      <tr v-if="addDetailLoading"><td colspan="9" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-                      <tr v-else-if="addDetailInvoices.length === 0"><td colspan="9" class="td-empty" style="font-style:italic;color:var(--text-muted)">Klik Load untuk menampilkan tagihan outstanding.</td></tr>
-                      <tr v-else v-for="inv in addDetailInvoices" :key="inv.id + (inv._type||'')" class="tr-data" :class="{ 'tr-selected': inv.selected }">
-                        <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onAddDetailSelect" /></td>
-                        <td class="td-secondary">{{ inv.orderReference || '—' }}</td>
-                        <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
-                        <td><span :class="['type-badge', inv._type === 'order' ? 'type-badge--order' : 'type-badge--invoice']">{{ inv._type === 'order' ? 'Order' : 'Invoice' }}</span></td>
-                        <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
-                        <td class="td-secondary">{{ formatDate(inv.dueDate) }}</td>
-                        <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
-                        <td style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
-                        <td class="td-secondary">{{ bpName(viewRow) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
-                  <button class="btn btn--ghost" @click="showAddDetail = false">Cancel</button>
-                  <button class="btn btn--primary" :disabled="addDetailSaving || addDetailSelected.length === 0" @click="saveAddDetail">
-                    <span v-if="addDetailSaving" class="spinner"></span>
-                    {{ addDetailSaving ? 'Saving...' : `Done (${addDetailSelected.length} selected)` }}
-                  </button>
-                </div>
-                <div v-if="viewError" class="form-api-error" style="margin-top:10px">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  {{ viewError }}
-                </div>
-              </div>
-
               <!-- Lines table -->
               <div class="section-divider" style="margin-top:0">
                 <span>Payment Lines</span>
-                <button v-if="viewRow.status === 'RPAP'" class="btn-add-line" @click="openAddDetail">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                  Add Detail
-                </button>
               </div>
 
               <div v-if="viewLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
@@ -535,8 +461,8 @@
                 <div class="detail-item"><span class="detail-label">Payment Date</span><span class="detail-value">{{ formatDate(viewRow.paymentDate) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', payStatusClass(viewRow.status)]">{{ payStatusLabel(viewRow.status) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Received From</span><span class="detail-value">{{ bpName(viewRow) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Deposit To</span><span class="detail-value">{{ viewRow['account$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ parseIdentifier(viewRow['paymentMethod$_identifier']) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Deposit To</span><span class="detail-value">{{ parseIdentifier(viewRow['account$_identifier']) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Currency</span><span class="detail-value">IDR</span></div>
                 <div class="detail-item"><span class="detail-label">Amount</span><span class="detail-value" style="font-weight:700">{{ formatCurrency(viewRow.amount) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Reference No.</span><span class="detail-value">{{ viewRow.referenceNo || '—' }}</span></div>
@@ -609,9 +535,15 @@ import {
   finalizePaymentAmount,
   fetchFinancialAccounts,
   fetchPaymentMethods,
+  createFinaccTransaction,
+  updatePaymentSchedulePaid,
+  updateInvoicePaymentComplete,
+  fetchPaymentScheduleById,
   DEFAULT_ORGANIZATION,
+  DEFAULT_CURRENCY,
   DEFAULT_FIN_ACCOUNT_ID,
   DEFAULT_PAYMETHOD_ID,
+  resolveFinancialAccountFromSchedules,
 } from '@/services/paymentIn.js'
 
 // ── directive
@@ -709,6 +641,7 @@ const toast = ref({ show: false, type: 'success', message: '' })
 const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / PAGE_SIZE)))
 const pageNumbers = computed(() => {
   const tp = totalPages.value, cp = currentPage.value, pages = []
+  if (tp <= 1) return [1]
   if (tp <= 7) { for (let i = 1; i <= tp; i++) pages.push(i); return pages }
   pages.push(1)
   if (cp > 3) pages.push('...')
@@ -718,7 +651,7 @@ const pageNumbers = computed(() => {
   return pages
 })
 const selectedInvoices    = computed(() => outstandingInvoices.value.filter(i => i.selected))
-const totalSelectedAmount = computed(() => selectedInvoices.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0))
+const totalSelectedAmount = computed(() => selectedInvoices.value.reduce((s, i) => s + (Number(i.actualPayment ?? i.outstandingAmount) || 0), 0))
 const totalOutstandingAmount = computed(() => outstandingInvoices.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0))
 const addDetailSelected   = computed(() => addDetailInvoices.value.filter(i => i.selected))
 const selectedPaymentMethodName = computed(() => {
@@ -742,10 +675,14 @@ function formatCurrency(v) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
 }
 function bpName(r) {
-  // Openbravo returns "SEARCH_KEY - Name" in _identifier fields
   const id = r?.['businessPartner$_identifier'] || ''
   if (!id) return '—'
-  // Format: "CODE - Name" → ambil bagian setelah " - " pertama
+  const sepIdx = id.indexOf(' - ')
+  return sepIdx >= 0 ? id.slice(sepIdx + 3) : id
+}
+// FIX #13: parse "CODE - Name" → ambil hanya Name (bagian setelah " - " pertama)
+function parseIdentifier(id) {
+  if (!id) return '—'
   const sepIdx = id.indexOf(' - ')
   return sepIdx >= 0 ? id.slice(sepIdx + 3) : id
 }
@@ -769,7 +706,27 @@ async function loadRows() {
     const startRow = (currentPage.value - 1) * PAGE_SIZE
     const res = await fetchAllPayments({ startRow, pageSize: PAGE_SIZE, searchKey: searchQuery.value })
     rows.value = res.data ?? []
-    totalRows.value = res.totalRows ?? rows.value.length
+    // Openbravo bisa kembalikan totalRows di berbagai tempat
+    const tr = res.totalRows ?? res.total ?? res.count ?? null
+    if (tr !== null && !isNaN(Number(tr))) {
+      totalRows.value = Number(tr)
+    } else {
+      // Fallback: kalau data penuh satu halaman, kemungkinan ada halaman berikutnya
+      const fetched = rows.value.length
+      if (fetched === PAGE_SIZE) {
+        totalRows.value = startRow + fetched + 1
+      } else {
+        totalRows.value = startRow + fetched
+      }
+    }
+    // Kalau halaman saat ini kosong tapi bukan halaman 1, balik ke halaman 1
+    if (rows.value.length === 0 && currentPage.value > 1) {
+      currentPage.value = 1
+      const res2 = await fetchAllPayments({ startRow: 0, pageSize: PAGE_SIZE, searchKey: searchQuery.value })
+      rows.value = res2.data ?? []
+      const tr2 = res2.totalRows ?? res2.total ?? res2.count ?? null
+      totalRows.value = tr2 !== null && !isNaN(Number(tr2)) ? Number(tr2) : rows.value.length
+    }
   } catch (e) { error.value = e.message }
   finally { loading.value = false }
 }
@@ -783,7 +740,16 @@ async function loadLookups() {
 }
 
 // ── pagination / search
-function goPage(p) { if (p >= 1 && p <= totalPages.value) { currentPage.value = p; loadRows() } }
+async function goPage(p) {
+  if (p < 1) return
+  currentPage.value = p
+  await loadRows()
+  // Kalau ternyata halaman ini kosong (API kembalikan data kurang dari expected), sesuaikan totalRows
+  if (rows.value.length === 0 && p > 1) {
+    currentPage.value = p - 1
+    await loadRows()
+  }
+}
 function onSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage.value = 1; loadRows() }, 400) }
 
 // ── dropdown
@@ -842,7 +808,10 @@ function openEditModal(r) {
     status:          r.status || 'RPAP',
     amount:          r.amount || 0,
   }
-  customerSearch.value = r['businessPartner$_identifier'] || ''
+  // FIX #8: parse "CODE - Name" → ambil hanya nama
+  const bpIdentifier = r['businessPartner$_identifier'] || ''
+  const sepIdx = bpIdentifier.indexOf(' - ')
+  customerSearch.value = sepIdx >= 0 ? bpIdentifier.slice(sepIdx + 3) : bpIdentifier
   outstandingInvoices.value = []; invoiceCheckMsg.value = null; invoicesLoaded.value = false
   showFormModal.value = true
 }
@@ -894,8 +863,16 @@ async function loadAddDetailInvoices() {
   finally { addDetailLoading.value = false }
 }
 
-function toggleAddDetailAll() { addDetailInvoices.value.forEach(i => { i.selected = addDetailSelectAll.value }) }
-function onAddDetailSelect() {
+function toggleAddDetailAll() {
+  addDetailInvoices.value.forEach(i => {
+    i.selected = addDetailSelectAll.value
+    if (i.selected && i.actualPayment == null) i.actualPayment = Number(i.outstandingAmount) || 0
+    if (!i.selected) i.actualPayment = null
+  })
+}
+function onAddDetailSelect(inv) {
+  if (inv.selected && inv.actualPayment == null) inv.actualPayment = Number(inv.outstandingAmount) || 0
+  if (!inv.selected) inv.actualPayment = null
   addDetailSelectAll.value = addDetailInvoices.value.length > 0 && addDetailInvoices.value.every(i => i.selected)
 }
 
@@ -903,25 +880,103 @@ async function saveAddDetail() {
   if (addDetailSelected.value.length === 0) return
   addDetailSaving.value = true; viewError.value = ''
   const paymentId = viewRow.value.id
-  const bpId    = typeof viewRow.value.businessPartner === 'object' ? viewRow.value.businessPartner?.id : viewRow.value.businessPartner
-  const orgId   = typeof viewRow.value.organization === 'object' ? viewRow.value.organization?.id : (viewRow.value.organization || DEFAULT_ORGANIZATION)
-  const finAccId  = typeof viewRow.value.account === 'object' ? viewRow.value.account?.id : (viewRow.value.account || DEFAULT_FIN_ACCOUNT_ID)
+  const bpId      = typeof viewRow.value.businessPartner === 'object' ? viewRow.value.businessPartner?.id : viewRow.value.businessPartner
+  const orgId     = typeof viewRow.value.organization === 'object' ? viewRow.value.organization?.id : (viewRow.value.organization || DEFAULT_ORGANIZATION)
+  const headerFinAccId = typeof viewRow.value.account === 'object' ? viewRow.value.account?.id : (viewRow.value.account || DEFAULT_FIN_ACCOUNT_ID)
   const payMethId = typeof viewRow.value.paymentMethod === 'object' ? viewRow.value.paymentMethod?.id : (viewRow.value.paymentMethod || DEFAULT_PAYMETHOD_ID)
+  const payDate   = viewRow.value.paymentDate?.slice(0, 10)
 
   try {
     const payDetail = await fetchPaymentDetail(paymentId)
+    // FIX #9: jika paymentDetail tidak berhasil dibuat, gunakan null
+    const payDetailId = payDetail?.id || null
 
     for (const inv of addDetailSelected.value) {
+      const actualAmt = Number(inv.actualPayment ?? inv.outstandingAmount) || 0
+
+      // 1. Buat FIN_Payment_ScheduleDetail
       await addPaymentScheduleDetail(
-        payDetail.id, inv.scheduleId || null, inv.id,
-        Number(inv.outstandingAmount) || 0,
-        bpId, orgId, finAccId, payMethId, paymentId,
+        payDetailId, inv.scheduleId || null, inv.id,
+        actualAmt,
+        bpId, orgId, headerFinAccId, payMethId, paymentId,
         inv._type || 'invoice',
       )
+
+      // 2. Update FIN_Payment_Schedule: paidAmount & outstandingAmount
+      if (inv.scheduleId) {
+        const sched = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
+        const currentPaid = Number(sched?.paidAmount) || 0
+        const expectedAmt = Number(sched?.amount ?? inv.grandTotalAmount) || 0
+        const updated = await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
+
+        // 3. Jika outstandingAmount = 0 → set paymentComplete = true di Invoice (skip jika sudah true)
+        if (inv._type !== 'order' && inv.id && !inv.paymentComplete) {
+          // FIX: cek field `outstanding` (nama field OB), bukan `outstandingAmount`
+          const newOutstanding = Number(updated?.outstanding ?? updated?.outstandingAmount ?? (expectedAmt - currentPaid - actualAmt))
+          if (newOutstanding <= 0) await updateInvoicePaymentComplete(inv.id, true)
+        }
+      }
     }
 
-    const total = addDetailSelected.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0)
-    await finalizePaymentAmount(paymentId, total)
+    const totalAmt = addDetailSelected.value.reduce((s, i) => s + (Number(i.actualPayment ?? i.outstandingAmount) || 0), 0)
+
+    // 4. Resolve financial account dari schedule invoice
+    const allScheduleIds = addDetailSelected.value.map(i => i.scheduleId).filter(Boolean)
+    const resolvedFinAccId = allScheduleIds.length
+      ? await resolveFinancialAccountFromSchedules(allScheduleIds).catch(() => headerFinAccId)
+      : headerFinAccId
+
+    // 5. Build description: "Invoice No.: 1000021, 1000022" | "Order No.: ..."
+    const invoiceNos = addDetailSelected.value
+      .filter(i => i._type !== 'order' && i.documentNo)
+      .map(i => i.documentNo)
+    const orderNos = addDetailSelected.value
+      .filter(i => i._type === 'order' && i.orderReference)
+      .map(i => i.orderReference)
+    const descParts = []
+    if (invoiceNos.length) descParts.push(`Invoice No.: ${invoiceNos.join(', ')}`)
+    if (orderNos.length)   descParts.push(`Order No.: ${orderNos.join(', ')}`)
+    const description = descParts.join(' | ') || undefined
+
+    // 6. Update payment header: amount + status RDNC + description
+    const existingAmt = Number(viewRow.value.amount) || 0
+    const newTotalAmt = existingAmt + totalAmt
+    await updatePaymentHeader(paymentId, {
+      ...viewRow.value,
+      businessPartner: bpId,
+      organization: orgId,
+      paymentMethod: payMethId,
+      account: headerFinAccId,
+      amount: newTotalAmt,
+      status: 'RDNC',
+      processed: true,
+      processProcedure: 'P',
+      description: description || viewRow.value.description,
+    }).catch(e => console.warn('[saveAddDetail] Update header gagal:', e.message))
+
+    // Update viewRow lokal supaya status bar langsung berubah
+    viewRow.value.amount = newTotalAmt
+    viewRow.value.status = 'RDNC'
+    if (description) viewRow.value.description = description
+
+    // 7. finalizePaymentAmount sebagai backup
+    await finalizePaymentAmount(paymentId, newTotalAmt)
+      .catch(e => console.warn('[saveAddDetail] finalizePaymentAmount gagal:', e.message))
+
+    // 8. POST ke FIN_Finacc_Transaction
+    await createFinaccTransaction({
+      paymentId,
+      financialAccountId: resolvedFinAccId,
+      paymentDate: payDate,
+      amount: totalAmt,
+      businessPartnerId: bpId,
+      organizationId: orgId,
+      currencyId: DEFAULT_CURRENCY,
+      description,
+    }).catch(e => {
+      console.error('[saveAddDetail] FIN_Finacc_Transaction gagal:', e.message)
+      throw new Error(`Gagal membuat transaksi financial account: ${e.message}`)
+    })
 
     showToast('Payment detail berhasil disimpan!')
     showAddDetail.value = false
@@ -981,17 +1036,32 @@ async function loadOutstandingInvoices() {
     }
     // sort by date ascending
     data.sort((a, b) => (a.invoiceDate || '') < (b.invoiceDate || '') ? -1 : 1)
-    outstandingInvoices.value = data.map(r => ({ ...r, selected: false }))
+    // FIX: pastikan outstandingAmount di setiap item valid (> 0)
+    outstandingInvoices.value = data
+      .filter(r => (Number(r.outstandingAmount) || 0) > 0)
+      .map(r => ({ ...r, selected: false }))
     invoicesLoaded.value = true
-    if (data.length === 0) invoiceCheckMsg.value = { type: 'warn', text: 'Tidak ada tagihan outstanding untuk customer ini.' }
+    if (outstandingInvoices.value.length === 0) invoiceCheckMsg.value = { type: 'warn', text: 'Tidak ada tagihan outstanding untuk customer ini.' }
   } catch (e) {
     invoiceCheckMsg.value = { type: 'error', text: e.message || 'Gagal memuat data.' }
   } finally { invoiceLoading.value = false }
 }
 
-function toggleAllInvoices() { outstandingInvoices.value.forEach(i => { i.selected = selectAllInvoices.value }) }
-function onInvoiceSelect() {
+function toggleAllInvoices() {
+  outstandingInvoices.value.forEach(i => {
+    i.selected = selectAllInvoices.value
+    if (i.selected && i.actualPayment == null) i.actualPayment = Number(i.outstandingAmount) || 0
+  })
+}
+function onInvoiceSelect(inv) {
+  if (inv.selected && inv.actualPayment == null) inv.actualPayment = Number(inv.outstandingAmount) || 0
+  if (!inv.selected) inv.actualPayment = null
   selectAllInvoices.value = outstandingInvoices.value.length > 0 && outstandingInvoices.value.every(i => i.selected)
+}
+function clampActualPayment(inv) {
+  const max = Number(inv.outstandingAmount) || 0
+  if (inv.actualPayment < 0) inv.actualPayment = 0
+  if (inv.actualPayment > max) inv.actualPayment = max
 }
 
 // ── process payment (dari form modal tab detail)
@@ -1004,20 +1074,88 @@ async function processPayment() {
   const orgId     = DEFAULT_ORGANIZATION
   const finAccId  = form.value.financialAccount || DEFAULT_FIN_ACCOUNT_ID
   const payMethId = form.value.paymentMethod    || DEFAULT_PAYMETHOD_ID
+  const payDate   = form.value.paymentDate
 
   try {
     const payDetail = await fetchPaymentDetail(paymentId)
+    // FIX #9: jika paymentDetail tidak berhasil dibuat, gunakan null agar
+    // addPaymentScheduleDetail fallback ke finPayment langsung
+    const payDetailId = payDetail?.id || null
 
     for (const inv of selectedInvoices.value) {
+      const actualAmt = Number(inv.actualPayment ?? inv.outstandingAmount) || 0
+
+      // 1. Buat FIN_Payment_ScheduleDetail
       await addPaymentScheduleDetail(
-        payDetail.id, inv.scheduleId || null, inv.id,
-        Number(inv.outstandingAmount) || 0,
+        payDetailId, inv.scheduleId || null, inv.id,
+        actualAmt,
         bpId, orgId, finAccId, payMethId, paymentId,
         inv._type || 'invoice',
       )
+
+      // 2. Update FIN_Payment_Schedule: paidAmount & outstandingAmount
+      if (inv.scheduleId) {
+        const sched = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
+        const currentPaid = Number(sched?.paidAmount) || 0
+        const expectedAmt = Number(sched?.amount ?? inv.grandTotalAmount) || 0
+        const updated = await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
+
+        // 3. Jika outstandingAmount = 0 → set paymentComplete = true di Invoice
+        if (inv._type !== 'order' && inv.id) {
+          // FIX: cek field `outstanding` (sesuai nama di OB), bukan `outstandingAmount`
+          const newOutstanding = Number(updated?.outstanding ?? updated?.outstandingAmount ?? (expectedAmt - currentPaid - actualAmt))
+          await updateInvoicePaymentComplete(inv.id, newOutstanding <= 0)
+        }
+      }
     }
 
-    await finalizePaymentAmount(paymentId, totalSelectedAmount.value)
+    const totalAmt = selectedInvoices.value.reduce((s, i) => s + (Number(i.actualPayment ?? i.outstandingAmount) || 0), 0)
+
+    // 4. Build description dari invoice/order yang dipilih
+    const invoiceNos = selectedInvoices.value
+      .filter(i => i._type !== 'order' && i.documentNo)
+      .map(i => i.documentNo)
+    const orderNos = selectedInvoices.value
+      .filter(i => i._type === 'order' && (i.orderReference || i.documentNo))
+      .map(i => i.orderReference || i.documentNo)
+    const descParts = []
+    if (invoiceNos.length) descParts.push(`Invoice No.: ${invoiceNos.join(', ')}`)
+    if (orderNos.length)   descParts.push(`Order No.: ${orderNos.join(', ')}`)
+    const autoDescription = descParts.join(' | ') || undefined
+
+    // 5. Update payment header: amount + status RDNC (Deposited Not Cleared) + description
+    const updatedHeaderData = {
+      ...form.value,
+      amount: totalAmt,
+      status: 'RDNC',
+      processed: true,
+      processProcedure: 'P',
+      description: autoDescription || form.value.description,
+    }
+    await updatePaymentHeader(paymentId, updatedHeaderData)
+      .catch(e => console.warn('[processPayment] Update header gagal:', e.message))
+
+    // Update local form state supaya list langsung reflect
+    form.value.amount = totalAmt
+    form.value.status = 'RDNC'
+    if (autoDescription) form.value.description = autoDescription
+
+    // 6. finalizePaymentAmount sebagai backup (beberapa versi Openbravo pakai ini)
+    await finalizePaymentAmount(paymentId, totalAmt)
+      .catch(e => console.warn('[processPayment] finalizePaymentAmount gagal:', e.message))
+
+    // 7. POST ke FIN_Finacc_Transaction dengan description
+    await createFinaccTransaction({
+      paymentId,
+      financialAccountId: finAccId,
+      paymentDate: payDate,
+      amount: totalAmt,
+      businessPartnerId: bpId,
+      organizationId: orgId,
+      currencyId: DEFAULT_CURRENCY,
+      description: autoDescription,
+    }).catch(e => console.warn('[processPayment] FIN_Finacc_Transaction gagal:', e.message))
+
     showFormModal.value = false
     savedPaymentId.value = null
     showToast('Payment berhasil diproses!')
@@ -1030,9 +1168,11 @@ async function processPayment() {
 // ── close form modal
 function closeFormModal() {
   if (saving.value || paying.value) return
+  const hadChanges = !!savedPaymentId.value
   showFormModal.value = false
   savedPaymentId.value = null
-  loadRows()
+  // FIX #14: hanya reload jika ada perubahan
+  if (hadChanges || isEdit.value) loadRows()
 }
 
 // ── delete
@@ -1240,4 +1380,7 @@ onMounted(() => { loadRows(); loadLookups() })
 
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }
 .fade-enter-from,.fade-leave-to { opacity: 0; }
+
+/* Actual Payment inline input */
+.actual-pay-input { width: 120px; text-align: right; padding: 0 8px; }
 </style>
