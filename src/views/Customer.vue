@@ -253,7 +253,7 @@
     </Transition>
 
     <!-- ══════════════════════════════════════════════════════════
-         CREATE / EDIT Business Partner Category — FULL PAGE
+         CREATE / EDIT LINK GL — FULL PAGE
     ══════════════════════════════════════════════════════════ -->
     <Transition name="slide">
       <div v-if="page.show && page.type==='linkgl'" class="page-wrap">
@@ -264,10 +264,10 @@
             Business Partner Category
           </button>
           <span class="breadcrumb-sep">/</span>
-          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Business Partner Category' : 'Edit Link GL' }}</span>
+          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Business Partner Category' : 'Edit Business Partner Category' }}</span>
         </div>
 
-        <div class="form-page-title">{{ page.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</div>
+        <div class="form-page-title">{{ page.mode==='create' ? 'Create Business Partner Category' : 'Edit Business Partner Category' }}</div>
 
         <div class="form-card">
           <div class="form-grid-2">
@@ -397,6 +397,36 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Contact Info -->
+              <div v-if="viewContact" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:12px">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Contact
+                </div>
+                <div class="detail-cols">
+                  <div class="detail-col">
+                    <div class="detail-item">
+                      <span class="detail-label">Name</span>
+                      <span class="detail-value">{{ [viewContact.firstName, viewContact.lastName].filter(Boolean).join(' ') || '—' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Email</span>
+                      <span class="detail-value">{{ viewContact.email || '—' }}</span>
+                    </div>
+                  </div>
+                  <div class="detail-col">
+                    <div class="detail-item">
+                      <span class="detail-label">Phone</span>
+                      <span class="detail-value">{{ viewContact.phone || '—' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Position</span>
+                      <span class="detail-value">{{ viewContact.position || '—' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -500,11 +530,11 @@
       <div v-if="glDeleteModal.show" class="modal-overlay" @click.self="glDeleteModal.show=false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3 class="modal-title">Delete Link GL</h3>
+            <h3 class="modal-title">Delete Business Partner Category</h3>
             <button class="modal-close" @click="glDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Are you sure you want to delete Link GL <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
+            <p class="delete-text">Are you sure you want to delete Business Partner Category <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
             <div v-if="glDeleteError" class="form-api-error" style="margin-top:10px">{{ glDeleteError }}</div>
           </div>
           <div class="modal-footer">
@@ -702,7 +732,7 @@ async function loadGLRows() {
   try {
     glRows.value = await fetchBPCategoryAccounts()
   } catch (e) {
-    glError.value = 'Failed to load Link GL data.'
+    glError.value = 'Failed to load Business Partner Category data.'
   } finally { glLoading.value = false }
 }
 
@@ -781,10 +811,10 @@ async function submitGLForm() {
   try {
     if (page.mode === 'create') {
       await createBPCategoryAccount(glForm)
-      showToast('Link GL created successfully')
+      showToast('Business Partner Category created successfully')
     } else {
       await updateBPCategoryAccount(page.data.id, glForm)
-      showToast('Link GL updated successfully')
+      showToast('Business Partner Category updated successfully')
     }
     page.show = false
     await loadGLRows()
@@ -807,7 +837,7 @@ async function doDeleteGL() {
   glDeleteLoading.value = true; glDeleteError.value = null
   try {
     await deleteBPCategoryAccount(glDeleteModal.row.id)
-    showToast('Link GL deleted')
+    showToast('Business Partner Category deleted')
     glDeleteModal.show = false
     await loadGLRows()
   } catch (e) {
@@ -1035,14 +1065,19 @@ async function doToggle() {
 // ── View Modal ───────────────────────────────────────────────
 const viewModal      = reactive({ show: false, data: null, type: 'customer' })
 const primaryAddress = ref('')
+const viewContact    = ref(null)
 
 async function openViewModal(c) {
   closeDropdown()
   viewModal.type='customer'; viewModal.data = c; viewModal.show = true
-  primaryAddress.value = ''
+  primaryAddress.value = ''; viewContact.value = null
   try {
-    const locs = await fetchBPLocations(c.id)
+    const [locs, cts] = await Promise.all([
+      fetchBPLocations(c.id),
+      fetchContacts(c.id),
+    ])
     if (locs.length) primaryAddress.value = locs[0]['locationAddress$_identifier'] || ''
+    if (cts.length)  viewContact.value = cts[0]
   } catch (e) {}
 }
 

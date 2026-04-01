@@ -82,28 +82,33 @@ let _customerCategoryId = null
 // POST - create customer
 // ==============================
 export async function createCustomer(data) {
-  const { paymentTerms, priceList, paymentMethod, currency, ...rest } = data
   if (!_customerCategoryId) {
     _customerCategoryId = await fetchCategoryIdByName('Customer')
   }
   const payload = {
     data: {
       _entityName: 'BusinessPartner',
-      active: true,
+      active: data.active ?? true,
       customer: true,
       vendor: false,
       businessPartnerCategory: { id: _customerCategoryId },
       searchKey: data.searchKey,
       name: data.name,
-      currency: fkWrap(currency) ?? { id: '303' },
-      ...rest,
-      ...(paymentTerms  && { paymentTerms:  fkWrap(paymentTerms) }),
-      ...(priceList     && { priceList:     fkWrap(priceList) }),
-      ...(paymentMethod && { paymentMethod: fkWrap(paymentMethod) }),
+      description: data.description || null,
+      taxExempt: data.taxExempt ?? false,
+      creditLimit: data.creditLimit ?? 0,
+      currency: fkWrap(data.currency) ?? { id: '303' },
+      ...(data.paymentTerms  && { paymentTerms:  fkWrap(data.paymentTerms) }),
+      ...(data.priceList     && { priceList:     fkWrap(data.priceList) }),
+      ...(data.paymentMethod && { paymentMethod: fkWrap(data.paymentMethod) }),
     },
   }
   const res = await api.post(BP_BASE, payload)
-  return res.data?.response?.data?.[0] ?? res.data
+  checkActionAllowed(res, 'createCustomer')
+  const raw = res.data?.response?.data
+  const result = Array.isArray(raw) ? raw[0] : raw
+  if (!result?.id) throw new Error('Failed to create customer: no ID returned from server.')
+  return result
 }
 
 // ==============================
@@ -123,6 +128,7 @@ export async function updateCustomer(id, data) {
     },
   }
   const res = await api.put(`${BP_BASE}/${id}`, payload)
+  checkActionAllowed(res, 'updateCustomer')
   const raw = res.data?.response?.data
   if (Array.isArray(raw)) return raw[0]
   return raw ?? res.data
@@ -447,9 +453,11 @@ export async function createLocation(data) {
     },
   }
   const res = await api.post(LOC_BASE, payload)
+  checkActionAllowed(res, 'createLocation')
   const raw = res.data?.response?.data
-  if (Array.isArray(raw)) return raw[0]
-  return raw ?? res.data
+  const result = Array.isArray(raw) ? raw[0] : raw
+  if (!result?.id) throw new Error('Failed to create location: no ID returned from server.')
+  return result
 }
 
 // ==============================
@@ -527,9 +535,11 @@ export async function createBPLocation(data) {
     },
   }
   const res = await api.post(BPLOC_REST, payload)
+  checkActionAllowed(res, 'createBPLocation')
   const raw = res.data?.response?.data
-  if (Array.isArray(raw)) return raw[0]
-  return raw ?? res.data
+  const result = Array.isArray(raw) ? raw[0] : raw
+  if (!result?.id) throw new Error('Failed to create BP location: no ID returned from server.')
+  return result
 }
 
 // ==============================
