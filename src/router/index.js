@@ -19,6 +19,9 @@ import GeneralLedgerView from '@/views/GeneralLedger.vue'
 import BalanceSheetView from '@/views/BalanceSheet.vue'
 import ProfitAndLossView from '@/views/ProfitAndLoss.vue'
 import FinancialAccountView from '@/views/FinancialAccount.vue'
+import TaxRateView from '@/views/TaxRate.vue'
+import PaymentTermView from '@/views/PaymentTerm.vue'
+import BusinessPartnerCategoryView from '@/views/BusinessPartnerCategory.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -42,6 +45,9 @@ const routes = [
   { path: '/general-ledger', component: GeneralLedgerView },
   { path: '/balance-sheet', component: BalanceSheetView },
   { path: '/profit-and-loss', component: ProfitAndLossView },
+  { path: '/tax-rate', component: TaxRateView },
+  { path: '/payment-term', component: PaymentTermView },
+  { path: '/bp-category', component: BusinessPartnerCategoryView },
 ]
 
 const router = createRouter({

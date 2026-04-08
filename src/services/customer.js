@@ -101,6 +101,7 @@ export async function createCustomer(data) {
       ...(data.paymentTerms  && { paymentTerms:  fkWrap(data.paymentTerms) }),
       ...(data.priceList     && { priceList:     fkWrap(data.priceList) }),
       ...(data.paymentMethod && { paymentMethod: fkWrap(data.paymentMethod) }),
+      ...(data.account       && { account:       fkWrap(data.account) }),
     },
   }
   const res = await api.post(BP_BASE, payload)
@@ -115,7 +116,7 @@ export async function createCustomer(data) {
 // PUT - update customer
 // ==============================
 export async function updateCustomer(id, data) {
-  const { paymentTerms, priceList, paymentMethod, currency, ...rest } = data
+  const { paymentTerms, priceList, paymentMethod, account, currency, ...rest } = data
   const payload = {
     data: {
       id,
@@ -125,6 +126,7 @@ export async function updateCustomer(id, data) {
       ...(paymentTerms  && { paymentTerms:  fkWrap(paymentTerms) }),
       ...(priceList     && { priceList:     fkWrap(priceList) }),
       ...(paymentMethod && { paymentMethod: fkWrap(paymentMethod) }),
+      ...(account       && { account:       fkWrap(account) }),
     },
   }
   const res = await api.put(`${BP_BASE}/${id}`, payload)
@@ -164,6 +166,13 @@ export async function fetchPaymentMethods() {
   // Endpoint menggunakan nama tabel DB: FIN_PaymentMethod (bukan nama entitas Java)
   // Kolom target di BusinessPartner: FIN_Paymentmethod_ID
   const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_PaymentMethod', {
+    params: { _startRow: 0, _endRow: 100, _where: 'e.active = true' },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function fetchFinancialAccounts() {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_Financial_Account', {
     params: { _startRow: 0, _endRow: 100, _where: 'e.active = true' },
   })
   return res.data?.response?.data ?? []

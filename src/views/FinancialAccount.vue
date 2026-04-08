@@ -8,7 +8,6 @@
           <div class="page-header-inner">
             <div>
               <h2 class="page-title">Financial Account</h2>
-              <p class="page-sub">Kelola rekening keuangan dan transaksinya</p>
             </div>
           </div>
         </div>
@@ -355,6 +354,59 @@
                 <span class="detail-value">{{ detailTxn.gLItem || '—' }}</span>
               </div>
             </div>
+
+            <!-- ── Accounting History (hanya jika posted & processed) -->
+            <template v-if="detailTxn.posted === 'Y' && detailTxn.processed">
+              <div class="detail-section-title" style="margin-top:24px;display:flex;align-items:center;gap:8px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Accounting History
+              </div>
+
+              <!-- Loading -->
+              <div v-if="acctLoading" class="acct-loading">
+                <div class="loading-dots"><span></span><span></span><span></span></div>
+              </div>
+
+              <!-- Error -->
+              <div v-else-if="acctError" class="acct-empty acct-error">{{ acctError }}</div>
+
+              <!-- Empty -->
+              <div v-else-if="acctHistory.length === 0" class="acct-empty">Tidak ada accounting entry ditemukan.</div>
+
+              <!-- Table -->
+              <div v-else class="acct-table-wrap">
+                <table class="acct-table">
+                  <thead>
+                    <tr>
+                      <th>General Ledger</th>
+                      <th>Accounting Date</th>
+                      <th>Account Element</th>
+                      <th style="text-align:right">Debit</th>
+                      <th style="text-align:right">Credit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(entry, idx) in acctHistory" :key="entry.id || idx">
+                      <td class="td-secondary">{{ entry['accountingSchema$_identifier'] || entry['generalLedger$_identifier'] || '—' }}</td>
+                      <td class="td-secondary">{{ formatDate(entry.accountingDate) }}</td>
+                      <td>
+                        <span class="acct-element">
+                          {{ entry['account$_identifier'] || entry['accountElement$_identifier'] || '—' }}
+                        </span>
+                      </td>
+                      <td style="text-align:right">
+                        <span v-if="Number(entry.debit) > 0" class="amount-in">{{ formatCurrency(entry.debit) }}</span>
+                        <span v-else class="td-secondary">0</span>
+                      </td>
+                      <td style="text-align:right">
+                        <span v-if="Number(entry.credit) > 0" class="amount-out">{{ formatCurrency(entry.credit) }}</span>
+                        <span v-else class="td-secondary">0</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
           </div>
 
           <div class="modal-footer">
@@ -383,6 +435,7 @@ import { ref, computed, onMounted } from 'vue'
 import {
   fetchFinancialAccounts,
   fetchFinaccTransactions,
+  fetchFinaccTransactionAcct,
 } from '@/services/financialAccount.js'
 
 const PAGE_SIZE = 20
@@ -408,6 +461,11 @@ let   txnSearchTimer   = null
 // ── detail modal
 const showDetailModal  = ref(false)
 const detailTxn        = ref(null)
+
+// ── accounting history (dalam modal)
+const acctHistory      = ref([])
+const acctLoading      = ref(false)
+const acctError        = ref('')
 
 // ── toast
 const toast = ref({ show: false, type: 'success', message: '' })
@@ -601,9 +659,23 @@ async function txnGoPage(p) {
 }
 
 // ── open transaction detail modal
-function openTxnDetail(txn) {
-  detailTxn.value    = { ...txn }
+async function openTxnDetail(txn) {
+  detailTxn.value       = { ...txn }
   showDetailModal.value = true
+  acctHistory.value     = []
+  acctError.value       = ''
+
+  // Load accounting history hanya jika posted='Y' dan processed=true
+  if (txn.posted === 'Y' && txn.processed) {
+    acctLoading.value = true
+    try {
+      acctHistory.value = await fetchFinaccTransactionAcct(txn.id)
+    } catch (e) {
+      acctError.value = e.message || 'Gagal memuat accounting history.'
+    } finally {
+      acctLoading.value = false
+    }
+  }
 }
 
 onMounted(() => loadAccounts())
@@ -787,6 +859,18 @@ onMounted(() => loadAccounts())
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
 .toast--success { background: #16a34a; color: #fff; }
 .toast--error   { background: var(--danger); color: #fff; }
+
+/* ── Accounting History table */
+.acct-table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.acct-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.acct-table thead th { background: var(--surface2); color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: left; }
+.acct-table tbody tr td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.acct-table tbody tr:last-child td { border-bottom: none; }
+.acct-table tbody tr:hover { background: var(--surface2); }
+.acct-element { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary); }
+.acct-loading { display: flex; justify-content: center; padding: 24px 0; }
+.acct-empty { text-align: center; color: var(--text-muted); padding: 20px; font-size: 13px; border: 1px dashed var(--border); border-radius: var(--radius-sm); margin-top: 12px; }
+.acct-error { color: var(--danger); border-color: #fecaca; }
 
 /* ── Transitions */
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }

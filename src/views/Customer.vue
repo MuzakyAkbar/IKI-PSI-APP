@@ -122,6 +122,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Customer Info
           </div>
+          <!-- Row 1: Identity fields -->
           <div class="form-grid-3">
             <div class="form-group">
               <label>Customer Code/SKU <span class="req">*</span></label>
@@ -129,28 +130,10 @@
               <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
             </div>
             <div class="form-group">
-              <label>Province</label>
-              <input v-model="form.province" placeholder="Province" />
-            </div>
-            <div class="form-group">
-              <label>Street Address</label>
-              <input v-model="form.streetAddress" placeholder="Street Address" />
-            </div>
-            <div class="form-group">
               <label>Customer Name <span class="req">*</span></label>
               <input v-model="form.name" placeholder="Customer Name" :class="{'input-error':formErrors.name}" />
               <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
             </div>
-            <div class="form-group">
-              <label>City</label>
-              <input v-model="form.city" placeholder="City" />
-            </div>
-            <div class="form-group">
-              <label>Other details</label>
-              <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
-            </div>
-          </div>
-          <div class="form-grid-2" style="margin-top:14px">
             <div class="form-group">
               <label>Business Partner Category</label>
               <select v-model="form.linkGL">
@@ -158,9 +141,35 @@
                 <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
             </div>
+          </div>
+
+          <!-- Row 2: Location fields -->
+          <div class="form-section-divider">
+            <span class="form-section-label">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Address / Location
+            </span>
+          </div>
+          <div class="form-grid-3" style="margin-top:12px">
+            <div class="form-group">
+              <label>Province</label>
+              <input v-model="form.province" placeholder="Province" />
+            </div>
+            <div class="form-group">
+              <label>City</label>
+              <input v-model="form.city" placeholder="City" />
+            </div>
             <div class="form-group">
               <label>Postal Code</label>
               <input v-model="form.postalCode" placeholder="Postal Code" />
+            </div>
+            <div class="form-group">
+              <label>Street Address</label>
+              <input v-model="form.streetAddress" placeholder="Street Address" />
+            </div>
+            <div class="form-group">
+              <label>Other Details</label>
+              <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
             </div>
           </div>
           <div class="form-checks" style="margin-top:14px">
@@ -199,6 +208,17 @@
                 <option v-for="pt in lookups.paymentTerms" :key="pt.id" :value="pt.id">{{ pt.name }}</option>
               </select>
               <span class="field-error" v-if="formErrors.paymentTerms">{{ formErrors.paymentTerms }}</span>
+            </div>
+            <div class="form-group">
+              <label>Financial Account</label>
+              <select v-model="form.account">
+                <option value="">Select Financial Account</option>
+                <option v-for="fa in lookups.financialAccounts" :key="fa.id" :value="fa.id">{{ fa['_identifier'] || fa.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Credit Limit</label>
+              <input v-model.number="form.creditLimit" type="number" min="0" placeholder="0" />
             </div>
           </div>
         </div>
@@ -339,8 +359,23 @@
             </button>
           </div>
 
+          <!-- Outstanding Balance Banner -->
+          <div class="balance-banner">
+            <div class="balance-banner-label">Outstanding Balance</div>
+            <div v-if="outstandingLoading" class="balance-banner-value balance-banner-loading">Loading...</div>
+            <div v-else class="balance-banner-value" :class="outstandingBalance > 0 ? 'balance-banner-value--nonzero' : ''">
+              IDR {{ outstandingBalance != null ? outstandingBalance.toLocaleString('id-ID') : '—' }}
+            </div>
+          </div>
+
           <div class="modal-body">
             <div class="detail-panel">
+
+              <!-- Section: Customer Info -->
+              <div class="detail-section-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Customer Info
+              </div>
               <div class="detail-cols">
                 <div class="detail-col">
                   <div class="detail-item">
@@ -349,19 +384,11 @@
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Customer Name</span>
-                    <span class="detail-value">{{ viewModal.data?.name }}</span>
+                    <span class="detail-value">{{ viewModal.data?.name || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Province</span>
-                    <span class="detail-value">{{ viewModal.data?.['province$_identifier'] || '—' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">City</span>
-                    <span class="detail-value">{{ viewModal.data?.cityName || '—' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Postal Code</span>
-                    <span class="detail-value">{{ viewModal.data?.postalCode || '—' }}</span>
+                    <span class="detail-label">Business Partner Category</span>
+                    <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Status</span>
@@ -369,24 +396,46 @@
                       {{ viewModal.data?.active ? 'Active' : 'Inactive' }}
                     </span>
                   </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Tax Exempt</span>
+                    <span class="detail-value">{{ viewModal.data?.taxExempt ? 'Yes' : 'No' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Credit Limit</span>
+                    <span class="detail-value">{{ viewModal.data?.creditLimit != null ? Number(viewModal.data.creditLimit).toLocaleString('id-ID') : '—' }}</span>
+                  </div>
                 </div>
                 <div class="detail-col">
                   <div class="detail-item">
                     <span class="detail-label">Street Address</span>
-                    <span class="detail-value">{{ primaryAddress || '—' }}</span>
+                    <span class="detail-value">{{ viewModal.data?.streetAddress || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Other details</span>
-                    <span class="detail-value">{{ viewModal.data?.description || '—' }}</span>
+                    <span class="detail-label">Other Details</span>
+                    <span class="detail-value">{{ viewModal.data?.otherDetails || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Business Partner Category</span>
-                    <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
+                    <span class="detail-label">City</span>
+                    <span class="detail-value">{{ (viewModal.data?.cityName && viewModal.data.cityName !== '—') ? viewModal.data.cityName : '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Payment Terms</span>
-                    <span class="detail-value">{{ viewModal.data?.['paymentTerms$_identifier'] || '—' }}</span>
+                    <span class="detail-label">Postal Code</span>
+                    <span class="detail-value">{{ viewModal.data?.postalCode || '—' }}</span>
                   </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Province</span>
+                    <span class="detail-value">{{ viewModal.data?.['province$_identifier'] || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section: Payment Info -->
+              <div class="detail-section-label" style="margin-top:18px">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Payment Info
+              </div>
+              <div class="detail-cols">
+                <div class="detail-col">
                   <div class="detail-item">
                     <span class="detail-label">Price List</span>
                     <span class="detail-value">{{ viewModal.data?.['priceList$_identifier'] || '—' }}</span>
@@ -396,12 +445,22 @@
                     <span class="detail-value">{{ viewModal.data?.['paymentMethod$_identifier'] || '—' }}</span>
                   </div>
                 </div>
+                <div class="detail-col">
+                  <div class="detail-item">
+                    <span class="detail-label">Payment Terms</span>
+                    <span class="detail-value">{{ viewModal.data?.['paymentTerms$_identifier'] || '—' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Financial Account</span>
+                    <span class="detail-value">{{ viewModal.data?.['account$_identifier'] || '—' }}</span>
+                  </div>
+                </div>
               </div>
 
-              <!-- Contact Info -->
-              <div v-if="viewContact" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-                <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:12px">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <!-- Section: Contact -->
+              <div v-if="viewContact" style="margin-top:18px">
+                <div class="detail-section-label">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                   Contact
                 </div>
                 <div class="detail-cols">
@@ -427,6 +486,7 @@
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
 
@@ -566,7 +626,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import {
   fetchCustomers, createCustomer, updateCustomer,
-  fetchPaymentTerms, fetchPriceLists, fetchPaymentMethods,
+  fetchPaymentTerms, fetchPriceLists, fetchPaymentMethods, fetchFinancialAccounts,
   fetchContacts, fetchContactsForIds, createContact, updateContact,
   fetchBPLocations, fetchBPLocationsForIds,
   createLocation, updateLocation,
@@ -578,6 +638,7 @@ import {
   fetchGLAccounts,
   fetchAccountingSchemas,
 } from '@/services/customer'
+import { fetchCustomerOutstandingBalance } from '@/services/customerInvoice'
 
 // ── click-outside directive ──────────────────────────────────
 const vClickOutside = {
@@ -602,20 +663,21 @@ const openDropdown = ref(null)
 const dropdownPos  = ref({ top: 0, right: 0 })
 
 // ── Lookups ──────────────────────────────────────────────────
-const lookups = reactive({ paymentTerms: [], priceLists: [], paymentMethods: [] })
+const lookups = reactive({ paymentTerms: [], priceLists: [], paymentMethods: [], financialAccounts: [] })
 const bpCategories = ref([])
 const glAccounts   = ref([])
 const accountingSchemas = ref([])
 
 async function loadLookups() {
   try {
-    const [pt, pl, pm, cats, accts, schemas] = await Promise.all([
-      fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods(),
+    const [pt, pl, pm, fa, cats, accts, schemas] = await Promise.all([
+      fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods(), fetchFinancialAccounts(),
       fetchBPCategories(), fetchGLAccounts(), fetchAccountingSchemas(),
     ])
     lookups.paymentTerms = pt
     lookups.priceLists = pl
     lookups.paymentMethods = pm
+    lookups.financialAccounts = fa
     bpCategories.value = cats
     glAccounts.value = accts
     accountingSchemas.value = schemas
@@ -870,9 +932,9 @@ const defaultForm = () => ({
   searchKey: '', name: '', description: '', province: '', city: '',
   streetAddress: '', otherDetails: '', postalCode: '', linkGL: '',
   contactFirstName: '', contactLastName: '', contactEmail: '', contactPhone: '', contactPosition: '',
-  contactId: null, // ADUser id when editing contact
+  contactId: null,
   taxExempt: false,
-  paymentTerms: '', priceList: '', paymentMethod: '',
+  paymentTerms: '', priceList: '', paymentMethod: '', account: '',
   creditLimit: 0, active: true,
   bpLocationId: null, locationId: null
 })
@@ -896,6 +958,7 @@ function openEditPage(c) {
     paymentTerms:  extractId(c.paymentTerms),
     priceList:     extractId(c.priceList),
     paymentMethod: extractId(c.paymentMethod),
+    account:       extractId(c.account),
     creditLimit: c.creditLimit ?? 0, active: c.active ?? true,
     bpLocationId: c.bpLocationId ?? null,
     locationId: c.locationId ?? null,
@@ -929,6 +992,7 @@ async function submitForm() {
       ...(form.paymentTerms  && { paymentTerms:  form.paymentTerms }),
       ...(form.priceList     && { priceList:     form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
+      ...(form.account       && { account:       form.account }),
     }
 
     if (page.mode === 'create') {
@@ -1066,19 +1130,28 @@ async function doToggle() {
 const viewModal      = reactive({ show: false, data: null, type: 'customer' })
 const primaryAddress = ref('')
 const viewContact    = ref(null)
+const outstandingBalance = ref(null)
+const outstandingLoading = ref(false)
 
 async function openViewModal(c) {
   closeDropdown()
   viewModal.type='customer'; viewModal.data = c; viewModal.show = true
   primaryAddress.value = ''; viewContact.value = null
+  outstandingBalance.value = null; outstandingLoading.value = true
   try {
-    const [locs, cts] = await Promise.all([
+    const [locs, cts, balance] = await Promise.all([
       fetchBPLocations(c.id),
       fetchContacts(c.id),
+      fetchCustomerOutstandingBalance(c.id),
     ])
     if (locs.length) primaryAddress.value = locs[0]['locationAddress$_identifier'] || ''
     if (cts.length)  viewContact.value = cts[0]
-  } catch (e) {}
+    outstandingBalance.value = balance
+  } catch (e) {
+    outstandingBalance.value = null
+  } finally {
+    outstandingLoading.value = false
+  }
 }
 
 function editFromView() {
@@ -1232,6 +1305,9 @@ onMounted(() => { load(); loadLookups() })
 .input-error { border-color: var(--danger) !important; }
 .field-error { font-size: 11.5px; color: var(--danger); }
 .req { color: var(--danger); }
+.form-section-divider { display: flex; align-items: center; gap: 8px; margin-top: 18px; margin-bottom: 2px; }
+.form-section-label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); white-space: nowrap; }
+.form-section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .form-checks { display: flex; gap: 20px; }
 .check-label { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; }
 .check-label input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
@@ -1258,6 +1334,12 @@ onMounted(() => { load(); loadLookups() })
 
 /* ── Detail View ──────────────────────────────────────── */
 .detail-panel { }
+.detail-section-label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.balance-banner { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.balance-banner-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.balance-banner-value { font-size: 15px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); }
+.balance-banner-value--nonzero { color: #dc2626; }
+.balance-banner-loading { color: var(--text-muted); font-size: 13px; font-weight: 500; font-family: var(--font); }
 .detail-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .detail-col { display: flex; flex-direction: column; gap: 14px; }
 .detail-item { display: flex; flex-direction: column; gap: 3px; }

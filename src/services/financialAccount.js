@@ -122,3 +122,34 @@ export async function fetchFinaccTransactionById(id) {
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
 }
+
+// ════════════════════════════════════════════════════
+// ACCOUNTING HISTORY — FinancialMgmtAccountingFact
+// ════════════════════════════════════════════════════
+//
+// Entity   : FinancialMgmtAccountingFact
+// Relasi   : e.recordID = FIN_Finacc_Transaction.id
+//            e.table    = '4D8C3B3C31D1410DA046140C9F024D17'
+//            (AD_Table.id untuk FIN_Finacc_Transaction — terlihat dari JSON response)
+//
+const ACCT_FACT_BASE          = '/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingFact'
+const FIN_FINACC_TXN_TABLE_ID = '4D8C3B3C31D1410DA046140C9F024D17'
+
+/**
+ * Fetch accounting fact entries untuk satu FIN_Finacc_Transaction.
+ * Filter: recordID = txnId  AND  table = FIN_Finacc_Transaction's AD_Table.id
+ *
+ * @param {string} finaccTransactionId - FIN_Finacc_Transaction.id
+ */
+export async function fetchFinaccTransactionAcct(finaccTransactionId) {
+  const res = await api.get(ACCT_FACT_BASE, {
+    params: {
+      _where:    `e.recordID = '${finaccTransactionId}' and e.table = '${FIN_FINACC_TXN_TABLE_ID}'`,
+      _startRow: 0,
+      _endRow:   50,
+      _noCount:  false,
+      _orderBy:  'e.debit desc, e.sequenceNumber asc',
+    },
+  })
+  return res.data?.response?.data ?? []
+}

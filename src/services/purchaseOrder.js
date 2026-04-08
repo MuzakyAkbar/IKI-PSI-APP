@@ -24,7 +24,7 @@ const ORDER_BASE = '/org.openbravo.service.json.jsonrest/Order'
 const PURCHASE_ORDER_DOCTYPE_ID = '53F55A814CA045AE9561B7E247FF9569'
 
 export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
-  let where = `e.transactionDocument.id = '${PURCHASE_ORDER_DOCTYPE_ID}'`
+  let where = `e.salesTransaction = false and e.transactionDocument.id = '${PURCHASE_ORDER_DOCTYPE_ID}'`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`
@@ -34,13 +34,25 @@ export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = 
       _startRow: startRow,
       _endRow: startRow + pageSize,
       _noCount: false,
-      _orderBy: 'e.creationDate desc',
+      _orderBy: 'e.documentNo asc',
       _where: where,
     },
   })
-  return res.data?.response ?? res.data
+  const response = res.data?.response ?? res.data
+  if (Array.isArray(response?.data)) {
+    response.data = response.data.slice().sort((a, b) => {
+      const nA = parseInt(a.documentNo, 10)
+      const nB = parseInt(b.documentNo, 10)
+      const aIsNum = !isNaN(nA)
+      const bIsNum = !isNaN(nB)
+      if (aIsNum && bIsNum) return nA - nB
+      if (aIsNum && !bIsNum) return -1
+      if (!aIsNum && bIsNum) return 1
+      return (a.documentNo || '').localeCompare(b.documentNo || '')
+    })
+  }
+  return response
 }
-
 export async function fetchOrder(id) {
   const res = await api.get(`${ORDER_BASE}/${id}`)
   const raw = res.data?.response?.data
@@ -79,7 +91,7 @@ function buildOrderPayload(data) {
   } = data
 
   return {
-    documentType: { id: '0' },
+    documentType: fkWrap(PURCHASE_ORDER_DOCTYPE_ID),
     currency: { id: '303' },
     salesTransaction: false, // Purchase Order
     ...(documentNo            && { documentNo }),
@@ -248,7 +260,7 @@ export async function fetchPaymentTermLines(paymentTermId) {
 
 // Payment Methods
 export async function fetchPaymentMethods() {
-  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtFinAccPaymentMethod', {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FIN_PaymentMethod', {
     params: { _startRow: 0, _endRow: 100 },
   })
   return res.data?.response?.data ?? []

@@ -128,16 +128,7 @@
                 </div>
                 <div class="form-group">
                   <label>Transaction Document</label>
-                  <div class="acc-wrap">
-                    <input v-model="docSearch" class="acc-input" placeholder="Search document..." @input="onDocSearch" @focus="showDocDrop=true" @blur="onDocBlur" />
-                    <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    <ul v-if="showDocDrop && filteredDocs.length" class="acc-dropdown">
-                      <li v-for="d in filteredDocs" :key="d.id" class="acc-opt" @mousedown.prevent="selectDoc(d)">{{ d.name }}</li>
-                    </ul>
-                    <ul v-else-if="showDocDrop && docSearch.length > 0 && !filteredDocs.length" class="acc-dropdown">
-                      <li class="acc-empty">No documents found</li>
-                    </ul>
-                  </div>
+                  <input value="Purchase Order" class="form-input" disabled style="background: var(--surface2); color: var(--text-secondary)" />
                 </div>
                 <div class="form-group">
                   <label>Warehouse</label>
@@ -449,7 +440,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import {
   fetchAllOrders, fetchOrder, createOrder, updateOrder, deleteOrder,
   fetchOrderLines, createOrderLine, updateOrderLine, deleteOrderLine,
-  fetchVendors, fetchVendorById, fetchPartnerLocations, fetchWarehouses, fetchDocumentSequences,
+  fetchVendors, fetchVendorById, fetchPartnerLocations, fetchWarehouses,
   fetchPaymentTerms, fetchPaymentMethods, fetchProducts, fetchUOMs,
   fetchOrganizations, fetchPriceLists, fetchPaymentTermLines,
 } from '@/services/purchaseOrder.js'
@@ -481,7 +472,6 @@ const dropdownPos = ref({ top: 0, right: 0 })
 // ── lookup data
 const partnerLocations = ref([])
 const warehouses = ref([])
-const documents = ref([])
 const paymentTerms = ref([])
 const paymentMethods = ref([])
 const uoms = ref([])
@@ -521,18 +511,6 @@ const vendorSearch = ref('')
 const filteredVendors = ref([])
 const showVendorDrop = ref(false)
 
-// Document search
-const docSearch = ref('')
-const showDocDrop = ref(false)
-const filteredDocs = computed(() => {
-  if (!docSearch.value.trim()) return documents.value.slice(0, 30)
-  const q = docSearch.value.toLowerCase()
-  return documents.value.filter(d => d.name?.toLowerCase().includes(q)).slice(0, 30)
-})
-function onDocSearch() { showDocDrop.value = true }
-function selectDoc(d) { form.value.transactionDocument = d.id; docSearch.value = d.name; showDocDrop.value = false }
-function onDocBlur() { setTimeout(() => { showDocDrop.value = false }, 150) }
-
 const lines = ref([])
 const paymentLines = ref([])
 const paymentLinesLoading = ref(false)
@@ -557,6 +535,7 @@ function showToast(msg, type = 'success') {
 }
 
 // ── helpers
+const extractId = (v) => { if (!v) return ''; if (typeof v === 'object') return v.id ?? ''; return String(v) }
 function today() { return new Date().toISOString().slice(0, 10) }
 function formatDate(d) {
   if (!d) return '—'
@@ -633,12 +612,11 @@ function closeDropdown() { openDropdown.value = null }
 
 // ── load lookups
 async function loadLookups() {
-  const [w, d, pt, pm, u, org, pl] = await Promise.allSettled([
-    fetchWarehouses(), fetchDocumentSequences(), fetchPaymentTerms(),
+  const [w, pt, pm, u, org, pl] = await Promise.allSettled([
+    fetchWarehouses(), fetchPaymentTerms(),
     fetchPaymentMethods(), fetchUOMs(), fetchOrganizations(), fetchPriceLists(),
   ])
   warehouses.value = w.value ?? []
-  documents.value = d.value ?? []
   paymentTerms.value = pt.value ?? []
   paymentMethods.value = pm.value ?? []
   uoms.value = u.value ?? []
@@ -660,12 +638,6 @@ function selectVendor(v) {
   form.value.businessPartner = v.id
   vendorSearch.value = v.name
   showVendorDrop.value = false
-
-  const extractId = (val) => {
-    if (!val) return ''
-    if (typeof val === 'object') return val.id || ''
-    return String(val)
-  }
 
   // Vendor pakai field khusus PO: pOPaymentTerms, pOPaymentMethod, purchasePricelist
   const ptId = extractId(v.pOPaymentTerms)
@@ -761,15 +733,14 @@ function addLine() { lines.value.push(newLine()) }
 function removeLine(i) { lines.value.splice(i, 1) }
 function calcLine(line) { line.lineNetAmount = (line.orderedQuantity || 0) * (line.unitPrice || 0) }
 
+
+
 // ── open modals
 function openCreateModal() {
   isEdit.value = false; editId.value = null
   form.value = emptyForm(); lines.value = []; paymentLines.value = []
   vendorSearch.value = ''; partnerLocations.value = []
   formError.value = ''; activeFormTab.value = 'transaction'
-  // Set docSearch label dari dokumen yang sudah di-load
-  const doc = documents.value.find(d => d.id === PURCHASE_ORDER_DOCTYPE_ID)
-  docSearch.value = doc?.name || 'Purchase Order'
   showFormModal.value = true
 }
 
@@ -781,27 +752,25 @@ async function openEditModal(r) {
 
   form.value = {
     documentNo: r.documentNo || '',
-    transactionDocument: r['transactionDocument'] || '',
-    warehouse: r['warehouse'] || '',
-    organization: r['organization'] || '',
-    partnerAddress: r['partnerAddress'] || '',
+    transactionDocument: PURCHASE_ORDER_DOCTYPE_ID,
+    warehouse: extractId(r.warehouse),
+    organization: extractId(r.organization),
+    partnerAddress: extractId(r.partnerAddress),
     orderDate: r.orderDate?.slice(0,10) || today(),
-    businessPartner: r['businessPartner'] || '',
-    paymentTerms: r['paymentTerms'] || '',
+    businessPartner: extractId(r.businessPartner),
+    paymentTerms: extractId(r.paymentTerms),
     scheduledDeliveryDate: r.scheduledDeliveryDate?.slice(0,10) || '',
-    paymentMethod: r['paymentMethod'] || '',
-    invoiceTerm: r.invoiceTerm || '',
+    paymentMethod: extractId(r.paymentMethod),
+    invoiceTerm: r.invoiceTerms || '',
     orderReference: r.orderReference || '',
     description: r.description || '',
-    invoiceAddress: r['invoiceAddress'] || '',
-    priceList: r['priceList'] || '',
+    invoiceAddress: extractId(r.invoiceAddress),
+    priceList: extractId(r.priceList),
     deliveryLocation: r.deliveryLocation || '',
   }
   vendorSearch.value = r['businessPartner$_identifier'] || ''
-  const foundDoc = documents.value.find(d => d.id === r['transactionDocument'])
-  docSearch.value = foundDoc?.name || r['transactionDocument$_identifier'] || ''
 
-  if (r.businessPartner) await loadPartnerLocations(r.businessPartner)
+  if (r.businessPartner) await loadPartnerLocations(extractId(r.businessPartner))
 
   const existingLines = await fetchOrderLines(r.id)
   lines.value = existingLines.map(l => {

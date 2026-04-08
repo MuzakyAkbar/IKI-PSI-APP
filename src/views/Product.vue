@@ -28,17 +28,17 @@
           <div class="table-wrap">
             <table class="table">
               <colgroup>
-                <col style="width:160px">
-                <col style="width:22%">
-                <col style="width:18%">
-                <col style="width:14%">
-                <col style="width:100px">
-                <col>
                 <col style="width:140px">
+                <col>
+                <col class="col-hide-md" style="width:16%">
+                <col class="col-hide-lg" style="width:12%">
+                <col class="col-hide-sm" style="width:90px">
+                <col class="col-hide-md" style="width:16%">
+                <col style="width:80px; min-width:80px">
               </colgroup>
               <thead><tr>
-                <th>Code</th><th>Product Name</th><th>Category</th>
-                <th>Unit of Measure</th><th>Type</th><th>Description</th>
+                <th>Code</th><th>Product Name</th><th class="col-hide-md">Category</th>
+                <th class="col-hide-lg">Unit of Measure</th><th class="col-hide-sm">Type</th><th class="col-hide-md">Description</th>
                 <th class="th-action">Action</th>
               </tr></thead>
               <tbody>
@@ -49,13 +49,22 @@
                   <tr v-for="r in rows" :key="r.id" class="tr-data">
                     <td><span class="code-badge">{{ r.searchKey }}</span></td>
                     <td class="td-name">
-                      <span class="td-name-text">{{ r.name }}</span>
-                      <span :class="['status-dot', r.active?'status-dot--active':'status-dot--inactive']"></span>
+                      <div class="td-name-wrap">
+                        <span class="td-name-text">{{ r.name }}</span>
+                        <span :class="['status-dot', r.active?'status-dot--active':'status-dot--inactive']"></span>
+                      </div>
+                      <div class="td-mobile-meta">
+                        <span class="td-meta-item col-show-md">{{ r['productCategory$_identifier'] || '—' }}</span>
+                        <span class="td-meta-sep col-show-md col-show-lg"> · </span>
+                        <span class="td-meta-item col-show-lg">{{ r['uOM$_identifier'] || '—' }}</span>
+                        <span class="td-meta-sep col-show-md"> · </span>
+                        <span class="td-meta-item col-show-md">{{ r.description || '—' }}</span>
+                      </div>
                     </td>
-                    <td class="td-secondary td-clip">{{ r['productCategory$_identifier'] || '—' }}</td>
-                    <td class="td-secondary td-clip">{{ r['uOM$_identifier'] || '—' }}</td>
-                    <td><span class="type-badge">{{ productTypeLabel(r.productType) }}</span></td>
-                    <td class="td-secondary td-clip">{{ r.description || '—' }}</td>
+                    <td class="td-secondary td-clip col-hide-md">{{ r['productCategory$_identifier'] || '—' }}</td>
+                    <td class="td-secondary td-clip col-hide-lg">{{ r['uOM$_identifier'] || '—' }}</td>
+                    <td class="col-hide-sm"><span class="type-badge">{{ productTypeLabel(r.productType) }}</span></td>
+                    <td class="td-secondary td-clip col-hide-md">{{ r.description || '—' }}</td>
                     <td class="td-action-cell">
                       <div class="action-group">
                         <div class="dropdown-wrap" v-click-outside="closeDropdown">
@@ -884,22 +893,56 @@ button { box-sizing: border-box; }
 .btn--danger:hover:not(:disabled) { background: #dc2626; }
 .btn-spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.table-wrap { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-.table th { padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; }
-.th-action { text-align: right; }
-.table td { padding: 12px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow: hidden; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; min-width: 320px; }
+.table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; }
+.th-action { text-align: right; overflow: visible !important; }
+.table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow: hidden; }
+.table td:last-child { overflow: visible; }
 .tr-data:last-child td { border-bottom: none; }
 .tr-data:hover td { background: var(--accent-light); }
 .code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-.td-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-name { font-weight: 500; overflow: hidden; }
+.td-name-wrap { display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .td-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.td-mobile-meta { display: none; font-size: 11.5px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-meta-item { overflow: hidden; text-overflow: ellipsis; }
+.td-meta-sep { color: var(--border); }
+
+/* Responsive column visibility */
+/* ≤ 1024px: hide Description + UOM columns */
+@media (max-width: 1024px) {
+  .col-hide-lg { display: none; }
+  .col-show-lg { display: inline; }
+  .td-mobile-meta { display: block; }
+}
+@media (min-width: 1025px) {
+  .col-show-lg { display: none; }
+}
+
+/* ≤ 768px: also hide Category + Description */
+@media (max-width: 768px) {
+  .col-hide-md { display: none; }
+  .col-show-md { display: inline; }
+  .td-mobile-meta { display: block; }
+}
+@media (min-width: 769px) {
+  .col-show-md { display: none; }
+}
+
+/* ≤ 480px: hide Type too */
+@media (max-width: 480px) {
+  .col-hide-sm { display: none; }
+  .table td, .table th { padding: 10px 12px; }
+  .toolbar { flex-wrap: wrap; }
+  .search-wrap { max-width: 100%; width: 100%; }
+}
 .td-secondary { color: var(--text-secondary); font-size: 13px; }
 .td-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-empty { text-align: center; color: var(--text-muted); padding: 48px 16px; font-size: 13px; }
 .td-error { color: var(--danger); }
-.td-action-cell { text-align: right; white-space: nowrap; overflow: visible !important; }
+.td-action-cell { text-align: right; white-space: nowrap; overflow: visible !important; width: 80px; min-width: 80px; padding-left: 4px !important; padding-right: 16px !important; }
 .type-badge { font-size: 11.5px; font-weight: 500; padding: 3px 10px; border-radius: 99px; background: #f1f5f9; color: #475569; display: inline-block; white-space: nowrap; }
 .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 5px; vertical-align: middle; flex-shrink: 0; }
 .status-dot--active { background: var(--success); }

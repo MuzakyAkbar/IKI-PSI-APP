@@ -51,7 +51,7 @@
                         <button class="action-btn action-btn--more" @click.stop="toggleDropdown(r.id, $event)">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                         </button>
-                        <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }" @click.stop>
+                        <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }" >
                           <button class="dropdown-item" @click="openViewModal(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
                           </button>
@@ -172,27 +172,29 @@
                   <label>Price List</label>
                   <input :value="priceListLabel" class="form-input" disabled placeholder="Auto dari customer" />
                 </div>
-                <div class="form-group">
-                  <label>Kode Pelanggan</label>
-                  <input v-model="form.kodePelanggan" class="form-input" placeholder="Auto dari customer" readonly style="background:#f8fafc" />
-                </div>
-                <div class="form-group">
-                  <label>Order Reference</label>
-                  <input v-model="form.orderReference" class="form-input" placeholder="Order Reference" />
-                </div>
+                <template v-if="!isEdit">
+                  <div class="form-group">
+                    <label>Kode Pelanggan</label>
+                    <input v-model="form.kodePelanggan" class="form-input" placeholder="Auto dari customer" readonly style="background:#f8fafc" />
+                  </div>
+                  <div class="form-group">
+                    <label>Order Reference</label>
+                    <input v-model="form.orderReference" class="form-input" placeholder="Order Reference" />
+                  </div>
 
-                <div class="form-group">
-                  <label>Stand Awal</label>
-                  <input v-model.number="form.standAwal" type="number" min="0" class="form-input" placeholder="0" />
-                </div>
-                <div class="form-group">
-                  <label>Stand Akhir</label>
-                  <input v-model.number="form.standAkhir" type="number" min="0" class="form-input" placeholder="0" @input="calcUsage" />
-                </div>
-                <div class="form-group">
-                  <label>Total Usage</label>
-                  <input :value="form.totalUsage" class="form-input" disabled placeholder="0" style="background:#f8fafc" />
-                </div>
+                  <div class="form-group">
+                    <label>Stand Awal</label>
+                    <input v-model.number="form.standAwal" type="number" min="0" class="form-input" placeholder="0" />
+                  </div>
+                  <div class="form-group">
+                    <label>Stand Akhir</label>
+                    <input v-model.number="form.standAkhir" type="number" min="0" class="form-input" placeholder="0" @input="calcUsage" />
+                  </div>
+                  <div class="form-group">
+                    <label>Total Usage</label>
+                    <input :value="form.totalUsage" class="form-input" disabled placeholder="0" style="background:#f8fafc" />
+                  </div>
+                </template>
 
                 <div class="form-group form-group--full">
                   <label>Description</label>
@@ -212,27 +214,47 @@
               <div class="table-wrap" style="margin-bottom:0">
                 <table class="table table--lines">
                   <thead><tr>
-                    <th style="width:40px">#</th>
+                    <th style="width:36px">#</th>
                     <th>Product</th>
-                    <th style="width:110px;text-align:center">Qty</th>
-                    <th style="width:150px;text-align:center">UOM</th>
-                    <th style="width:160px;text-align:right">Unit Price</th>
-                    <th style="width:170px;text-align:right">Net Amount</th>
-                    <th style="width:40px"></th>
+                    <th style="width:90px;text-align:center">Qty</th>
+                    <th style="width:120px;text-align:center">UOM</th>
+                    <th style="width:160px">Tax</th>
+                    <th style="width:150px;text-align:right">Unit Price</th>
+                    <th style="width:150px;text-align:right">Net Amount</th>
+                    <th style="width:36px"></th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="lines.length === 0"><td colspan="7" class="td-empty" style="padding:20px">No lines yet. Click "Add Line".</td></tr>
+                    <tr v-if="lines.length === 0"><td colspan="8" class="td-empty" style="padding:20px">No lines yet. Click "Add Line".</td></tr>
                     <tr v-for="(line, idx) in lines" :key="idx">
                       <td class="td-secondary" style="text-align:center">{{ idx + 1 }}</td>
+
+                      <!-- Product combobox — dropdown fixed agar tidak ter-clip table overflow -->
                       <td>
-                        <div class="acc-wrap">
-                          <input v-model="line.productSearch" class="acc-input acc-input--sm" placeholder="Search product..." @input="onProductSearch(line)" @focus="line.showDrop = true" @blur="() => onProductBlur(line)" />
-                          <ul v-if="line.showDrop && line.productOptions.length" class="acc-dropdown">
+                        <input
+                          v-model="line.productSearch"
+                          class="acc-input acc-input--sm"
+                          placeholder="Search product..."
+                          @input="onProductSearch(line)"
+                          @focus="openProductDrop(line, $event)"
+                          @blur="onProductBlur(line)"
+                        />
+                        <teleport to="body">
+                          <ul
+                            v-if="line.showDrop && line.productOptions.length"
+                            class="acc-dropdown acc-dropdown--teleport"
+                            :style="line.dropStyle"
+                          >
                             <li v-for="p in line.productOptions" :key="p.id" class="acc-opt" @mousedown.prevent="selectProduct(line, p)">{{ p.name }}</li>
                           </ul>
-                        </div>
+                        </teleport>
                       </td>
-                      <td style="text-align:center"><input v-model.number="line.invoicedQuantity" type="number" min="0" class="form-input form-input--sm" style="text-align:center" @input="calcLine(line)" /></td>
+
+                      <!-- Qty -->
+                      <td style="text-align:center">
+                        <input v-model.number="line.invoicedQuantity" type="number" class="form-input form-input--sm" style="text-align:center" @input="calcLine(line)" />
+                      </td>
+
+                      <!-- UOM combobox -->
                       <td style="text-align:center">
                         <div class="acc-wrap">
                           <input v-model="line.uomSearch" class="acc-input acc-input--sm" placeholder="UOM..." style="text-align:center;padding-right:24px" @input="onUomSearch(line)" @focus="line.showUomDrop = true" @blur="() => onUomBlur(line)" />
@@ -244,8 +266,42 @@
                           </ul>
                         </div>
                       </td>
-                      <td style="text-align:right"><input v-model.number="line.unitPrice" type="number" min="0" class="form-input form-input--sm" style="text-align:right" @input="calcLine(line)" /></td>
+
+                      <!-- Tax combobox — dropdown fixed -->
+                      <td>
+                        <input
+                          v-model="line.taxSearch"
+                          class="acc-input acc-input--sm"
+                          placeholder="Select tax..."
+                          @input="onTaxSearch(line)"
+                          @focus="openTaxDrop(line, $event)"
+                          @blur="onTaxBlur(line)"
+                        />
+                        <teleport to="body">
+                          <ul
+                            v-if="line.showTaxDrop && line.taxOptions.length"
+                            class="acc-dropdown acc-dropdown--teleport"
+                            :style="line.taxDropStyle"
+                          >
+                            <li v-for="tx in line.taxOptions" :key="tx.id" class="acc-opt" @mousedown.prevent="selectTax(line, tx)">
+                              {{ tx.name }}<span v-if="tx.rate != null" class="tax-rate-badge">{{ tx.rate }}%</span>
+                            </li>
+                          </ul>
+                          <ul v-else-if="line.showTaxDrop && line.taxSearch?.length > 0 && !line.taxOptions.length" class="acc-dropdown acc-dropdown--teleport" :style="line.taxDropStyle">
+                            <li class="acc-empty">No tax found</li>
+                          </ul>
+                        </teleport>
+                      </td>
+
+                      <!-- Unit Price -->
+                      <td style="text-align:right">
+                        <input v-model.number="line.unitPrice" type="number" min="0" class="form-input form-input--sm" style="text-align:right" @input="calcLine(line)" />
+                      </td>
+
+                      <!-- Net Amount -->
                       <td class="td-secondary" style="text-align:right;font-weight:600;white-space:nowrap">{{ formatCurrency(line.lineNetAmount) }}</td>
+
+                      <!-- Remove -->
                       <td>
                         <button class="btn-rm-line" @click="removeLine(idx)">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -330,6 +386,7 @@
           <!-- View Tabs -->
           <div class="modal-tabs">
             <button :class="['modal-tab', viewTab === 'basic' ? 'modal-tab--active' : '']" @click="viewTab = 'basic'">Basic</button>
+            <button :class="['modal-tab', viewTab === 'paymentPlan' ? 'modal-tab--active' : '']" @click="switchToPaymentPlan">Payment Plan</button>
             <button :class="['modal-tab', viewTab === 'accounting' ? 'modal-tab--active' : '']" @click="switchToAccounting">Accounting</button>
           </div>
 
@@ -379,12 +436,15 @@
               </div>
               <div class="totals-block">
                 <div class="totals-row"><span>Subtotal</span><span>{{ formatCurrency(viewRow.summedLineAmount) }}</span></div>
-                <div class="totals-row"><span>Total Pajak</span><span>{{ formatCurrency((viewRow.grandTotalAmount ?? 0) - (viewRow.summedLineAmount ?? 0)) }}</span></div>
+                <div class="totals-row"><span>Tax</span><span>{{ formatCurrency((viewRow.grandTotalAmount ?? 0) - (viewRow.summedLineAmount ?? 0)) }}</span></div>
                 <div class="totals-row totals-row--grand"><span>Total Invoice</span><span>{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
               </div>
 
-              <!-- Payment Plan -->
-              <div class="section-divider" style="margin-top:20px">
+            </div>
+
+            <!-- ── Payment Plan Tab ── -->
+            <div v-if="viewTab === 'paymentPlan'">
+              <div class="section-divider" style="margin-top:0">
                 Payment Plan
                 <span v-if="paymentSchedules.length" class="pp-badge">{{ paymentSchedules.length }} instalment{{ paymentSchedules.length > 1 ? 's' : '' }}</span>
               </div>
@@ -531,9 +591,18 @@
               </button>
             </template>
 
-            <!-- CO + belum posted: Reactivate + Post -->
-            <!-- (Reactivate hanya tersedia setelah Unpost) -->
+            <!-- CO + belum posted: Cancel + Reactivate + Post -->
             <template v-else-if="viewRow?.documentStatus === 'CO' && !isPosted">
+              <button class="btn btn--cancel" :disabled="cancelling" @click="doCancelInvoice">
+                <span v-if="cancelling" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                {{ cancelling ? 'Cancelling...' : 'Cancel Invoice' }}
+              </button>
+              <button class="btn btn--adjustment" :disabled="adjusting" @click="doAdjustmentInvoice">
+                <span v-if="adjusting" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                {{ adjusting ? 'Processing...' : 'Adjustment' }}
+              </button>
               <button class="btn btn--reactivate" :disabled="reactivating" @click="doReactivateInvoice">
                 <span v-if="reactivating" class="spinner"></span>
                 <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -546,8 +615,18 @@
               </button>
             </template>
 
-            <!-- CO + posted: Unpost -->
+            <!-- CO + posted: Cancel + Unpost -->
             <template v-else-if="viewRow?.documentStatus === 'CO' && isPosted">
+              <button class="btn btn--cancel" :disabled="cancelling" @click="doCancelInvoice">
+                <span v-if="cancelling" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                {{ cancelling ? 'Cancelling...' : 'Cancel Invoice' }}
+              </button>
+              <button class="btn btn--adjustment" :disabled="adjusting" @click="doAdjustmentInvoice">
+                <span v-if="adjusting" class="spinner"></span>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                {{ adjusting ? 'Processing...' : 'Adjustment' }}
+              </button>
               <button class="btn btn--unpost" :disabled="unposting" @click="doUnpostAccounting">
                 <span v-if="unposting" class="spinner"></span>
                 <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -592,6 +671,7 @@
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path v-if="toast.type === 'success'" d="M20 6 9 17l-5-5"/>
+          <path v-else-if="toast.type === 'warning'" d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
           <path v-else d="M18 6 6 18M6 6l12 12"/>
         </svg>
         {{ toast.message }}
@@ -602,28 +682,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import {
   fetchAllInvoices, fetchInvoice, createInvoice, updateInvoice, deleteInvoice, postInvoice,
   fetchInvoiceLines, createInvoiceLine, updateInvoiceLine, deleteInvoiceLine,
   fetchAccountingFacts,
   fetchCustomers, fetchCustomerById, fetchPartnerLocations,
   fetchPaymentTerms, fetchPaymentTermLines, fetchPaymentMethods,
-  fetchPriceLists, fetchProducts, fetchUOMs,
+  fetchPriceLists, fetchProducts, fetchUOMs, fetchTaxRates,
   runInvoiceProcess, postAccountingProcess,
-  unpostAccountingProcess, reactivateInvoice, voidInvoice,
+  unpostAccountingProcess, reactivateInvoice, voidInvoice, cancelInvoice, adjustmentInvoice,
   createPaymentPlan, fetchPaymentSchedules,
-  DEFAULT_TAX_ID,
-  DEFAULT_ORGANIZATION,
+  DEFAULT_ORGANIZATION, ADJUSTMENT_PRODUCT_ID,
 } from '@/services/customerInvoice.js'
 
 // ── directive
 const vClickOutside = {
   mounted(el, binding) {
     el._handler = (e) => { if (!el.contains(e.target)) binding.value(e) }
-    document.addEventListener('click', el._handler, true)
+    document.addEventListener('click', el._handler)
   },
-  unmounted(el) { document.removeEventListener('click', el._handler, true) },
+  unmounted(el) { document.removeEventListener('click', el._handler) },
 }
 
 // ── table state
@@ -647,6 +726,7 @@ const paymentTerms = ref([])
 const paymentMethods = ref([])
 const uoms = ref([])
 const priceLists = ref([])
+const taxRates = ref([])
 
 // ── form state
 const showFormModal = ref(false)
@@ -714,10 +794,12 @@ const posting = ref(false)
 // ── completing
 const completing = ref(false)
 
-// ── unposting / reactivating / voiding
-const unposting = ref(false)
+// ── unposting / reactivating / voiding / cancelling
+const unposting    = ref(false)
 const reactivating = ref(false)
-const voiding = ref(false)
+const voiding      = ref(false)
+const cancelling   = ref(false)
+const adjusting    = ref(false)
 
 // posted bisa boolean true atau string 'Y' tergantung Openbravo response
 const isPosted = computed(() => {
@@ -753,7 +835,7 @@ function statusLabel(s) {
 function statusClass(s) {
   if (s === 'DR') return 'status-pill--draft'
   if (s === 'CO') return 'status-pill--completed'
-  if (s === 'CL') return 'status-pill--open'
+  if (s === 'CL') return 'status-pill--closed'
   return 'status-pill--draft'
 }
 
@@ -763,16 +845,10 @@ function statusClass(s) {
 function paymentStatusLabel(r) {
   if (r.documentStatus === 'DR') return '—'
   if (r.documentStatus === 'VO') return '—'
-  // outstandingAmount is the only reliable field
-  const outstanding = r.outstandingAmount != null ? Number(r.outstandingAmount) : null
-  const paid = r.paidAmount != null ? Number(r.paidAmount) : null
-  if (outstanding != null) {
-    if (outstanding <= 0) return 'Paid'
-    if (paid != null && paid > 0) return 'Partial'
-    return 'Unpaid'
-  }
-  // outstandingAmount not returned by API — show nothing rather than guess
-  return '—'
+  if (r.documentStatus === 'CL') return '—'
+  // paymentComplete adalah field boolean asli di entity Invoice Openbravo
+  if (r.paymentComplete === true || r.paymentComplete === 'Y') return 'Paid'
+  return 'Unpaid'
 }
 
 function paymentStatusClass(r) {
@@ -794,37 +870,45 @@ const pageNumbers = computed(() => {
   return pages
 })
 
+// ── stored labels from full invoice fetch (fallback for edit modal)
+const storedPaymentTermLabel  = ref('')
+const storedPaymentMethodLabel = ref('')
+const storedPriceListLabel     = ref('')
+
 // ── computed labels
 const paymentTermLabel = computed(() => {
-  if (!form.value.paymentTerms) return ''
   const found = paymentTerms.value.find(pt => pt.id === form.value.paymentTerms)
-  return found?.name || form.value.paymentTerms
+  return found?.name || storedPaymentTermLabel.value || ''
 })
 const paymentMethodLabel = computed(() => {
-  if (!form.value.paymentMethod) return ''
   const found = paymentMethods.value.find(pm => pm.id === form.value.paymentMethod)
-  return found?.['_identifier'] || found?.name || form.value.paymentMethod
+  return found?.['_identifier'] || found?.name || storedPaymentMethodLabel.value || ''
 })
 const priceListLabel = computed(() => {
-  if (!form.value.priceList) return ''
   const found = priceLists.value.find(pl => pl.id === form.value.priceList)
-  return found?.name || form.value.priceList
+  return found?.name || storedPriceListLabel.value || ''
 })
 
 // ── load invoices
 async function loadInvoices() {
   loading.value = true; error.value = ''
   try {
-    const data = await fetchAllInvoices({ startRow: (currentPage.value - 1) * pageSize, pageSize, searchKey: searchQuery.value })
+    const startRow = (currentPage.value - 1) * pageSize
+    const data = await fetchAllInvoices({ startRow, pageSize, searchKey: searchQuery.value })
     rows.value = data.data ?? []
-    totalCount.value = data.totalRows ?? rows.value.length
+    // Openbravo kadang mengembalikan totalRows yang salah di halaman 2+.
+    // Hanya update totalCount dari halaman pertama (startRow=0) atau saat belum ada nilai.
+    const apiTotal = Number(data.totalRows ?? data.total ?? 0)
+    if (startRow === 0 || totalCount.value === 0) {
+      totalCount.value = apiTotal > 0 ? apiTotal : rows.value.length
+    }
   } catch (e) {
     error.value = e?.response?.data?.response?.error?.message || e.message
   } finally { loading.value = false }
 }
 
 function goPage(p) { if (p >= 1 && p <= totalPages.value) { currentPage.value = p; loadInvoices() } }
-function onSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage.value = 1; loadInvoices() }, 400) }
+function onSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage.value = 1; totalCount.value = 0; loadInvoices() }, 400) }
 
 // ── dropdown
 function toggleDropdown(id, e) {
@@ -837,13 +921,14 @@ function closeDropdown() { openDropdown.value = null }
 
 // ── load lookups
 async function loadLookups() {
-  const [pt, pm, u, pl] = await Promise.allSettled([
-    fetchPaymentTerms(), fetchPaymentMethods(), fetchUOMs(), fetchPriceLists(),
+  const [pt, pm, u, pl, tx] = await Promise.allSettled([
+    fetchPaymentTerms(), fetchPaymentMethods(), fetchUOMs(), fetchPriceLists(), fetchTaxRates(),
   ])
-  paymentTerms.value  = pt.value  ?? []
-  paymentMethods.value = pm.value ?? []
-  uoms.value          = u.value   ?? []
-  priceLists.value    = pl.value  ?? []
+  paymentTerms.value   = pt.status === 'fulfilled' ? (pt.value  ?? []) : []
+  paymentMethods.value = pm.status === 'fulfilled' ? (pm.value ?? []) : []
+  uoms.value           = u.status  === 'fulfilled' ? (u.value   ?? []) : []
+  priceLists.value     = pl.status === 'fulfilled' ? (pl.value  ?? []) : []
+  taxRates.value       = tx.status === 'fulfilled' ? (tx.value  ?? []) : []
 }
 
 // ── customer search
@@ -917,10 +1002,22 @@ async function onProductSearch(line) {
     line.productOptions = await fetchProducts(line.productSearch)
   }, 300))
 }
+function openProductDrop(line, event) {
+  const rect = event.currentTarget.getBoundingClientRect()
+  line.dropStyle = {
+    position: 'fixed',
+    top:  rect.bottom + 2 + 'px',
+    left: rect.left + 'px',
+    width: rect.width + 'px',
+    zIndex: 9999,
+  }
+  line.showDrop = true
+}
 function selectProduct(line, p) {
   line.product = p.id
   line.productSearch = p.name
   line.showDrop = false
+  line.dropStyle = {}
   const uomId = p.uOM ? (typeof p.uOM === 'object' ? p.uOM.id : p.uOM) : ''
   if (uomId) {
     line.uOM = uomId
@@ -929,10 +1026,42 @@ function selectProduct(line, p) {
     line.uomOptions = found ? [found] : []
   }
   line.unitPrice = p.listPrice ?? p.standardPrice ?? 0
-  line.tax = DEFAULT_TAX_ID
   calcLine(line)
 }
-function onProductBlur(line) { setTimeout(() => { line.showDrop = false }, 150) }
+function onProductBlur(line) { setTimeout(() => { line.showDrop = false; line.dropStyle = {} }, 150) }
+
+// ── tax search per line
+let taxTimers = new WeakMap()
+function onTaxSearch(line) {
+  line.showTaxDrop = true
+  const t = taxTimers.get(line)
+  if (t) clearTimeout(t)
+  taxTimers.set(line, setTimeout(() => {
+    const q = (line.taxSearch || '').toLowerCase()
+    line.taxOptions = !q
+      ? taxRates.value.slice(0, 30)
+      : taxRates.value.filter(tx => (tx.name || '').toLowerCase().includes(q) || (tx.rate != null && String(tx.rate).includes(q))).slice(0, 30)
+  }, 150))
+}
+function openTaxDrop(line, event) {
+  if (!line.taxOptions.length) line.taxOptions = taxRates.value.slice(0, 30)
+  const rect = event.currentTarget.getBoundingClientRect()
+  line.taxDropStyle = {
+    position: 'fixed',
+    top:  rect.bottom + 2 + 'px',
+    left: rect.left + 'px',
+    width: Math.max(rect.width, 180) + 'px',
+    zIndex: 9999,
+  }
+  line.showTaxDrop = true
+}
+function selectTax(line, tx) {
+  line.tax = tx.id
+  line.taxSearch = tx.name + (tx.rate != null ? ` (${tx.rate}%)` : '')
+  line.showTaxDrop = false
+  line.taxDropStyle = {}
+}
+function onTaxBlur(line) { setTimeout(() => { line.showTaxDrop = false }, 150) }
 
 // ── UOM search per line
 let uomTimers = new WeakMap()
@@ -956,11 +1085,22 @@ function newLine() {
     product: '', productSearch: '', invoicedQuantity: 1,
     uOM: '', uomSearch: '', uomOptions: [], showUomDrop: false,
     unitPrice: 0, lineNetAmount: 0, showDrop: false, productOptions: [],
-    tax: DEFAULT_TAX_ID,
+    dropStyle: {},
+    tax: '', taxSearch: '', taxOptions: [], showTaxDrop: false,
   }
 }
 function addLine() { lines.value.push(newLine()) }
-function removeLine(i) { lines.value.splice(i, 1) }
+async function removeLine(i) {
+  const line = lines.value[i]
+  if (line?.id) {
+    try {
+      await deleteInvoiceLine(line.id)
+    } catch (e) {
+      console.warn('[removeLine] Gagal hapus line dari ERP:', e.message)
+    }
+  }
+  lines.value.splice(i, 1)
+}
 function calcLine(line) { line.lineNetAmount = parseFloat(line.invoicedQuantity || 0) * parseFloat(line.unitPrice || 0) }
 
 // ── open modals
@@ -968,6 +1108,7 @@ function openCreateModal() {
   isEdit.value = false; editId.value = null
   form.value = emptyForm(); lines.value = []; paymentLines.value = []
   customerSearch.value = ''; partnerLocations.value = []
+  storedPaymentTermLabel.value = ''; storedPaymentMethodLabel.value = ''; storedPriceListLabel.value = ''
   formError.value = ''; activeFormTab.value = 'transaction'
   showFormModal.value = true
 }
@@ -976,59 +1117,113 @@ async function openEditModal(r) {
   closeDropdown()
   isEdit.value = true; editId.value = r.id
   activeFormTab.value = 'transaction'; formError.value = ''
-  showFormModal.value = true
+  // showFormModal ditunda sampai data full invoice siap agar form tidak render dengan nilai kosong
 
+  // Fetch full invoice data agar paymentTerms/paymentMethod/priceList terisi lengkap
+  const extractId = (v) => !v ? '' : (typeof v === 'object' ? (v.id || '') : String(v))
+  const extractName = (v) => !v ? '' : (typeof v === 'object' ? (v['_identifier'] || v.name || '') : '')
+  let full = r
+  try { full = await fetchInvoice(r.id) ?? r } catch (_) {}
+
+  const bpId = extractId(full.businessPartner)
+
+  // Isi form dengan data invoice
   form.value = {
-    documentNo:      r.documentNo || '',
-    invoiceDate:     r.invoiceDate?.slice(0, 10) || today(),
-    accountingDate:  r.accountingDate?.slice(0, 10) || today(),
-    businessPartner: r.businessPartner || '',
-    partnerAddress:  r.partnerAddress  || '',
-    paymentTerms:    r.paymentTerms    || '',
-    paymentMethod:   r.paymentMethod   || '',
-    priceList:       r.priceList       || '',
-    kodePelanggan:   r.kodePelanggan   || '',
-    orderReference:  r.orderReference  || '',
-    description:     r.description     || '',
-    standAwal:       r.standAwal       ?? 0,
-    standAkhir:      r.standAkhir      ?? 0,
-    totalUsage:      r.totalUsage      ?? 0,
+    documentNo:      full.documentNo || '',
+    invoiceDate:     full.invoiceDate?.slice(0, 10) || today(),
+    accountingDate:  full.accountingDate?.slice(0, 10) || today(),
+    businessPartner: bpId,
+    partnerAddress:  extractId(full.partnerAddress),
+    paymentTerms:    extractId(full.paymentTerms),
+    paymentMethod:   extractId(full.paymentMethod),
+    priceList:       extractId(full.priceList),
+    kodePelanggan:   full.kodePelanggan   || '',
+    orderReference:  full.orderReference  || '',
+    description:     full.description     || '',
+    standAwal:       full.standAwal       ?? 0,
+    standAkhir:      full.standAkhir      ?? 0,
+    totalUsage:      full.totalUsage      ?? 0,
   }
-  customerSearch.value = r['businessPartner$_identifier'] || ''
 
-  if (r.businessPartner) await loadPartnerLocations(r.businessPartner)
+  // Langsung simpan label dari data invoice (sudah ada $identifier-nya)
+  storedPaymentTermLabel.value   = full['paymentTerms$_identifier']  || ''
+  storedPaymentMethodLabel.value = full['paymentMethod$_identifier'] || ''
+  storedPriceListLabel.value     = full['priceList$_identifier']     || ''
+
+  customerSearch.value = full['businessPartner$_identifier'] || r['businessPartner$_identifier'] || ''
+
+  // Fetch customer detail hanya sebagai fallback bila invoice tidak punya data tsb
+  if (bpId) {
+    try {
+      const detail = await fetchCustomerById(bpId)
+      if (detail) {
+        if (!form.value.kodePelanggan) form.value.kodePelanggan = detail.searchKey || detail.value || ''
+        // Hanya overwrite jika invoice sendiri tidak punya nilainya
+        const ptId = extractId(detail.paymentTerms)
+        const pmId = extractId(detail.paymentMethod)
+        const plId = extractId(detail.priceList)
+        if (!form.value.paymentTerms  && ptId) { form.value.paymentTerms  = ptId; storedPaymentTermLabel.value   = detail['paymentTerms$_identifier']  || '' }
+        if (!form.value.paymentMethod && pmId) { form.value.paymentMethod = pmId; storedPaymentMethodLabel.value = detail['paymentMethod$_identifier'] || '' }
+        if (!form.value.priceList     && plId) { form.value.priceList     = plId; storedPriceListLabel.value     = detail['priceList$_identifier']     || '' }
+      }
+    } catch (e) { console.warn('[openEditModal] fetchCustomerById gagal:', e.message) }
+  }
+
+  await loadPartnerLocations(bpId)
+
+  // Buka modal setelah semua data siap
+  showFormModal.value = true
 
   const existingLines = await fetchInvoiceLines(r.id)
   lines.value = existingLines.map(l => {
     const foundUom = uoms.value.find(u => u.id === l.uOM)
+    const taxId = typeof l.tax === 'object' ? l.tax?.id : (l.tax || '')
+    const foundTax = taxRates.value.find(tx => tx.id === taxId)
+    const taxLabel = foundTax
+      ? foundTax.name + (foundTax.rate != null ? ` (${foundTax.rate}%)` : '')
+      : (l['tax$_identifier'] || '')
+    const productId = typeof l.product === 'object' ? l.product?.id : (l.product || '')
+    const isAdjustment = productId === ADJUSTMENT_PRODUCT_ID
     return {
       id:               l.id,
-      product:          l.product || '',
+      product:          productId,
       productSearch:    l['product$_identifier'] || '',
-      invoicedQuantity: l.invoicedQuantity || 1,
+      invoicedQuantity: isAdjustment ? (l.invoicedQuantity < 0 ? -1 : 1) : (l.invoicedQuantity || 1),
       uOM:              l.uOM || '',
       uomSearch:        foundUom ? (foundUom.uOMSymbol || foundUom.name) : (l['uOM$_identifier'] || ''),
       uomOptions:       foundUom ? [foundUom] : [],
       showUomDrop:      false,
-      unitPrice:        l.unitPrice || 0,
-      lineNetAmount:    l.lineNetAmount || 0,
+      unitPrice:        isAdjustment ? 0 : (l.unitPrice ?? l.grossUnitPrice ?? l.listPrice ?? 0),
+      lineNetAmount:    isAdjustment ? 0 : (l.lineNetAmount ?? 0),
       showDrop:         false,
+      dropStyle:        {},
       productOptions:   [],
-      tax:              l.tax || DEFAULT_TAX_ID,
+      tax:              taxId,
+      taxSearch:        taxLabel,
+      taxOptions:       foundTax ? [foundTax] : [],
+      showTaxDrop:      false,
+      taxDropStyle:     {},
     }
   })
 }
 
 async function openViewModal(r) {
   closeDropdown()
-  viewRow.value = r
   viewTab.value = 'basic'
   accountingFacts.value = []
   accountingError.value = ''
   paymentSchedules.value = []
-  showViewModal.value = true
   viewLinesLoading.value = true
   paymentSchedulesLoading.value = true
+
+  // Fetch full invoice data agar basic info (paymentTerms, paymentMethod, dll) lengkap
+  // Set viewRow dari full fetch agar paymentTerms$_identifier & paymentMethod$_identifier pasti ada
+  viewRow.value = r           // tampilkan modal segera dengan data parsial
+  showViewModal.value = true
+
+  fetchInvoice(r.id)
+    .then(full => { if (full) viewRow.value = full })
+    .catch(() => {})
 
   // Run both fetches independently so each updates as soon as it resolves
   fetchInvoiceLines(r.id)
@@ -1047,6 +1242,10 @@ function openEditFromView() {
   if (!r) return
   showViewModal.value = false
   openEditModal(r)
+}
+
+function switchToPaymentPlan() {
+  viewTab.value = 'paymentPlan'
 }
 
 async function switchToAccounting() {
@@ -1090,7 +1289,7 @@ async function saveInvoice() {
           lineNetAmount:    line.lineNetAmount,
           grossUnitPrice:   line.unitPrice,
           discount:         0,
-          tax:              line.tax || DEFAULT_TAX_ID,
+          ...(line.tax && { tax: line.tax }),
           businessPartner:  form.value.businessPartner,
           organization:     DEFAULT_ORGANIZATION,
         }
@@ -1131,7 +1330,7 @@ async function doPostInvoice() {
         product:          prodId,
         invoicedQuantity: l.invoicedQuantity || 1,
         uOM:              getId(l.uOM),
-        unitPrice:        l.unitPrice || 0,
+        unitPrice:        l.unitPrice || l.grossUnitPrice || l.listPrice || 0,
         tax:              getId(l.tax) || DEFAULT_TAX_ID,
         businessPartner:  bpId,
         organization:     orgId,
@@ -1288,6 +1487,58 @@ async function doVoidInvoice() {
   } finally { voiding.value = false }
 }
 
+// ── cancel invoice: validasi → unpost → reactivate → qty=0 → CL
+async function doCancelInvoice() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  cancelling.value = true
+  try {
+    const { invoice: updated, iotError } = await cancelInvoice(invoiceId, viewRow.value)
+    if (iotError) {
+      showToast(`Invoice cancelled, namun sinkronisasi IoT gagal: ${iotError}`, 'warning')
+    } else {
+      showToast('Invoice cancelled. Semua quantity di-nolkan dan status menjadi Closed (CL).')
+    }
+    paymentSchedules.value = []
+    accountingFacts.value  = []
+    accountingError.value  = ''
+    await loadInvoices()
+    const refreshed = rows.value.find(r => r.id === invoiceId)
+    viewRow.value = refreshed || updated
+
+    // Reload view lines agar qty = 0 langsung terlihat
+    viewLinesLoading.value = true
+    fetchInvoiceLines(invoiceId)
+      .then(l => { viewLines.value = l })
+      .catch(() => { viewLines.value = [] })
+      .finally(() => { viewLinesLoading.value = false })
+  } catch (e) {
+    showToast(e?.message || 'Failed to cancel invoice', 'error')
+  } finally { cancelling.value = false }
+}
+
+// ── adjustment invoice: unpost jika perlu → reactivate ke Draft → tambah line Adjustment → buka Edit modal
+async function doAdjustmentInvoice() {
+  if (!viewRow.value) return
+  const invoiceId = viewRow.value.id
+  adjusting.value = true
+  try {
+    const { invoice: updated } = await adjustmentInvoice(invoiceId, viewRow.value)
+    paymentSchedules.value = []
+    accountingFacts.value  = []
+    accountingError.value  = ''
+    await loadInvoices()
+    const refreshed = rows.value.find(r => r.id === invoiceId) || updated
+
+    // Tutup view modal, tunggu Vue flush DOM, lalu buka Edit modal
+    showViewModal.value = false
+    await nextTick()
+    await openEditModal(refreshed)
+  } catch (e) {
+    showToast(e?.message || 'Adjustment gagal', 'error')
+  } finally { adjusting.value = false }
+}
+
 // ── delete
 function confirmDelete(r) { closeDropdown(); deleteRow.value = r; deleteError.value = ''; showDeleteModal.value = true }
 async function doDelete() {
@@ -1382,6 +1633,9 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .btn--void { background: #dc2626; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
 .btn--void:hover:not(:disabled) { background: #b91c1c; }
 .btn--void:disabled { opacity: .4; cursor: not-allowed; }
+.btn--cancel { background: #374151; color: #fff; border: none; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); transition: all .15s; }
+.btn--cancel:hover:not(:disabled) { background: #1f2937; }
+.btn--cancel:disabled { opacity: .4; cursor: not-allowed; }
 
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -1405,6 +1659,7 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .status-pill--draft { background: #f1f5f9; color: #64748b; }
 .status-pill--completed { background: #eff6ff; color: #1d4ed8; }
+.status-pill--closed { background: #fef3c7; color: #92400e; }
 .status-pill--open { background: #f0fdf4; color: #16a34a; }
 
 .action-group { display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
@@ -1476,6 +1731,8 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .acc-input--sm { height: 32px; font-size: 12.5px; }
 .acc-chevron { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .acc-dropdown { position: absolute; z-index: 300; top: calc(100% + 3px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto; list-style: none; margin: 0; padding: 4px 0; }
+.acc-dropdown--teleport { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto; list-style: none; margin: 0; padding: 4px 0; }
+.tax-rate-badge { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
 .acc-opt { padding: 8px 12px; font-size: 12.5px; color: var(--text-primary); cursor: pointer; transition: background .1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acc-opt:hover { background: var(--accent-light); }
 .acc-empty { padding: 8px 12px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
@@ -1517,6 +1774,7 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
 .toast--success { background: #16a34a; color: #fff; }
 .toast--error   { background: var(--danger); color: #fff; }
+.toast--warning { background: #d97706; color: #fff; }
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }
 .fade-enter-from,.fade-leave-to { opacity: 0; }
 
@@ -1540,4 +1798,9 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .pp-status--paid    { background: #dcfce7; color: #16a34a; } /* Paid */
 .pp-status--partial { background: #fef9c3; color: #b45309; }
 .pp-status--unpaid  { background: #fee2e2; color: #dc2626; }
+
+/* Adjustment button */
+.btn--adjustment { background: #f59e0b; color: #fff; border: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; height: 34px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: background .12s; }
+.btn--adjustment:hover:not(:disabled) { background: #d97706; }
+.btn--adjustment:disabled { opacity: .55; cursor: not-allowed; }
 </style>

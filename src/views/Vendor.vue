@@ -4,7 +4,7 @@
     <!-- ══════════════════════════════════════════════════════════
          LIST VIEW
     ══════════════════════════════════════════════════════════ -->
-    <div v-if="!page.show && !glPage.show" class="page-wrap">
+    <div v-if="!page.show" class="page-wrap">
       <div class="content-card">
 
         <!-- Header -->
@@ -12,24 +12,14 @@
           <h2 class="page-title">Vendor</h2>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-          <button :class="['tab', activeTab==='list'?'tab--active':'']" @click="activeTab='list'">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            List Vendor
-          </button>
-          <button :class="['tab', activeTab==='linkgl'?'tab--active':'']" @click="switchToLinkGL">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Link GL
-          </button>
-        </div>
 
-        <!-- LIST TAB -->
+
+        <!-- ══ LIST TAB ══ -->
         <div v-if="activeTab==='list'">
           <div class="toolbar">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="searchQuery" class="search-input" placeholder="Search vendor..." @input="onSearch" />
+              <input v-model="searchQuery" class="search-input" placeholder="Search..." @input="onSearch" />
             </div>
             <button class="btn btn--primary" @click="openCreatePage">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -106,78 +96,15 @@
           </div>
         </div>
 
-        <!-- LINK GL TAB -->
-        <div v-if="activeTab==='linkgl'">
-          <div class="toolbar">
-            <div class="search-wrap">
-              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="glSearch" class="search-input" placeholder="Search..." />
-            </div>
-            <button class="btn btn--primary" @click="openGLCreatePage">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Link GL
-            </button>
-          </div>
-
-          <div class="table-wrap">
-            <table class="table">
-              <thead><tr>
-                <th>Code/SKU</th>
-                <th>Name Category</th>
-                <th>Vendor Liability</th>
-                <th>Pre Payment</th>
-                <th class="th-action">Action</th>
-              </tr></thead>
-              <tbody>
-                <tr v-if="glLoading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-                <tr v-else-if="glError"><td colspan="5" class="td-empty td-error">{{ glError }}</td></tr>
-                <tr v-else-if="filteredGLRows.length===0"><td colspan="5" class="td-empty">No Link GL data found.</td></tr>
-                <template v-else>
-                  <tr v-for="row in filteredGLRows" :key="row.id" class="tr-data">
-                    <td><span class="code-badge">{{ row.searchKey || row['businessPartnerCategory$_identifier'] || '—' }}</span></td>
-                    <td class="td-name">{{ row['businessPartnerCategory$_identifier'] || '—' }}</td>
-                    <td class="td-secondary td-truncate">{{ row['vendorLiability$_identifier'] || '—' }}</td>
-                    <td class="td-secondary td-truncate">{{ row['vendorPrepayment$_identifier'] || '—' }}</td>
-                    <td class="td-action-cell">
-                      <div class="action-group">
-                        <div class="dropdown-wrap" v-click-outside="closeGLDropdown">
-                          <button class="action-btn" @click.stop="toggleGLDropdown(row.id, $event)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                          </button>
-                          <div v-if="openGLDropdown===row.id" class="dropdown-menu" :style="{top:glDropdownPos.top+'px',right:glDropdownPos.right+'px'}">
-                            <button class="dropdown-item" @click="openGLViewModal(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
-                            </button>
-                            <button class="dropdown-item" @click="openGLEditPage(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
-                            </button>
-                            <button class="dropdown-item dropdown-item--danger" @click="confirmDeleteGL(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
-                            </button>
-                            <button class="dropdown-item dropdown-item--success" @click="confirmSetGLDefault(row)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Default
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════
-         CREATE / EDIT FULL PAGE
+         CREATE / EDIT VENDOR — FULL PAGE
     ══════════════════════════════════════════════════════════ -->
     <Transition name="slide">
-      <div v-if="page.show" class="page-wrap">
+      <div v-if="page.show && page.type==='vendor'" class="page-wrap">
 
-        <!-- Breadcrumb -->
         <div class="breadcrumb-row">
           <button class="breadcrumb-back" @click="closePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -195,6 +122,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Vendor Info
           </div>
+          <!-- Row 1: Identity fields -->
           <div class="form-grid-3">
             <div class="form-group">
               <label>Vendor Code/SKU <span class="req">*</span></label>
@@ -202,42 +130,51 @@
               <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
             </div>
             <div class="form-group">
-              <label>Province</label>
-              <input v-model="form.province" placeholder="Province" />
-            </div>
-            <div class="form-group">
-              <label>Street Address</label>
-              <input v-model="form.streetAddress" placeholder="Street Address" />
-            </div>
-            <div class="form-group">
               <label>Vendor Name <span class="req">*</span></label>
               <input v-model="form.name" placeholder="Vendor Name" :class="{'input-error':formErrors.name}" />
               <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
+            </div>
+            <div class="form-group">
+              <label>Business Partner Category</label>
+              <select v-model="form.linkGL">
+                <option value="">Select</option>
+                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Location fields -->
+          <div class="form-section-divider">
+            <span class="form-section-label">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Address / Location
+            </span>
+          </div>
+          <div class="form-grid-3" style="margin-top:12px">
+            <div class="form-group">
+              <label>Province</label>
+              <input v-model="form.province" placeholder="Province" />
             </div>
             <div class="form-group">
               <label>City</label>
               <input v-model="form.city" placeholder="City" />
             </div>
             <div class="form-group">
-              <label>Other details</label>
-              <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
-            </div>
-          </div>
-          <div class="form-grid-2" style="margin-top:14px">
-            <div class="form-group">
-              <label>Link GL</label>
-              <select v-model="form.linkGL">
-                <option value="">Select</option>
-                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label>Postal Code</label>
               <input v-model="form.postalCode" placeholder="Postal Code" />
+            </div>
+            <div class="form-group">
+              <label>Street Address</label>
+              <input v-model="form.streetAddress" placeholder="Street Address" />
+            </div>
+            <div class="form-group">
+              <label>Other Details</label>
+              <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
             </div>
           </div>
           <div class="form-checks" style="margin-top:14px">
             <label class="check-label"><input type="checkbox" v-model="form.active" /> Active</label>
+            <label class="check-label"><input type="checkbox" v-model="form.taxExempt" /> Tax Exempt</label>
           </div>
         </div>
 
@@ -272,27 +209,48 @@
               </select>
               <span class="field-error" v-if="formErrors.paymentTerms">{{ formErrors.paymentTerms }}</span>
             </div>
+            <div class="form-group">
+              <label>Financial Account</label>
+              <select v-model="form.account">
+                <option value="">Select Financial Account</option>
+                <option v-for="fa in lookups.financialAccounts" :key="fa.id" :value="fa.id">{{ fa['_identifier'] || fa.name }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Credit Limit</label>
+              <input v-model.number="form.creditLimit" type="number" min="0" placeholder="0" />
+            </div>
           </div>
         </div>
 
-        <!-- Contact Info Card -->
+        <!-- Contact Card -->
         <div class="form-card">
           <div class="form-card-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            Contact Info
+            Contact
           </div>
-          <div class="form-grid-3">
+
+          <!-- Form input: always visible -->
+          <div class="form-grid-2">
             <div class="form-group">
-              <label>Name</label>
-              <input v-model="form.contactName" placeholder="Name PIC" />
+              <label>First Name</label>
+              <input v-model="form.contactFirstName" placeholder="First name" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input v-model="form.contactLastName" placeholder="Last name" />
             </div>
             <div class="form-group">
               <label>Email</label>
-              <input v-model="form.contactEmail" placeholder="Email PIC" type="email" />
+              <input v-model="form.contactEmail" placeholder="Email" type="email" />
             </div>
             <div class="form-group">
               <label>Phone</label>
-              <input v-model="form.contactPhone" placeholder="Phone PIC" />
+              <input v-model="form.contactPhone" placeholder="Phone" />
+            </div>
+            <div class="form-group">
+              <label>Position</label>
+              <input v-model="form.contactPosition" placeholder="Position" />
             </div>
           </div>
         </div>
@@ -309,167 +267,11 @@
             {{ formLoading ? 'Saving...' : 'Save' }}
           </button>
         </div>
-
       </div>
     </Transition>
 
     <!-- ══════════════════════════════════════════════════════════
-         CREATE / EDIT LINK GL — FULL PAGE
-    ══════════════════════════════════════════════════════════ -->
-    <Transition name="slide">
-      <div v-if="glPage.show" class="page-wrap">
-
-        <div class="breadcrumb-row">
-          <button class="breadcrumb-back" @click="closeGLPage">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            Link GL
-          </button>
-          <span class="breadcrumb-sep">/</span>
-          <span class="breadcrumb-cur">{{ glPage.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</span>
-        </div>
-
-        <div class="form-page-title">{{ glPage.mode==='create' ? 'Create Link GL' : 'Edit Link GL' }}</div>
-
-        <div class="form-card">
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label>Code/SKU</label>
-              <input v-model="glForm.searchKey" placeholder="Auto or manual" :disabled="glPage.mode==='edit'" />
-            </div>
-            <div class="form-group">
-              <label>Vendor Liability</label>
-              <select v-model="glForm.vendorLiability">
-                <option value="">Select</option>
-                <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} - {{ a.name }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Name Category <span class="req">*</span></label>
-              <select v-model="glForm.businessPartnerCategory">
-                <option value="">Select category</option>
-                <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-              </select>
-              <span class="field-error" v-if="glFormErrors.businessPartnerCategory">{{ glFormErrors.businessPartnerCategory }}</span>
-            </div>
-            <div class="form-group">
-              <label>Accounting Schema <span class="req">*</span></label>
-              <select v-model="glForm.accountingSchema">
-                <option value="">Select schema</option>
-                <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name }}</option>
-              </select>
-              <span class="field-error" v-if="glFormErrors.accountingSchema">{{ glFormErrors.accountingSchema }}</span>
-            </div>
-            <div class="form-group">
-              <label>Pre Payment (Vendor)</label>
-              <select v-model="glForm.vendorPrepayment">
-                <option value="">Select</option>
-                <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} - {{ a.name }}</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-checks" style="margin-top:16px">
-            <label class="check-label"><input type="checkbox" v-model="glForm.default" /> Default</label>
-          </div>
-        </div>
-
-        <div v-if="glFormError" class="form-api-error">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          {{ glFormError }}
-        </div>
-
-        <div class="page-footer">
-          <button class="btn btn--ghost" @click="closeGLPage" :disabled="glFormLoading">Cancel</button>
-          <button class="btn btn--primary" @click="submitGLForm" :disabled="glFormLoading">
-            <span v-if="glFormLoading" class="btn-spinner"></span>
-            {{ glFormLoading ? 'Saving...' : 'Save' }}
-          </button>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- ══════════════════════════════════════════════════════════
-         VIEW LINK GL DETAIL MODAL
-    ══════════════════════════════════════════════════════════ -->
-    <Transition name="fade">
-      <div v-if="glViewModal.show" class="modal-overlay" @click.self="glViewModal.show=false">
-        <div class="modal modal--detail">
-          <div class="modal-header">
-            <h3 class="modal-title">Link GL Detail</h3>
-            <button class="modal-close" @click="glViewModal.show=false">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <div class="modal-body" v-if="glViewModal.data">
-            <div class="detail-cols">
-              <div class="detail-col">
-                <div class="detail-item">
-                  <span class="detail-label">Code/SKU</span>
-                  <span class="detail-value mono">{{ glViewModal.data.searchKey || glViewModal.data['businessPartnerCategory$_identifier'] || '—' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Category Name</span>
-                  <span class="detail-value">{{ glViewModal.data['businessPartnerCategory$_identifier'] || '—' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Vendor Liability</span>
-                  <span class="detail-value">{{ glViewModal.data['vendorLiability$_identifier'] || '—' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Pre Payment (Vendor)</span>
-                  <span class="detail-value">{{ glViewModal.data['vendorPrepayment$_identifier'] || '—' }}</span>
-                </div>
-              </div>
-              <div class="detail-col">
-                <div class="detail-item">
-                  <span class="detail-label">Account Receivable</span>
-                  <span class="detail-value">{{ glViewModal.data['customerReceivablesNo$_identifier'] || '—' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Write-off</span>
-                  <span class="detail-value">{{ glViewModal.data['writeoff$_identifier'] || '—' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Status</span>
-                  <span :class="['status-pill', glViewModal.data.active?'status-pill--active':'status-pill--inactive']">
-                    {{ glViewModal.data.active ? 'Active' : 'Inactive' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn--ghost" @click="openGLEditPage(glViewModal.data); glViewModal.show=false">Edit</button>
-            <button class="btn btn--primary" @click="glViewModal.show=false">Close</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- ══ DELETE LINK GL MODAL ══ -->
-    <Transition name="fade">
-      <div v-if="glDeleteModal.show" class="modal-overlay" @click.self="glDeleteModal.show=false">
-        <div class="modal modal--sm">
-          <div class="modal-header">
-            <h3 class="modal-title">Delete Link GL</h3>
-            <button class="modal-close" @click="glDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-          <div class="modal-body">
-            <p class="delete-text">Yakin ingin menghapus Link GL <strong>{{ glDeleteModal.row?.['businessPartnerCategory$_identifier'] }}</strong>?</p>
-            <div v-if="glDeleteError" class="form-api-error" style="margin-top:10px">{{ glDeleteError }}</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn--ghost" @click="glDeleteModal.show=false" :disabled="glDeleteLoading">Cancel</button>
-            <button class="btn btn--danger" @click="doDeleteGL" :disabled="glDeleteLoading">
-              <span v-if="glDeleteLoading" class="btn-spinner"></span>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- ══════════════════════════════════════════════════════════
-         VIEW DETAIL MODAL
+         VIEW VENDOR DETAIL MODAL
     ══════════════════════════════════════════════════════════ -->
     <Transition name="fade">
       <div v-if="viewModal.show" class="modal-overlay" @click.self="viewModal.show=false">
@@ -481,14 +283,14 @@
             </button>
           </div>
 
-          <div class="detail-tabs">
-            <button :class="['dtab', detailTab==='basic'?'dtab--active':'']" @click="detailTab='basic'">Basic Info</button>
-            <button :class="['dtab', detailTab==='contact'?'dtab--active':'']" @click="detailTab='contact'">Contact</button>
-          </div>
-
           <div class="modal-body">
-            <!-- Basic Info -->
-            <div v-if="detailTab==='basic'" class="detail-panel">
+            <div class="detail-panel">
+
+              <!-- Section: Vendor Info -->
+              <div class="detail-section-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Vendor Info
+              </div>
               <div class="detail-cols">
                 <div class="detail-col">
                   <div class="detail-item">
@@ -497,19 +299,11 @@
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Vendor Name</span>
-                    <span class="detail-value">{{ viewModal.data?.name }}</span>
+                    <span class="detail-value">{{ viewModal.data?.name || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Province</span>
-                    <span class="detail-value">{{ viewModal.data?.province || '—' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">City</span>
-                    <span class="detail-value">{{ viewModal.data?.cityName || '—' }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="detail-label">Postal Code</span>
-                    <span class="detail-value">{{ viewModal.data?.postalCode || '—' }}</span>
+                    <span class="detail-label">Business Partner Category</span>
+                    <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Status</span>
@@ -517,67 +311,97 @@
                       {{ viewModal.data?.active ? 'Active' : 'Inactive' }}
                     </span>
                   </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Tax Exempt</span>
+                    <span class="detail-value">{{ viewModal.data?.taxExempt ? 'Yes' : 'No' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Credit Limit</span>
+                    <span class="detail-value">{{ viewModal.data?.creditLimit != null ? Number(viewModal.data.creditLimit).toLocaleString('id-ID') : '—' }}</span>
+                  </div>
                 </div>
                 <div class="detail-col">
                   <div class="detail-item">
                     <span class="detail-label">Street Address</span>
-                    <span class="detail-value">{{ primaryAddress || '—' }}</span>
+                    <span class="detail-value">{{ viewModal.data?.streetAddress || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Other details</span>
-                    <span class="detail-value">{{ viewModal.data?.description || '—' }}</span>
+                    <span class="detail-label">Other Details</span>
+                    <span class="detail-value">{{ viewModal.data?.otherDetails || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Phone</span>
-                    <span class="detail-value">{{ viewModal.data?.phone || viewModal.data?.hp || '—' }}</span>
+                    <span class="detail-label">City</span>
+                    <span class="detail-value">{{ (viewModal.data?.cityName && viewModal.data.cityName !== '—') ? viewModal.data.cityName : '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Payment Terms</span>
-                    <span class="detail-value">{{ viewModal.data?.['paymentTerms$_identifier'] || '—' }}</span>
+                    <span class="detail-label">Postal Code</span>
+                    <span class="detail-value">{{ viewModal.data?.postalCode || '—' }}</span>
                   </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Province</span>
+                    <span class="detail-value">{{ viewModal.data?.['province$_identifier'] || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section: Payment Info -->
+              <div class="detail-section-label" style="margin-top:18px">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Payment Info
+              </div>
+              <div class="detail-cols">
+                <div class="detail-col">
                   <div class="detail-item">
                     <span class="detail-label">Price List</span>
                     <span class="detail-value">{{ viewModal.data?.['priceList$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Organization</span>
-                    <span class="detail-value">{{ viewModal.data?.['organization$_identifier'] || '—' }}</span>
+                    <span class="detail-label">Payment Method</span>
+                    <span class="detail-value">{{ viewModal.data?.['paymentMethod$_identifier'] || '—' }}</span>
+                  </div>
+                </div>
+                <div class="detail-col">
+                  <div class="detail-item">
+                    <span class="detail-label">Payment Terms</span>
+                    <span class="detail-value">{{ viewModal.data?.['paymentTerms$_identifier'] || '—' }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Financial Account</span>
+                    <span class="detail-value">{{ viewModal.data?.['account$_identifier'] || '—' }}</span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Contact Tab -->
-            <div v-if="detailTab==='contact'" class="detail-panel">
-              <div class="sub-toolbar">
-                <span class="sub-count">{{ contacts.length }} contact(s)</span>
-                <button class="btn btn--sm btn--primary" @click="openContactModal()">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                  Add Contact
-                </button>
-              </div>
-              <div v-if="contactsLoading" class="sub-loading"><div class="loading-dots"><span></span><span></span><span></span></div></div>
-              <div v-else-if="contacts.length===0" class="sub-empty">No contacts yet.</div>
-              <div v-else class="contact-cards">
-                <div v-for="ct in contacts" :key="ct.id" class="contact-card">
-                  <div class="contact-avatar">{{ initials(ct.firstName, ct.lastName) }}</div>
-                  <div class="contact-info">
-                    <div class="contact-name">{{ ct.firstName }} {{ ct.lastName }}</div>
-                    <div class="contact-meta">
-                      <span v-if="ct.email"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {{ ct.email }}</span>
-                      <span v-if="ct.phone"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> {{ ct.phone }}</span>
+              <!-- Section: Contact -->
+              <div v-if="viewContact" style="margin-top:18px">
+                <div class="detail-section-label">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  Contact
+                </div>
+                <div class="detail-cols">
+                  <div class="detail-col">
+                    <div class="detail-item">
+                      <span class="detail-label">Name</span>
+                      <span class="detail-value">{{ [viewContact.firstName, viewContact.lastName].filter(Boolean).join(' ') || '—' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Email</span>
+                      <span class="detail-value">{{ viewContact.email || '—' }}</span>
                     </div>
                   </div>
-                  <div class="contact-actions">
-                    <button class="icon-btn icon-btn--edit" @click="openContactModal(ct)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </button>
-                    <button class="icon-btn icon-btn--delete" @click="confirmDeleteContact(ct)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    </button>
+                  <div class="detail-col">
+                    <div class="detail-item">
+                      <span class="detail-label">Phone</span>
+                      <span class="detail-value">{{ viewContact.phone || '—' }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Position</span>
+                      <span class="detail-value">{{ viewContact.position || '—' }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
 
@@ -589,7 +413,7 @@
       </div>
     </Transition>
 
-    <!-- ══ TOGGLE ACTIVE MODAL ══ -->
+    <!-- ══ TOGGLE VENDOR ACTIVE MODAL ══ -->
     <Transition name="fade">
       <div v-if="toggleModal.show" class="modal-overlay" @click.self="toggleModal.show=false">
         <div class="modal modal--sm">
@@ -598,81 +422,14 @@
             <button class="modal-close" @click="toggleModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
-            <p class="delete-text" v-if="toggleModal.vendor?.active">Yakin ingin menonaktifkan <strong>{{ toggleModal.vendor?.name }}</strong>?</p>
-            <p class="delete-text" v-else>Aktifkan kembali <strong>{{ toggleModal.vendor?.name }}</strong>?</p>
+            <p class="delete-text" v-if="toggleModal.vendor?.active">Are you sure you want to deactivate <strong>{{ toggleModal.vendor?.name }}</strong>?</p>
+            <p class="delete-text" v-else>Reactivate <strong>{{ toggleModal.vendor?.name }}</strong>?</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="toggleModal.show=false" :disabled="toggleLoading">Cancel</button>
             <button :class="['btn', toggleModal.vendor?.active ? 'btn--danger' : 'btn--primary']" @click="doToggle" :disabled="toggleLoading">
               <span v-if="toggleLoading" class="btn-spinner"></span>
               {{ toggleModal.vendor?.active ? 'Deactivate' : 'Activate' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- ══ CONTACT MODAL ══ -->
-    <Transition name="fade">
-      <div v-if="contactModal.show" class="modal-overlay" @click.self="contactModal.show=false">
-        <div class="modal">
-          <div class="modal-header">
-            <h3 class="modal-title">{{ contactModal.mode==='create' ? 'Add Contact' : 'Edit Contact' }}</h3>
-            <button class="modal-close" @click="contactModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-          <div class="modal-body">
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>First Name <span class="req">*</span></label>
-                <input v-model="contactForm.firstName" placeholder="First name" :class="{'input-error':contactErrors.firstName}" />
-                <span class="field-error" v-if="contactErrors.firstName">{{ contactErrors.firstName }}</span>
-              </div>
-              <div class="form-group">
-                <label>Last Name</label>
-                <input v-model="contactForm.lastName" placeholder="Last name" />
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input v-model="contactForm.email" placeholder="Email" type="email" />
-              </div>
-              <div class="form-group">
-                <label>Phone</label>
-                <input v-model="contactForm.phone" placeholder="Phone" />
-              </div>
-              <div class="form-group">
-                <label>Position</label>
-                <input v-model="contactForm.position" placeholder="Position" />
-              </div>
-            </div>
-            <div v-if="contactError" class="form-api-error" style="margin-top:12px">{{ contactError }}</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn--ghost" @click="contactModal.show=false" :disabled="contactLoading">Cancel</button>
-            <button class="btn btn--primary" @click="submitContact" :disabled="contactLoading">
-              <span v-if="contactLoading" class="btn-spinner"></span>
-              {{ contactLoading ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <!-- ══ CONTACT DELETE ══ -->
-    <Transition name="fade">
-      <div v-if="contactDeleteModal.show" class="modal-overlay" @click.self="contactDeleteModal.show=false">
-        <div class="modal modal--sm">
-          <div class="modal-header">
-            <h3 class="modal-title">Delete Contact</h3>
-            <button class="modal-close" @click="contactDeleteModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-          </div>
-          <div class="modal-body">
-            <p class="delete-text">Yakin ingin menghapus kontak <strong>{{ contactDeleteModal.contact?.firstName }} {{ contactDeleteModal.contact?.lastName }}</strong>?</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn--ghost" @click="contactDeleteModal.show=false" :disabled="contactDeleteLoading">Cancel</button>
-            <button class="btn btn--danger" @click="doDeleteContact" :disabled="contactDeleteLoading">
-              <span v-if="contactDeleteLoading" class="btn-spinner"></span>
-              Delete
             </button>
           </div>
         </div>
@@ -694,52 +451,14 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import {
-  fetchVendors,
-  createVendor,
-  updateVendor,
-  toggleVendorActive,
-  fetchPaymentTerms,
-  fetchPriceLists,
-  fetchPaymentMethods,
+  fetchVendors, createVendor, updateVendor, deleteVendor,
+  fetchPaymentTerms, fetchPriceLists, fetchPaymentMethods, fetchFinancialAccounts,
+  fetchContacts, fetchContactsForIds, createContact, updateContact,
+  fetchBPLocations, fetchBPLocationsForIds,
+  createLocation, updateLocation,
+  createBPLocation, updateBPLocation, deleteBPLocation,
   fetchBPCategories,
-  createBPCategory,
-  updateBPCategory,
-  deleteBPCategory,
-  fetchBPCategoryAccounts,
-  fetchBPCategoryAccountsByCategory,
-  createBPCategoryAccount,
-  updateBPCategoryAccount,
-  deleteBPCategoryAccount,
-  fetchGLAccounts,
-  fetchAccountingSchemas,
-  createLocation,
-  createBPLocation,
-  updateLocation,
-  updateBPLocation,
-  deleteBPLocation,
-  fetchContacts,
-  fetchContactsForIds,
-  createContact,
-  updateContact,
-  deleteContact,
 } from '@/services/vendor'
-
-// ── BusinessPartnerLocation helpers (inline axios) ───────────
-import axios from 'axios'
-const _bplocApi = axios.create({
-  baseURL: window.APP_CONFIG?.API_BASE_URL || '/openbravo/',
-  headers: { Authorization: `Basic ${btoa('APIService:wrt')}`, 'Content-Type': 'application/json' },
-})
-const BPLOC_REST = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
-
-async function fetchBPLocations(bpId) {
-  const res = await _bplocApi.get(BPLOC_REST, { params: { _startRow: 0, _endRow: 10, _where: `e.businessPartner.id = '${bpId}'` } })
-  return res.data?.response?.data ?? []
-}
-async function fetchBPLocationsForIds(idsInClause) {
-  const res = await _bplocApi.get(BPLOC_REST, { params: { _startRow: 0, _endRow: 500, _where: `e.businessPartner.id in (${idsInClause}) and e.active = true` } })
-  return res.data?.response?.data ?? []
-}
 
 // ── click-outside directive ──────────────────────────────────
 const vClickOutside = {
@@ -747,36 +466,37 @@ const vClickOutside = {
   unmounted(el) { document.removeEventListener('click', el._co) },
 }
 
-// ── State ────────────────────────────────────────────────────
-const activeTab   = ref('list')
-const vendors     = ref([])
-const loading     = ref(false)
-const error       = ref(null)
-const searchQuery = ref('')
-const currentPage = ref(1)
-const pageSize    = 20
-const totalRows   = ref(0)
+// ════════════════════════════════════════════════════════════
+// VENDOR LIST STATE
+// ════════════════════════════════════════════════════════════
+const activeTab    = ref('list')
+const vendors      = ref([])
+const loading      = ref(false)
+const error        = ref(null)
+const searchQuery  = ref('')
+const currentPage  = ref(1)
+const pageSize     = 20
+const totalRows    = ref(0)
 let   searchTimeout = null
 
 const openDropdown = ref(null)
 const dropdownPos  = ref({ top: 0, right: 0 })
 
 // ── Lookups ──────────────────────────────────────────────────
-const lookups = reactive({ paymentTerms: [], priceLists: [], paymentMethods: [] })
-const bpCategories      = ref([])
-const glAccounts        = ref([])
-const accountingSchemas = ref([])
+const lookups = reactive({ paymentTerms: [], priceLists: [], paymentMethods: [], financialAccounts: [] })
+const bpCategories = ref([])
 
 async function loadLookups() {
   try {
-    const [pt, pl, pm, cats, accts, schemas] = await Promise.all([
-      fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods(),
-      fetchBPCategories(), fetchGLAccounts(), fetchAccountingSchemas(),
+    const [pt, pl, pm, fa, cats] = await Promise.all([
+      fetchPaymentTerms(), fetchPriceLists(), fetchPaymentMethods(), fetchFinancialAccounts(),
+      fetchBPCategories(),
     ])
-    lookups.paymentTerms = pt; lookups.priceLists = pl; lookups.paymentMethods = pm
+    lookups.paymentTerms = pt
+    lookups.priceLists = pl
+    lookups.paymentMethods = pm
+    lookups.financialAccounts = fa
     bpCategories.value = cats
-    glAccounts.value = accts
-    accountingSchemas.value = schemas
   } catch (e) { console.warn('Lookup failed', e) }
 }
 
@@ -790,44 +510,45 @@ const paginationPages = computed(() => {
   if (c < t-2) p.push('…'); p.push(t); return p
 })
 
-// ── Load ─────────────────────────────────────────────────────
 async function load() {
   loading.value = true; error.value = null
   try {
-    const res = await fetchVendors({ startRow: (currentPage.value - 1) * pageSize, pageSize, searchKey: searchQuery.value })
-    const list = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : [])
-    totalRows.value = res.totalRows ?? list.length
-    vendors.value = await enrichWithLocation(list)
-  } catch (e) { error.value = 'Gagal memuat data vendor.' }
-  finally { loading.value = false }
+    const res = await fetchVendors({ startRow: (currentPage.value-1)*pageSize, pageSize, searchKey: searchQuery.value })
+    const raw = res.data ?? res
+    vendors.value = enrichVendors(raw)
+    totalRows.value = res.totalRows ?? raw.length
+  } catch (e) {
+    error.value = 'Failed to load vendors.'
+  } finally { loading.value = false }
 }
 
-async function enrichWithLocation(list) {
-  if (!list.length) return list
+async function enrichVendors(list) {
+  if (!list?.length) { vendors.value = []; return }
+  vendors.value = list
   try {
     const ids = list.map(v => `'${v.id}'`).join(',')
     const locs = await fetchBPLocationsForIds(ids)
     const locMap = {}
-    for (const loc of locs) {
-      const bpId = typeof loc.businessPartner === 'object' ? loc.businessPartner.id : loc.businessPartner
-      if (bpId && !locMap[bpId]) locMap[bpId] = loc
+    for (const l of locs) {
+      const bpId = typeof l.businessPartner === 'object' ? l.businessPartner?.id : l.businessPartner
+      if (bpId && !locMap[bpId]) locMap[bpId] = l
     }
-    return list.map(v => {
+    vendors.value = list.map(v => {
       const loc = locMap[v.id]
       const ident = loc?.['locationAddress$_identifier'] || ''
       const parts = ident.split(' - ')
-      return { 
-        ...v, 
-        streetAddress: parts[0] && parts[0].trim() !== 'null' ? parts[0].trim() : '',
-        otherDetails: parts[1] && parts[1].trim() !== 'null' ? parts[1].trim() : '',
-        postalCode: parts[2] && parts[2].trim() !== 'null' ? parts[2].trim() : '',
-        cityName: parts[3] && parts[3].trim() !== 'null' ? parts[3].trim() : (parts[0]?.trim() || '—'),
-        phone: v.hp || loc?.phone || '—',
-        bpLocationId: loc?.id || null, 
-        locationId: typeof loc?.locationAddress === 'object' ? loc?.locationAddress?.id : loc?.locationAddress || null
+      return {
+        ...v,
+        streetAddress: parts[0]?.trim() || '',
+        otherDetails:  parts[1]?.trim() || '',
+        postalCode:    parts[2]?.trim() || '',
+        cityName:      parts[3]?.trim() || (parts[0]?.trim() || '—'),
+        phone:         v.hp || loc?.phone || '—',
+        bpLocationId:  loc?.id || null,
+        locationId:    typeof loc?.locationAddress === 'object' ? loc?.locationAddress?.id : loc?.locationAddress || null,
       }
     })
-  } catch (e) { return list }
+  } catch (e) { /* silently ignore enrichment error */ }
 }
 
 function onSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage.value = 1; load() }, 400) }
@@ -842,7 +563,7 @@ function toggleDropdown(id, event) {
 }
 function closeDropdown() { openDropdown.value = null }
 
-// ── Toast ────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────
 const toast = reactive({ show: false, message: '', type: 'success' })
 let toastTimer = null
 function showToast(message, type = 'success') {
@@ -850,19 +571,18 @@ function showToast(message, type = 'success') {
   toastTimer = setTimeout(() => { toast.show = false }, 3000)
 }
 
-// ── View Modal ───────────────────────────────────────────────
-const viewModal      = reactive({ show: false, data: null })
-const detailTab      = ref('basic')
-const primaryAddress = ref('')
+// ── View Modal ────────────────────────────────────────────────
+const viewModal  = reactive({ show: false, data: null })
+const viewContact = ref(null)
 
 async function openViewModal(v) {
   closeDropdown()
-  viewModal.data = v; viewModal.show = true; detailTab.value = 'basic'
-  primaryAddress.value = ''
-  loadContacts(v.id)
+  viewModal.data = v
+  viewModal.show = true
+  viewContact.value = null
   try {
-    const locs = await fetchBPLocations(v.id)
-    if (locs.length) primaryAddress.value = locs[0]['locationAddress$_identifier'] || ''
+    const contacts = await fetchContacts(v.id)
+    viewContact.value = contacts[0] ?? null
   } catch (e) {}
 }
 
@@ -871,8 +591,8 @@ function editFromView() {
   openEditPage(viewModal.data)
 }
 
-// ── Create / Edit Page ───────────────────────────────────────
-const page        = reactive({ show: false, mode: 'create', data: null })
+// ── Create / Edit Page ────────────────────────────────────────
+const page        = reactive({ show: false, mode: 'create', type: 'vendor', data: null })
 const formLoading = ref(false)
 const formError   = ref(null)
 const formErrors  = reactive({})
@@ -880,53 +600,73 @@ const formErrors  = reactive({})
 const defaultForm = () => ({
   searchKey: '', name: '', description: '',
   province: '', city: '', streetAddress: '', otherDetails: '', postalCode: '',
-  phone: '', contactName: '', contactEmail: '', contactPhone: '',
-  paymentTerms: '', priceList: '', paymentMethod: '',
+  contactFirstName: '', contactLastName: '', contactEmail: '', contactPhone: '', contactPosition: '',
+  contactId: null,
+  paymentTerms: '', priceList: '', paymentMethod: '', account: '',
+  creditLimit: 0,
+  taxExempt: false,
   linkGL: '',
   active: true,
-  bpLocationId: null, locationId: null
+  bpLocationId: null, locationId: null,
 })
 const form = reactive(defaultForm())
 
 function openCreatePage() {
   Object.assign(form, defaultForm()); Object.keys(formErrors).forEach(k => delete formErrors[k])
-  formError.value = null; page.mode = 'create'; page.data = null; page.show = true
+  formError.value = null; page.mode = 'create'; page.type = 'vendor'; page.data = null; page.show = true
 }
 
-function openEditPage(v) {
+async function openEditPage(v) {
   closeDropdown()
   Object.assign(form, {
-    searchKey:    v.searchKey ?? '',
-    name:         v.name ?? '',
-    description:  v.description ?? '',
-    province:     v.province ?? '',
-    city:         v.cityName !== '—' ? v.cityName : '',
-    streetAddress:v.streetAddress ?? '',
-    otherDetails: v.otherDetails ?? '',
-    postalCode:   v.postalCode ?? '',
-    phone:        v.hp ?? v.phone ?? '',
-    contactName:  '', contactEmail: '', contactPhone: '',
-    paymentTerms: typeof v.paymentTerms === 'object' ? (v.paymentTerms?.id ?? '') : (v.paymentTerms ?? ''),
-    priceList:    typeof v.priceList    === 'object' ? (v.priceList?.id    ?? '') : (v.priceList    ?? ''),
-    paymentMethod:typeof v.paymentMethod=== 'object' ? (v.paymentMethod?.id?? '') : (v.paymentMethod?? ''),
-    linkGL:       typeof v.businessPartnerCategory === 'object' ? (v.businessPartnerCategory?.id ?? '') : (v.businessPartnerCategory ?? ''),
-    active:       v.active ?? true,
-    bpLocationId: v.bpLocationId ?? null,
-    locationId:   v.locationId ?? null
+    searchKey:         v.searchKey ?? '',
+    name:              v.name ?? '',
+    description:       v.description ?? '',
+    province:          v.province ?? '',
+    city:              v.cityName !== '—' ? (v.cityName ?? '') : '',
+    streetAddress:     v.streetAddress ?? '',
+    otherDetails:      v.otherDetails ?? '',
+    postalCode:        v.postalCode ?? '',
+    contactFirstName:  '', contactLastName: '', contactEmail: '', contactPhone: '', contactPosition: '',
+    contactId:         null,
+    paymentTerms:      typeof v.paymentTerms === 'object' ? (v.paymentTerms?.id ?? '') : (v.paymentTerms ?? ''),
+    priceList:         typeof v.priceList    === 'object' ? (v.priceList?.id    ?? '') : (v.priceList    ?? ''),
+    paymentMethod:     typeof v.paymentMethod=== 'object' ? (v.paymentMethod?.id?? '') : (v.paymentMethod?? ''),
+    account:           typeof v.account      === 'object' ? (v.account?.id      ?? '') : (v.account      ?? ''),
+    creditLimit:       v.creditLimit ?? 0,
+    taxExempt:         v.taxExempt ?? false,
+    linkGL:            typeof v.businessPartnerCategory === 'object' ? (v.businessPartnerCategory?.id ?? '') : (v.businessPartnerCategory ?? ''),
+    active:            v.active ?? true,
+    bpLocationId:      v.bpLocationId ?? null,
+    locationId:        v.locationId ?? null,
   })
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  formError.value = null; page.mode = 'edit'; page.data = v; page.show = true
+  formError.value = null; page.mode = 'edit'; page.type = 'vendor'; page.data = v; page.show = true
+
+  // Fetch & autofill contact
+  try {
+    const contacts = await fetchContacts(v.id)
+    const ct = contacts[0] ?? null
+    if (ct) {
+      form.contactFirstName  = ct.firstName ?? ''
+      form.contactLastName   = ct.lastName  ?? ''
+      form.contactEmail      = ct.email     ?? ''
+      form.contactPhone      = ct.phone     ?? ''
+      form.contactPosition   = ct.position  ?? ''
+      form.contactId         = ct.id
+    }
+  } catch (e) { /* silently ignore */ }
 }
 
 function closePage() { if (formLoading.value) return; page.show = false }
 
 function validateForm() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
-  if (!form.searchKey.trim())  formErrors.searchKey    = 'Code wajib diisi'
-  if (!form.name.trim())       formErrors.name         = 'Nama vendor wajib diisi'
-  if (!form.priceList)         formErrors.priceList    = 'Price List wajib dipilih'
-  if (!form.paymentMethod)     formErrors.paymentMethod= 'Payment Method wajib dipilih'
-  if (!form.paymentTerms)      formErrors.paymentTerms = 'Payment Terms wajib dipilih'
+  if (!form.searchKey.trim())   formErrors.searchKey     = 'Code is required'
+  if (!form.name.trim())        formErrors.name          = 'Vendor name is required'
+  if (!form.priceList)          formErrors.priceList     = 'Price List is required'
+  if (!form.paymentMethod)      formErrors.paymentMethod = 'Payment Method is required'
+  if (!form.paymentTerms)       formErrors.paymentTerms  = 'Payment Terms is required'
   return Object.keys(formErrors).length === 0
 }
 
@@ -935,127 +675,125 @@ async function submitForm() {
   formLoading.value = true; formError.value = null
   try {
     const payload = {
-      searchKey:    form.searchKey.trim(),
-      name:         form.name.trim(),
-      description:  form.description.trim() || null,
-      phone:        form.phone.trim() || null,
-      active:       form.active,
+      searchKey:   form.searchKey.trim(),
+      name:        form.name.trim(),
+      description: form.description?.trim() || null,
+      active:      form.active,
+      taxExempt:   form.taxExempt,
+      creditLimit: form.creditLimit ?? 0,
       ...(form.linkGL        && { businessPartnerCategory: form.linkGL }),
       ...(form.paymentTerms  && { paymentTerms:  form.paymentTerms }),
       ...(form.priceList     && { priceList:     form.priceList }),
       ...(form.paymentMethod && { paymentMethod: form.paymentMethod }),
+      ...(form.account       && { account:       form.account }),
     }
-    
+
     if (page.mode === 'create') {
-      // 1. Create BusinessPartner (Vendor)
       const newVendor = await createVendor(payload)
 
-      // 2. Create Location (Hanya jika field alamat diisi)
+      // Create Location + BPLocation if address provided
       if (form.streetAddress || form.city || form.province || form.postalCode) {
         const locPayload = {
           addressLine1: form.streetAddress || '-',
           addressLine2: form.otherDetails || null,
-          cityName: form.city || '-',
-          postalCode: form.postalCode || null,
-          country: '209'
+          cityName:     form.city || '-',
+          postalCode:   form.postalCode || null,
+          country:      '209',
         }
         const newLoc = await createLocation(locPayload)
-
-        // 3. Create BusinessPartnerLocation
-        const bpLocPayload = {
-          name: form.city || 'Utama',
-          phone: form.phone || null,
-          businessPartner: newVendor.id,
-          locationAddress: newLoc.id,
+        await createBPLocation({
+          name:             form.city || 'Utama',
+          phone:            form.contactPhone || null,
+          businessPartner:  newVendor.id,
+          locationAddress:  newLoc.id,
           invoiceToAddress: true,
-          shipToAddress: true,
-          payFromAddress: true,
-          remitToAddress: true
-        }
-        await createBPLocation(bpLocPayload)
+          shipToAddress:    true,
+          payFromAddress:   true,
+          remitToAddress:   true,
+        })
       }
 
-      // 4. Create ADUser (contact pertama) jika ada data contact
-      if (form.contactName && form.contactName.trim()) {
-        const nameParts = form.contactName.trim().split(' ')
-        const firstName = nameParts[0]
-        const lastName  = nameParts.slice(1).join(' ') || null
+      // Create contact if provided
+      if (form.contactFirstName?.trim()) {
         await createContact({
-          firstName,
-          lastName,
-          name:            form.contactName.trim(),
-          email:           form.contactEmail  || null,
-          phone:           form.contactPhone  || null,
+          firstName:       form.contactFirstName.trim(),
+          lastName:        form.contactLastName?.trim() || null,
+          name:            `${form.contactFirstName.trim()} ${form.contactLastName?.trim() || ''}`.trim(),
+          email:           form.contactEmail || null,
+          phone:           form.contactPhone || null,
+          position:        form.contactPosition || null,
           businessPartner: newVendor.id,
         })
       }
 
-      // 5. Update BusinessPartner dengan nomor HP di field hp
-      if (form.contactPhone && form.contactPhone.trim()) {
-        const bpId = newVendor.id
-        await updateVendor(bpId, {
-          searchKey: form.searchKey.trim(),
-          name:      form.name.trim(),
-          hp:        form.contactPhone.trim(),
-        })
-      }
-
-      showToast('Vendor dan Location berhasil dibuat')
+      showToast('Vendor created successfully')
       currentPage.value = 1; load(); page.show = false
+
     } else {
-      // Mode Edit: 1. Update BusinessPartner
       await updateVendor(page.data.id, payload)
 
-      // 2. Update atau Create Location
       if (form.streetAddress || form.city || form.province || form.postalCode) {
         const locPayload = {
           addressLine1: form.streetAddress || '-',
           addressLine2: form.otherDetails || null,
-          cityName: form.city || '-',
-          postalCode: form.postalCode || null,
-          country: '209'
+          cityName:     form.city || '-',
+          postalCode:   form.postalCode || null,
+          country:      '209',
         }
-
         if (form.locationId && form.bpLocationId) {
-          // Jika sebelumnya SUDAH PUNYA alamat -> UPDATE
           await updateLocation(form.locationId, locPayload)
-          const bpLocPayload = {
-            name: form.city || 'Utama',
-            phone: form.phone || null,
-            businessPartner: page.data.id,
-            locationAddress: form.locationId,
+          await updateBPLocation(form.bpLocationId, {
+            name:             form.city || 'Utama',
+            phone:            form.contactPhone || null,
+            businessPartner:  page.data.id,
+            locationAddress:  form.locationId,
             invoiceToAddress: true,
-            shipToAddress: true,
-            payFromAddress: true,
-            remitToAddress: true
-          }
-          await updateBPLocation(form.bpLocationId, bpLocPayload)
+            shipToAddress:    true,
+            payFromAddress:   true,
+            remitToAddress:   true,
+          })
         } else {
-          // Jika sebelumnya KOSONG lalu sekarang diisi -> CREATE
           const newLoc = await createLocation(locPayload)
-          const bpLocPayload = {
-            name: form.city || 'Utama',
-            phone: form.phone || null,
-            businessPartner: page.data.id,
-            locationAddress: newLoc.id,
+          await createBPLocation({
+            name:             form.city || 'Utama',
+            phone:            form.contactPhone || null,
+            businessPartner:  page.data.id,
+            locationAddress:  newLoc.id,
             invoiceToAddress: true,
-            shipToAddress: true,
-            payFromAddress: true,
-            remitToAddress: true
-          }
-          await createBPLocation(bpLocPayload)
+            shipToAddress:    true,
+            payFromAddress:   true,
+            remitToAddress:   true,
+          })
         }
       }
 
-      showToast('Vendor berhasil diupdate')
+      // Update or create contact
+      if (form.contactFirstName?.trim()) {
+        const contactPayload = {
+          firstName:       form.contactFirstName.trim(),
+          lastName:        form.contactLastName?.trim() || null,
+          name:            `${form.contactFirstName.trim()} ${form.contactLastName?.trim() || ''}`.trim(),
+          email:           form.contactEmail || null,
+          phone:           form.contactPhone || null,
+          position:        form.contactPosition || null,
+          businessPartner: page.data.id,
+        }
+        if (form.contactId) {
+          await updateContact(form.contactId, contactPayload)
+        } else {
+          await createContact(contactPayload)
+        }
+      }
+
+      showToast('Vendor updated successfully')
       page.show = false; load()
     }
   } catch (e) {
-    formError.value = e.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
+    formError.value = e.response?.data?.response?.error?.message ?? e.message ?? 'An error occurred.'
   } finally { formLoading.value = false }
 }
 
-// ── Toggle Active ────────────────────────────────────────────
+// ── Toggle Active ─────────────────────────────────────────────
 const toggleModal   = reactive({ show: false, vendor: null })
 const toggleLoading = ref(false)
 
@@ -1065,234 +803,13 @@ async function doToggle() {
   toggleLoading.value = true
   try {
     const newActive = !toggleModal.vendor.active
-    await toggleVendorActive(toggleModal.vendor.id, newActive)
-    showToast(newActive ? 'Vendor diaktifkan' : 'Vendor dinonaktifkan')
+    await deleteVendor(toggleModal.vendor.id)
+    showToast(newActive ? 'Vendor activated' : 'Vendor deactivated')
     toggleModal.show = false; load()
   } catch (e) {
-    showToast(e.response?.data?.response?.error?.message ?? 'Gagal mengubah status', 'error')
+    showToast(e.response?.data?.response?.error?.message ?? 'Failed to change status', 'error')
     toggleModal.show = false
   } finally { toggleLoading.value = false }
-}
-
-// ── Contacts ─────────────────────────────────────────────────
-const contacts         = ref([])
-const contactsLoading  = ref(false)
-
-async function loadContacts(bpId) {
-  contactsLoading.value = true
-  try { contacts.value = await fetchContacts(bpId) }
-  catch (e) { contacts.value = [] }
-  finally { contactsLoading.value = false }
-}
-
-const contactModal       = reactive({ show: false, mode: 'create', id: null })
-const contactLoading     = ref(false)
-const contactError       = ref(null)
-const contactErrors      = reactive({})
-const contactForm        = reactive({ firstName: '', lastName: '', email: '', phone: '', position: '' })
-const contactDeleteModal = reactive({ show: false, contact: null })
-const contactDeleteLoading = ref(false)
-
-function openContactModal(ct = null) {
-  contactError.value = null; Object.keys(contactErrors).forEach(k => delete contactErrors[k])
-  if (ct) {
-    Object.assign(contactForm, { firstName: ct.firstName ?? '', lastName: ct.lastName ?? '', email: ct.email ?? '', phone: ct.phone ?? '', position: ct.position ?? '' })
-    contactModal.mode = 'edit'; contactModal.id = ct.id
-  } else {
-    Object.assign(contactForm, { firstName: '', lastName: '', email: '', phone: '', position: '' })
-    contactModal.mode = 'create'; contactModal.id = null
-  }
-  contactModal.show = true
-}
-
-async function submitContact() {
-  Object.keys(contactErrors).forEach(k => delete contactErrors[k])
-  if (!contactForm.firstName.trim()) { contactErrors.firstName = 'First name wajib diisi'; return }
-  contactLoading.value = true; contactError.value = null
-  try {
-    const payload = {
-      firstName: contactForm.firstName.trim(),
-      lastName: contactForm.lastName.trim() || null,
-      name: `${contactForm.firstName.trim()} ${contactForm.lastName.trim()}`.trim(),
-      email: contactForm.email.trim() || null,
-      phone: contactForm.phone.trim() || null,
-      position: contactForm.position.trim() || null,
-      businessPartner: viewModal.data?.id,
-    }
-    if (contactModal.mode === 'create') { await createContact(payload); showToast('Contact berhasil ditambahkan') }
-    else { await updateContact(contactModal.id, payload); showToast('Contact berhasil diupdate') }
-    contactModal.show = false; await loadContacts(viewModal.data?.id)
-  } catch (e) { contactError.value = e.message ?? 'Terjadi kesalahan.' }
-  finally { contactLoading.value = false }
-}
-
-function confirmDeleteContact(ct) { contactDeleteModal.contact = ct; contactDeleteModal.show = true }
-
-async function doDeleteContact() {
-  contactDeleteLoading.value = true
-  try {
-    await deleteContact(contactDeleteModal.contact.id)
-    showToast('Contact dihapus'); contactDeleteModal.show = false
-    await loadContacts(viewModal.data?.id)
-  } catch (e) {
-    showToast(e.message ?? 'Gagal menghapus', 'error'); contactDeleteModal.show = false
-  } finally { contactDeleteLoading.value = false }
-}
-
-function initials(first, last) { return `${(first?.[0] || '').toUpperCase()}${(last?.[0] || '').toUpperCase()}` || '?' }
-
-// ════════════════════════════════════════════════════════════
-// LINK GL STATE
-// ════════════════════════════════════════════════════════════
-const glRows    = ref([])
-const glLoading = ref(false)
-const glError   = ref(null)
-const glSearch  = ref('')
-
-const openGLDropdown = ref(null)
-const glDropdownPos  = ref({ top: 0, right: 0 })
-
-const filteredGLRows = computed(() => {
-  if (!glSearch.value.trim()) return glRows.value
-  const q = glSearch.value.toLowerCase()
-  return glRows.value.filter(r =>
-    (r['businessPartnerCategory$_identifier'] || '').toLowerCase().includes(q) ||
-    (r['vendorLiability$_identifier'] || '').toLowerCase().includes(q)
-  )
-})
-
-async function loadGLRows() {
-  glLoading.value = true; glError.value = null
-  try {
-    glRows.value = await fetchBPCategoryAccounts()
-  } catch (e) {
-    glError.value = 'Gagal memuat data Link GL.'
-  } finally { glLoading.value = false }
-}
-
-function switchToLinkGL() {
-  activeTab.value = 'linkgl'
-  if (!glRows.value.length) loadGLRows()
-}
-
-function toggleGLDropdown(id, event) {
-  if (openGLDropdown.value === id) { openGLDropdown.value = null; return }
-  const rect = event.currentTarget.getBoundingClientRect()
-  glDropdownPos.value = { top: rect.bottom + 4, right: window.innerWidth - rect.right }
-  openGLDropdown.value = id
-}
-function closeGLDropdown() { openGLDropdown.value = null }
-
-// ── GL Page (create/edit) ────────────────────────────────────
-const glPage        = reactive({ show: false, mode: 'create', data: null })
-const glFormLoading = ref(false)
-const glFormError   = ref(null)
-const glFormErrors  = reactive({})
-const defaultGLForm = () => ({
-  businessPartnerCategory: '',
-  accountingSchema: '',
-  searchKey: '',
-  customerReceivablesNo: '',
-  customerPrepayment: '',
-  vendorLiability: '',
-  vendorPrepayment: '',
-  writeoff: '',
-  nonInvoicedReceipts: '',
-  default: false,
-})
-const glForm = reactive(defaultGLForm())
-
-function openGLCreatePage() {
-  Object.assign(glForm, defaultGLForm())
-  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
-  glFormError.value = null
-  glPage.mode = 'create'; glPage.data = null; glPage.show = true
-  closeGLDropdown()
-}
-
-function openGLEditPage(row) {
-  Object.assign(glForm, {
-    businessPartnerCategory: row.businessPartnerCategory || '',
-    accountingSchema:        row.accountingSchema || '',
-    searchKey:               row.searchKey || '',
-    customerReceivablesNo:   row.customerReceivablesNo || '',
-    customerPrepayment:      row.customerPrepayment || '',
-    vendorLiability:         row.vendorLiability || '',
-    vendorPrepayment:        row.vendorPrepayment || '',
-    writeoff:                row.writeoff || '',
-    nonInvoicedReceipts:     row.nonInvoicedReceipts || '',
-    default:                 row.default ?? false,
-  })
-  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
-  glFormError.value = null
-  glPage.mode = 'edit'; glPage.data = row; glPage.show = true
-  closeGLDropdown()
-}
-
-function closeGLPage() { if (glFormLoading.value) return; glPage.show = false }
-
-async function submitGLForm() {
-  Object.keys(glFormErrors).forEach(k => delete glFormErrors[k])
-  if (!glForm.businessPartnerCategory) {
-    glFormErrors.businessPartnerCategory = 'Category wajib dipilih'; return
-  }
-  if (!glForm.accountingSchema) {
-    glFormErrors.accountingSchema = 'Accounting Schema wajib dipilih'; return
-  }
-  glFormLoading.value = true; glFormError.value = null
-  try {
-    if (glPage.mode === 'create') {
-      await createBPCategoryAccount(glForm)
-      showToast('Link GL berhasil dibuat')
-    } else {
-      await updateBPCategoryAccount(glPage.data.id, glForm)
-      showToast('Link GL berhasil diupdate')
-    }
-    glPage.show = false
-    await loadGLRows()
-  } catch (e) {
-    glFormError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
-  } finally { glFormLoading.value = false }
-}
-
-// ── GL View Modal ────────────────────────────────────────────
-const glViewModal = reactive({ show: false, data: null })
-function openGLViewModal(row) {
-  glViewModal.data = row; glViewModal.show = true; closeGLDropdown()
-}
-
-// ── GL Delete ────────────────────────────────────────────────
-const glDeleteModal   = reactive({ show: false, row: null })
-const glDeleteLoading = ref(false)
-const glDeleteError   = ref(null)
-
-function confirmDeleteGL(row) {
-  closeGLDropdown()
-  glDeleteModal.row = row; glDeleteError.value = null; glDeleteModal.show = true
-}
-
-async function doDeleteGL() {
-  glDeleteLoading.value = true; glDeleteError.value = null
-  try {
-    await deleteBPCategoryAccount(glDeleteModal.row.id)
-    showToast('Link GL dihapus')
-    glDeleteModal.show = false
-    await loadGLRows()
-  } catch (e) {
-    glDeleteError.value = e?.response?.data?.response?.error?.message ?? e.message ?? 'Gagal menghapus.'
-  } finally { glDeleteLoading.value = false }
-}
-
-// ── GL Set Default ───────────────────────────────────────────
-async function confirmSetGLDefault(row) {
-  closeGLDropdown()
-  try {
-    showToast('Memproses...')
-    await loadGLRows()
-    showToast('Default berhasil diset')
-  } catch (e) {
-    showToast('Gagal set default', 'error')
-  }
 }
 
 onMounted(() => { load(); loadLookups() })
@@ -1308,31 +825,40 @@ onMounted(() => { load(); loadLookups() })
   --accent: #3b82f6; --accent-hover: #2563eb; --accent-light: #eff6ff;
   --success: #22c55e; --danger: #ef4444;
   --radius: 12px; --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.1);
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
 }
-.app { min-height: 100vh; background: var(--bg); font-family: var(--font); }
-.page-wrap { padding: 28px 32px; max-width: 1280px; margin: 0 auto; }
-.content-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-.card-header { padding: 22px 24px 0; }
-.page-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0; }
-.tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 20px; gap: 4px; margin-top: 12px; }
-.tab { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px 9px; font-size: 13px; font-weight: 500; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); cursor: pointer; transition: color .15s, border-color .15s; margin-bottom: -1px; font-family: var(--font); }
-.tab:hover { color: var(--text-primary); }
-.tab--active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-.toolbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; gap: 12px; }
-.search-wrap { position: relative; flex: 1; max-width: 280px; }
+
+/* ── Layout ───────────────────────────────────────────── */
+.app { font-family: var(--font); color: var(--text-primary); background: var(--bg); min-height: 100vh; }
+.page-wrap { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.content-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.page-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+
+/* ── Toolbar ──────────────────────────────────────────── */
+.toolbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; gap: 12px; border-bottom: 1px solid var(--border); }
+.search-wrap { position: relative; flex: 1; max-width: 320px; }
 .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-.search-input { width: 100%; height: 36px; padding: 0 12px 0 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: var(--surface2); outline: none; font-family: var(--font); color: var(--text-primary); transition: border-color .15s; }
+.search-input { width: 100%; height: 36px; padding: 0 12px 0 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; font-family: var(--font); background: var(--surface2); color: var(--text-primary); }
 .search-input:focus { border-color: var(--accent); background: #fff; }
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; font-family: var(--font); }
-.btn:disabled { opacity: .6; cursor: not-allowed; }
-.btn--primary { background: var(--accent); color: #fff; } .btn--primary:hover:not(:disabled) { background: var(--accent-hover); }
-.btn--ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); } .btn--ghost:hover:not(:disabled) { background: var(--surface2); }
-.btn--danger { background: var(--danger); color: #fff; } .btn--danger:hover:not(:disabled) { background: #dc2626; }
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: var(--font); transition: all .15s; white-space: nowrap; }
+.btn--primary { background: var(--accent); color: #fff; }
+.btn--primary:hover { background: var(--accent-hover); }
+.btn--primary:disabled { opacity: .6; cursor: not-allowed; }
+.btn--ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn--ghost:hover { background: var(--surface2); }
+.btn--ghost:disabled { opacity: .5; cursor: not-allowed; }
+.btn--danger { background: var(--danger); color: #fff; }
+.btn--danger:hover { background: #dc2626; }
+.btn--danger:disabled { opacity: .6; cursor: not-allowed; }
 .btn--sm { padding: 6px 12px; font-size: 12px; }
 .btn-spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Table ────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table thead th { padding: 10px 16px; text-align: left; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -1348,6 +874,8 @@ onMounted(() => { load(); loadLookups() })
 .td-action-cell { text-align: right; overflow: visible !important; }
 .code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; }
 .inactive-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #fff1f2; color: var(--danger); margin-left: 6px; vertical-align: middle; }
+
+/* ── Action Group / Dropdown ──────────────────────────── */
 .action-group { display: flex; justify-content: flex-end; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); transition: background .12s; }
 .action-btn:hover { background: var(--border); }
@@ -1357,27 +885,37 @@ onMounted(() => { load(); loadLookups() })
 .dropdown-item:hover { background: var(--surface2); color: var(--text-primary); }
 .dropdown-item--danger { color: var(--danger); } .dropdown-item--danger:hover { background: #fff1f2; }
 .dropdown-item--success { color: var(--success); } .dropdown-item--success:hover { background: #f0fdf4; }
+
+/* ── Loading ──────────────────────────────────────────── */
 .loading-dots { display: flex; gap: 6px; justify-content: center; align-items: center; }
 .loading-dots span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
-.loading-dots span:nth-child(2) { animation-delay: .2s; } .loading-dots span:nth-child(3) { animation-delay: .4s; }
+.loading-dots span:nth-child(2) { animation-delay: .2s; }
+.loading-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
+
+/* ── Pagination ───────────────────────────────────────── */
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
 .page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); outline: none; }
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
 .page-btn--active { background: #fff !important; color: #1e293b !important; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07); }
 .page-btn:disabled { opacity: .3; cursor: not-allowed; }
-.linkgl-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 64px; color: var(--text-muted); }
-.linkgl-empty p { font-size: 13px; margin: 0; }
+
+/* ── Toast ────────────────────────────────────────────── */
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 3000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
-.toast--success { background: #16a34a; color: #fff; } .toast--error { background: var(--danger); color: #fff; }
+.toast--success { background: #16a34a; color: #fff; }
+.toast--error { background: var(--danger); color: #fff; }
 .toast-enter-active,.toast-leave-active { transition: all .25s ease; }
 .toast-enter-from,.toast-leave-to { opacity: 0; transform: translateY(8px); }
+
+/* ── Breadcrumb ───────────────────────────────────────── */
 .breadcrumb-row { display: flex; align-items: center; gap: 6px; font-size: 12.5px; margin-bottom: 16px; }
 .breadcrumb-back { display: inline-flex; align-items: center; gap: 4px; background: none; border: none; color: var(--accent); font-size: 12.5px; font-weight: 500; cursor: pointer; padding: 0; font-family: var(--font); }
 .breadcrumb-back:hover { text-decoration: underline; }
 .breadcrumb-sep { color: var(--text-muted); }
 .breadcrumb-cur { color: var(--text-primary); font-weight: 500; }
 .form-page-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Form Cards ───────────────────────────────────────── */
 .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; box-shadow: var(--shadow); }
 .form-card-title { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 18px; }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
@@ -1390,25 +928,29 @@ onMounted(() => { load(); loadLookups() })
 .input-error { border-color: var(--danger) !important; }
 .field-error { font-size: 11.5px; color: var(--danger); }
 .req { color: var(--danger); }
+.form-section-divider { display: flex; align-items: center; gap: 8px; margin-top: 18px; margin-bottom: 2px; }
+.form-section-label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); white-space: nowrap; }
+.form-section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .form-checks { display: flex; gap: 20px; }
 .check-label { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; }
 .check-label input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
 .form-api-error { padding: 10px 14px; background: #fff1f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); color: var(--danger); font-size: 12.5px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
 .page-footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px; margin-top: 8px; }
+
+/* ── Modals ───────────────────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
 .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 480px; overflow: hidden; }
-.modal--detail { max-width: 700px; } .modal--sm { max-width: 400px; }
+.modal--detail { max-width: 700px; }
+.modal--sm { max-width: 400px; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0; }
 .modal-close { background: none; border: none; color: var(--text-muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
 .modal-close:hover { background: var(--surface2); color: var(--text-primary); }
 .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
-.detail-tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 20px; }
-.dtab { padding: 12px 16px 10px; font-size: 13px; font-weight: 500; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; transition: all .15s; font-family: var(--font); }
-.dtab:hover { color: var(--text-primary); }
-.dtab--active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-.detail-panel { }
+
+/* ── Detail View ──────────────────────────────────────── */
+.detail-section-label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .detail-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .detail-col { display: flex; flex-direction: column; gap: 14px; }
 .detail-item { display: flex; flex-direction: column; gap: 3px; }
@@ -1418,23 +960,12 @@ onMounted(() => { load(); loadLookups() })
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; }
 .status-pill--active { background: #f0fdf4; color: #16a34a; }
 .status-pill--inactive { background: #fff1f2; color: var(--danger); }
-.sub-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.sub-count { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-.sub-loading { display: flex; justify-content: center; padding: 32px; }
-.sub-empty { text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px; }
-.contact-cards { display: flex; flex-direction: column; gap: 8px; }
-.contact-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); }
-.contact-avatar { width: 36px; height: 36px; background: var(--accent-light); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-.contact-info { flex: 1; min-width: 0; }
-.contact-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.contact-meta { display: flex; gap: 12px; margin-top: 2px; }
-.contact-meta span { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
-.contact-actions { display: flex; gap: 6px; }
-.icon-btn { width: 28px; height: 28px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
-.icon-btn--edit { background: #f0fdf4; color: #16a34a; } .icon-btn--edit:hover { background: #dcfce7; }
-.icon-btn--delete { background: #fff1f2; color: var(--danger); } .icon-btn--delete:hover { background: #ffe4e6; }
+
+/* ── Delete confirm ───────────────────────────────────── */
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); margin: 0; }
 .delete-text strong { color: var(--text-primary); }
+
+/* ── Transitions ──────────────────────────────────────── */
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }
 .fade-enter-from,.fade-leave-to { opacity: 0; }
 .slide-enter-active,.slide-leave-active { transition: transform .2s ease, opacity .2s ease; }

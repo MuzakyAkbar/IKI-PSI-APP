@@ -16,13 +16,47 @@ const api = axios.create({
 const fkWrap = (val) => (val ? { id: val } : undefined)
 
 // ════════════════════════════════════════════════════
+// IOT / PSI API — Back to Draft
+// ════════════════════════════════════════════════════
+const IOT_API_BASE = window.APP_CONFIG?.IOT_API_BASE_URL || 'https://api-erp-psi-dev.nebulaiot.io'
+const IOT_USERNAME = window.APP_CONFIG?.IOT_USERNAME || 'ERP_TO_IOT'
+const IOT_PASSWORD = window.APP_CONFIG?.IOT_PASSWORD || 'sad21341!WadSSAGGC'
+const iotToken = btoa(`${IOT_USERNAME}:${IOT_PASSWORD}`)
+
+export async function backToDraftIot(idErp) {
+  const res = await fetch(`${IOT_API_BASE}/billing/back/draft/${idErp}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${iotToken}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!res.ok) {
+    let errMessage = `Back to Draft IoT gagal [${res.status}]`
+    try {
+      const errJson = await res.json()
+      if (errJson?.message) errMessage = errJson.message
+    } catch {
+      const errText = await res.text().catch(() => '')
+      if (errText) errMessage = errText
+    }
+    throw new Error(errMessage)
+  }
+
+  return res.status === 204 ? null : await res.json().catch(() => null)
+}
+
+// ════════════════════════════════════════════════════
 // CONSTANTS
 // ════════════════════════════════════════════════════
-export const AR_INVOICE_DOCTYPE_ID = 'BAF9EDB72D024FA9AFF8CED783CB8CE1' // AR Invoice
-export const DEFAULT_ORGANIZATION  = 'B3FE20F490CF49989D7250C0D3341603'
-export const DEFAULT_CURRENCY      = '303'                               // IDR
-export const DEFAULT_PRICE_LIST    = '01D7BA2E3F234527B861CBAB12AE0DDE'
-export const DEFAULT_TAX_ID        = 'F3F273F648784C858549A45FF0A69AFA'
+export const AR_INVOICE_DOCTYPE_ID  = 'BAF9EDB72D024FA9AFF8CED783CB8CE1' // AR Invoice
+export const DEFAULT_ORGANIZATION   = 'B3FE20F490CF49989D7250C0D3341603'
+export const DEFAULT_CURRENCY       = '303'                               // IDR
+export const DEFAULT_PRICE_LIST     = '01D7BA2E3F234527B861CBAB12AE0DDE'
+export const DEFAULT_TAX_ID         = 'F3F273F648784C858549A45FF0A69AFA'
+export const ADJUSTMENT_PRODUCT_ID  = '64556432E0644B86A2E01BE25309F9F4' // Product Adjustment
+export const ADJUSTMENT_UOM_ID      = '100'                               // Unit
 
 // ════════════════════════════════════════════════════
 // INVOICE HEADER
@@ -37,22 +71,28 @@ export async function fetchAllInvoices({ startRow = 0, pageSize = 20, searchKey 
   }
   const res = await api.get(INV_BASE, {
     params: {
-      _startRow: startRow,
-      _endRow: startRow + pageSize,
-      _noCount: false,
-      _orderBy: 'e.creationDate desc',
-      _where: where,
-      // Include paymentComplete so payment status pill is accurate
-      _selectedProperties: 'id,documentNo,invoiceDate,businessPartner,businessPartner$_identifier,kodePelanggan,grandTotalAmount,summedLineAmount,documentStatus,posted,outstandingAmount,paidAmount,organization,organization$_identifier',
+      _startRow:  startRow,
+      _endRow:    startRow + pageSize,
+      _noCount:   false,
+      _orderBy:   'e.documentNo desc',
+      _where:     where,
+      _selectedProperties: 'id,documentNo,invoiceDate,businessPartner,businessPartner$_identifier,kodePelanggan,grandTotalAmount,summedLineAmount,documentStatus,posted,paymentComplete,organization,organization$_identifier',
     },
   })
-  return res.data?.response ?? res.data
+  const result = res.data?.response ?? res.data
+  console.log('[DEBUG] startRow:', startRow, '| totalRows:', result.totalRows, '| data.length:', result.data?.length, '| paymentComplete[0]:', result.data?.[0]?.paymentComplete)
+  return result
 }
 
 export async function fetchInvoice(id) {
   const res = await api.get(`${INV_BASE}/${id}`)
-  const raw = res.data?.response?.data
-  return Array.isArray(raw) ? raw[0] : raw
+  // Openbravo GET by ID bisa return dua struktur:
+  // 1. { response: { data: [{...}] } }  -> list wrapper
+  // 2. { id, documentNo, ... }          -> flat object langsung
+  const wrapped = res.data?.response?.data
+  if (wrapped) return Array.isArray(wrapped) ? wrapped[0] : wrapped
+  if (res.data?.id) return res.data
+  return null
 }
 
 export async function createInvoice(data) {
@@ -312,6 +352,18 @@ export async function fetchProducts(search = '') {
 export async function fetchUOMs() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/UOM', {
     params: { _startRow: 0, _endRow: 200 },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function fetchTaxRates() {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtTaxRate', {
+    params: {
+      _where:    `e.active = true`,
+      _startRow: 0,
+      _endRow:   200,
+      _orderBy:  'e.name asc',
+    },
   })
   return res.data?.response?.data ?? []
 }
@@ -591,58 +643,209 @@ export async function postAccountingProcess(invoiceId, invoiceData) {
   const lines = linesRes.data?.response?.data ?? []
   if (lines.length === 0) throw new Error('Tidak ada invoice lines untuk di-post.')
 
-  // ── Step 4: resolve AR Receivable account dari AcctSchema ──
-  // Try BusinessPartner-level customer accounts first, then AcctSchema-level fallback
+  // ── Step 4: resolve AR Receivable account ──
+  // Strategy order:
+  //   4a. BusinessPartner-level — coba 5 entity name berbeda
+  //   4b. BusinessPartnerCategoryAccount — via BP category + schema
+  //   4c. AcctSchema-level fallback
+  //   4d. LAST RESORT — cari akun Piutang langsung dari ElementValue (account code)
   let arAccount = null
 
-  // 4a. Try BusinessPartner accounting (CustomerReceivables)
   const bpId = extractId(invoiceData.businessPartner)
+
+  // Helper: coba semua field name AR yang mungkin di satu record
+  const extractArCombId = (rec) => {
+    if (!rec) return null
+    // Log semua key agar mudah debug
+    console.log('[POST ACCOUNTING] Record keys:', Object.keys(rec))
+    return extractId(rec.customerReceivables)
+      || extractId(rec.receivables)
+      || extractId(rec.cReceivableAcct)
+      || extractId(rec.customerReceivablesNo)
+      || extractId(rec.receivablesAccount)
+      || extractId(rec.acctReceivable)
+      || extractId(rec.receivableAccount)
+      || extractId(rec.bpartnerReceivables)
+      // nilai numerik di field *Acct* yang berisi ID combination (nama field Openbravo asli)
+      || Object.entries(rec).reduce((found, [k, v]) => {
+           if (found) return found
+           const lk = k.toLowerCase()
+           if ((lk.includes('receiv') || lk.includes('piutang')) && v) return extractId(v)
+           return null
+         }, null)
+  }
+
+  // 4a. Try BusinessPartner-level customer accounts — try multiple entity names
   if (bpId && schemaId) {
+    const bpAcctEntities = [
+      'BusinessPartnerAccounts',
+      'BusinessPartnerAccts',
+      'C_BP_Customer_Acct',
+      'FinancialMgmtBPAcct',
+      'C_BPartner_Acct',          // nama tabel DB asli Openbravo
+    ]
+    for (const entityName of bpAcctEntities) {
+      try {
+        const res = await api.get(`/org.openbravo.service.json.jsonrest/${entityName}`, {
+          params: {
+            _where: `e.businessPartner.id = '${bpId}' and e.accountingSchema.id = '${schemaId}'`,
+            _startRow: 0, _endRow: 1,
+          },
+        })
+        const rec = res.data?.response?.data?.[0]
+        if (rec) {
+          console.log(`[POST ACCOUNTING] BP Acct found via ${entityName}`)
+          const combId = extractArCombId(rec)
+          if (combId) {
+            arAccount = await resolveAcctCombination(combId)
+            console.log('[POST ACCOUNTING] AR from BP acct:', arAccount)
+            break
+          } else {
+            console.warn(`[POST ACCOUNTING] ${entityName} found but no AR field. Full record:`, JSON.stringify(rec))
+          }
+        }
+      } catch (e) {
+        console.log(`[POST ACCOUNTING] ${entityName} not found:`, e.message?.slice(0, 80))
+      }
+    }
+  }
+
+  // 4b. Try BusinessPartnerCategoryAccount (BP Category → schema → customerReceivablesNo)
+  if (!arAccount && bpId && schemaId) {
     try {
-      const bpAcctRes = await api.get('/org.openbravo.service.json.jsonrest/BusinessPartnerAccounts', {
-        params: {
-          _where: `e.businessPartner.id = '${bpId}' and e.accountingSchema.id = '${schemaId}'`,
-          _startRow: 0, _endRow: 1,
-        },
-      })
-      const bpAcct = bpAcctRes.data?.response?.data?.[0]
-      if (bpAcct) {
-        console.log('[POST ACCOUNTING] BP Acct keys:', Object.keys(bpAcct))
-        const combId = extractId(bpAcct.customerReceivables)
-          || extractId(bpAcct.receivables)
-          || extractId(bpAcct.cReceivableAcct)
-        if (combId) {
-          arAccount = await resolveAcctCombination(combId)
-          console.log('[POST ACCOUNTING] AR from BP:', arAccount)
+      const bpRes = await api.get(`/org.openbravo.service.json.jsonrest/BusinessPartner/${bpId}`)
+      const bpData = bpRes.data?.response?.data
+      const bp = Array.isArray(bpData) ? bpData[0] : (bpData ?? bpRes.data)
+      const categoryId = extractId(bp?.businessPartnerCategory)
+      console.log('[POST ACCOUNTING] BP category:', categoryId)
+
+      if (categoryId) {
+        // Coba dua entity name untuk category account
+        for (const catEntity of ['BusinessPartnerCategoryAccount', 'C_BP_Group_Acct']) {
+          try {
+            const catAcctRes = await api.get(`/org.openbravo.service.json.jsonrest/${catEntity}`, {
+              params: {
+                _where: `e.businessPartnerCategory.id = '${categoryId}' and e.accountingSchema.id = '${schemaId}'`,
+                _startRow: 0, _endRow: 1,
+              },
+            })
+            const catAcct = catAcctRes.data?.response?.data?.[0]
+            if (catAcct) {
+              console.log(`[POST ACCOUNTING] ${catEntity} found`)
+              const combId = extractArCombId(catAcct)
+              if (combId) {
+                arAccount = await resolveAcctCombination(combId)
+                console.log('[POST ACCOUNTING] AR from BPCategoryAcct:', arAccount)
+                break
+              } else {
+                console.warn(`[POST ACCOUNTING] ${catEntity} found but no AR field. Full record:`, JSON.stringify(catAcct))
+              }
+            }
+          } catch (e) {
+            console.log(`[POST ACCOUNTING] ${catEntity} failed:`, e.message?.slice(0, 80))
+          }
+          if (arAccount) break
         }
       }
     } catch (e) {
-      console.log('[POST ACCOUNTING] BP accounts lookup failed:', e.message)
+      console.log('[POST ACCOUNTING] BPCategoryAccount lookup failed:', e.message)
     }
   }
 
-  // 4b. Fallback: AcctSchema-level AR
-  if (!arAccount && (schemaRec || schemaId)) {
+  // 4c. Fallback: AcctSchema-level AR
+  if (!arAccount) {
     const schema = schemaRec || {}
-    const arCombId = extractId(schema.receivables)
-      || extractId(schema.customerReceivables)
-      || extractId(schema.notFinRecReceivables)
-      || extractId(schema.receivablesNoCurrency)
-      || extractId(schema['c_receivable_acct'])
-    console.log('[POST ACCOUNTING] AcctSchema AR candidates:', {
-      receivables: schema.receivables,
-      customerReceivables: schema.customerReceivables,
-    })
-    if (arCombId) {
-      arAccount = await resolveAcctCombination(arCombId)
-      console.log('[POST ACCOUNTING] AR from AcctSchema:', arAccount)
-    } else {
-      console.warn('[POST ACCOUNTING] No AR field found in AcctSchema:', JSON.stringify(schema))
+    if (Object.keys(schema).length > 0) {
+      console.log('[POST ACCOUNTING] Trying AcctSchema-level AR. Keys:', Object.keys(schema))
+      const arCombId = extractArCombId(schema)
+        || extractId(schema.notFinRecReceivables)
+        || extractId(schema.receivablesNoCurrency)
+      if (arCombId) {
+        arAccount = await resolveAcctCombination(arCombId)
+        console.log('[POST ACCOUNTING] AR from AcctSchema:', arAccount)
+      }
     }
+    // Juga coba fetch AcctSchema dengan _selectedProperties lebih luas
+    if (!arAccount && schemaId) {
+      try {
+        const schemaFullRes = await api.get(`/org.openbravo.service.json.jsonrest/FinancialMgmtAcctSchema/${schemaId}`)
+        const schemaFull = schemaFullRes.data?.response?.data?.[0] ?? schemaFullRes.data
+        if (schemaFull && typeof schemaFull === 'object') {
+          console.log('[POST ACCOUNTING] AcctSchema full keys:', Object.keys(schemaFull))
+          const arCombId2 = extractArCombId(schemaFull)
+            || extractId(schemaFull.notFinRecReceivables)
+            || extractId(schemaFull.receivablesNoCurrency)
+          if (arCombId2) {
+            arAccount = await resolveAcctCombination(arCombId2)
+            console.log('[POST ACCOUNTING] AR from AcctSchema full:', arAccount)
+          }
+        }
+      } catch (e) {
+        console.log('[POST ACCOUNTING] AcctSchema full fetch failed:', e.message?.slice(0, 80))
+      }
+    }
+  }
+
+  // 4d. LAST RESORT: cari akun Piutang langsung dari ElementValue berdasarkan nama/kode akun
+  if (!arAccount) {
+    console.warn('[POST ACCOUNTING] All BP/Schema AR lookups failed. Trying ElementValue search...')
+    try {
+      // Cari account element yang namanya mengandung "piutang" atau "receivable", atau code dimulai dengan 12
+      const evRes = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtElementValue', {
+        params: {
+          _where: `e.active = true and e.accountType = 'A' and (upper(e.name) like upper('%piutang%') or upper(e.name) like upper('%receivable%') or (e.searchKey like '12%' and e.summaryLevel = false))`,
+          _startRow: 0,
+          _endRow: 10,
+          _orderBy: 'e.searchKey asc',
+        },
+      })
+      const evList = evRes.data?.response?.data ?? []
+      console.log('[POST ACCOUNTING] ElementValue AR candidates:', evList.map(e => `${e.searchKey} - ${e.name}`))
+
+      if (evList.length > 0) {
+        // Pilih yang paling spesifik: lebih prefer "piutang usaha" / "accounts receivable trade"
+        const bestEv = evList.find(e =>
+          /piutang usaha|trade receiv|account.*receiv.*trade/i.test(e.name)
+        ) ?? evList[0]
+
+        // Cari AccountingCombination yang pakai element ini
+        const combRes = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingCombination', {
+          params: {
+            _where: `e.account.id = '${bestEv.id}'` + (schemaId ? ` and e.accountingSchema.id = '${schemaId}'` : ''),
+            _startRow: 0, _endRow: 1,
+          },
+        })
+        const combRec = combRes.data?.response?.data?.[0]
+        if (combRec) {
+          arAccount = await resolveAcctCombination(combRec.id)
+          console.log('[POST ACCOUNTING] AR from ElementValue fallback:', arAccount, '| account:', bestEv.searchKey, bestEv.name)
+        } else {
+          // Buat fake arAccount langsung dari elementValue id (tanpa combination)
+          arAccount = {
+            accountId: bestEv.id,
+            combId:    null,
+            value:     bestEv.searchKey || '',
+            accountingEntryDescription: bestEv.name || '',
+          }
+          console.log('[POST ACCOUNTING] AR from ElementValue (no combination):', arAccount)
+        }
+      }
+    } catch (e) {
+      console.warn('[POST ACCOUNTING] ElementValue AR search failed:', e.message)
+    }
+  }
+
+  if (!arAccount) {
+    throw new Error(
+      'Akun AR (Piutang) tidak ditemukan. Pastikan:\n' +
+      '1. Business Partner Category sudah memiliki akun "Customer Receivables" di tab Customer Accounting\n' +
+      '2. Atau Accounting Schema sudah dikonfigurasi dengan akun Receivables\n' +
+      '3. Atau pastikan ada akun dengan nama "Piutang" / "Receivable" di Chart of Accounts\n\n' +
+      'Cek browser console (F12) untuk detail field yang tersedia di setiap entity.'
+    )
   }
 
   // ── Step 5: Resolve Revenue accounts per line (deduplicated by productId) ──
-  // Cache by productId so same product is not fetched twice
   const revenueCache = {}
   async function getRevenueAccount(productId) {
     if (!productId) return null
@@ -665,10 +868,45 @@ export async function postAccountingProcess(invoiceId, invoiceData) {
     return account
   }
 
+  // ── Step 5b: Resolve Tax account per tax rate ──
+  const taxAcctCache = {}
+  async function getTaxAccount(taxId) {
+    if (!taxId) return null
+    if (taxId in taxAcctCache) return taxAcctCache[taxId]
+    try {
+      const taxAcctRes = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtTaxAccounts', {
+        params: {
+          _where: `e.tax.id = '${taxId}'` + (schemaId ? ` and e.accountingSchema.id = '${schemaId}'` : ''),
+          _startRow: 0, _endRow: 1,
+        },
+      })
+      const taxAcct = taxAcctRes.data?.response?.data?.[0]
+      if (taxAcct) {
+        console.log('[POST ACCOUNTING] TaxAcct keys:', Object.keys(taxAcct))
+        // taxDue = Tax Payable (for sales/AR invoices)
+        const combId = extractId(taxAcct.taxDue)
+          || extractId(taxAcct.taxDueAcct)
+          || extractId(taxAcct.t_due_acct)
+        if (combId) {
+          const account = await resolveAcctCombination(combId)
+          taxAcctCache[taxId] = account
+          return account
+        }
+      }
+    } catch (e) {
+      console.log('[POST ACCOUNTING] TaxAcct lookup failed for', taxId, ':', e.message?.slice(0, 80))
+    }
+    taxAcctCache[taxId] = null
+    return null
+  }
+
   // ── Step 6: Build entries ──
-  // Pattern: ONE Debit AR for total invoice + ONE Credit Revenue per line
-  // This is the correct double-entry standard for AR invoices.
-  const totalAmount = Number(invoiceData.grandTotalAmount) || lines.reduce((s, l) => s + (Number(l.lineNetAmount) || 0), 0)
+  // Standard AR Invoice double-entry:
+  //   Debit  AR (Piutang)    = grandTotalAmount  (net + tax)
+  //   Credit Revenue         = lineNetAmount     (per line)
+  //   Credit Tax Payable     = taxAmount         (per tax line, if any)
+  // grandTotalAmount = sum(lineNetAmount) + sum(taxAmount)
+  const grandTotal = Number(invoiceData.grandTotalAmount) || 0
   let seqNo = 10
 
   const buildFact = ({ isDebit, amount, lineId, lineNo, desc }) => ({
@@ -698,28 +936,26 @@ export async function postAccountingProcess(invoiceId, invoiceData) {
     active:                      true,
   })
 
-  // 6a. ONE Debit AR — total invoice amount, referencing first line
-  const firstLine = lines[0]
   const invoiceDesc = invoiceData.description || invoiceData['businessPartner$_identifier']?.split(' - ').slice(1).join(' - ') || ''
-  if (arAccount?.accountId) {
-    await api.post(FACT_BASE, {
-      data: {
-        ...buildFact({ isDebit: true, amount: totalAmount, lineId: firstLine?.id, lineNo: 10, desc: `${invoiceData.documentNo} # ${invoiceDesc}`.trim() }),
-        account:                   { id: arAccount.accountId },
-        ...(arAccount.combId     && { accountingCombination: { id: arAccount.combId } }),
-        value:                      arAccount.value,
-        accountingEntryDescription: arAccount.accountingEntryDescription,
-      },
-    })
-    seqNo += 10
-  } else {
-    console.warn('[POST ACCOUNTING] AR account not resolved — Debit entry skipped.')
-  }
 
-  // 6b. ONE Credit Revenue per invoice line
+  // 6a. ONE Debit AR — grandTotalAmount (net + tax), referencing first line
+  const firstLine = lines[0]
+  await api.post(FACT_BASE, {
+    data: {
+      ...buildFact({ isDebit: true, amount: grandTotal, lineId: firstLine?.id, lineNo: 10, desc: `${invoiceData.documentNo} # ${invoiceDesc}`.trim() }),
+      account:                   { id: arAccount.accountId },
+      ...(arAccount.combId     && { accountingCombination: { id: arAccount.combId } }),
+      value:                      arAccount.value,
+      accountingEntryDescription: arAccount.accountingEntryDescription,
+    },
+  })
+  seqNo += 10
+
+  // 6b. Credit Revenue per invoice line (lineNetAmount)
   for (const line of lines) {
     const lineNo      = line.lineNo ?? seqNo
     const lineAmount  = Number(line.lineNetAmount) || 0
+    if (lineAmount === 0) continue
     const lineDesc    = line.description || invoiceData.documentNo || ''
     const productId   = extractId(line.product)
     const revAccount  = await getRevenueAccount(productId)
@@ -736,8 +972,47 @@ export async function postAccountingProcess(invoiceId, invoiceData) {
       })
       seqNo += 10
     } else {
-      console.warn(`[POST ACCOUNTING] Line ${lineNo}: Revenue account not resolved — Credit entry skipped.`)
+      console.warn(`[POST ACCOUNTING] Line ${lineNo}: Revenue account not resolved — Credit Revenue entry skipped.`)
     }
+  }
+
+  // 6c. Credit Tax Payable per invoice tax line (taxAmount)
+  // Fetch invoice tax lines (C_InvoiceTax)
+  try {
+    const taxLinesRes = await api.get('/org.openbravo.service.json.jsonrest/InvoiceTax', {
+      params: {
+        _where: `e.invoice.id = '${invoiceId}'`,
+        _startRow: 0, _endRow: 50,
+      },
+    })
+    const taxLines = taxLinesRes.data?.response?.data ?? []
+    console.log('[POST ACCOUNTING] Tax lines count:', taxLines.length)
+
+    for (const taxLine of taxLines) {
+      const taxAmount = Number(taxLine.taxAmount) || 0
+      if (taxAmount === 0) continue
+      const taxId     = extractId(taxLine.tax)
+      const taxAcct   = await getTaxAccount(taxId)
+
+      if (taxAcct?.accountId) {
+        await api.post(FACT_BASE, {
+          data: {
+            ...buildFact({ isDebit: false, amount: taxAmount, lineId: null, lineNo: seqNo, desc: `${invoiceData.documentNo} # Tax ${taxLine['tax$_identifier'] || ''}`.trim() }),
+            account:                   { id: taxAcct.accountId },
+            ...(taxAcct.combId       && { accountingCombination: { id: taxAcct.combId } }),
+            value:                      taxAcct.value,
+            accountingEntryDescription: taxAcct.accountingEntryDescription,
+          },
+        })
+        seqNo += 10
+        console.log('[POST ACCOUNTING] Tax Credit entry posted:', taxAmount, taxAcct)
+      } else {
+        // If tax account not found, still need balance — add tax to revenue of first line
+        console.warn(`[POST ACCOUNTING] Tax account not found for tax ${taxId} — tax amount ${taxAmount} unaccounted.`)
+      }
+    }
+  } catch (e) {
+    console.warn('[POST ACCOUNTING] Failed to fetch invoice tax lines:', e.message)
   }
 
   // ── Step 7: set posted='Y' pada header invoice ──
@@ -858,6 +1133,35 @@ export async function fetchPaymentSchedules(invoiceId) {
     },
   })
   return res.data?.response?.data ?? []
+}
+
+/**
+ * Fetch total outstanding balance untuk satu customer (Business Partner).
+ * Menjumlahkan outstandingAmount dari semua payment schedules invoice yang belum lunas.
+ * Returns: { totalOutstanding, totalDue, schedules }
+ */
+export async function fetchCustomerOutstandingBalance(businessPartnerId) {
+  if (!businessPartnerId) return { totalOutstanding: 0, totalDue: 0, schedules: [] }
+  const bpId = typeof businessPartnerId === 'object' ? businessPartnerId.id : String(businessPartnerId)
+
+  const res = await api.get(PAY_SCHED_BASE, {
+    params: {
+      _where:    `e.invoice.businessPartner.id = '${bpId}' and e.outstandingAmount != 0 and e.invoice.salesTransaction = true`,
+      _startRow: 0,
+      _endRow:   200,
+      _orderBy:  'e.dueDate asc',
+    },
+  })
+  const schedules = res.data?.response?.data ?? []
+  const today = new Date().toISOString().slice(0, 10)
+  let totalOutstanding = 0
+  let totalDue = 0
+  for (const s of schedules) {
+    const amt = Number(s.outstandingAmount) || 0
+    totalOutstanding += amt
+    if (s.dueDate && s.dueDate <= today) totalDue += amt
+  }
+  return { totalOutstanding, totalDue, schedules }
 }
 
 /**
@@ -1005,6 +1309,332 @@ function addDays(dateStr, days) {
   const d = new Date(dateStr)
   d.setDate(d.getDate() + days)
   return d.toISOString().slice(0, 10)
+}
+
+// ════════════════════════════════════════════════════
+// CANCEL INVOICE
+// Alur:
+//   1. Validasi — tolak jika sudah ada Payment In atau Financial Account Transaction
+//   2. (Opsional) Unpost jurnal accounting jika invoice sudah di-Post
+//   3. Reactivate ke Draft (CO → DR)
+//   4. Set semua invoicedQuantity di invoice lines menjadi 0
+//   5. Tutup invoice dengan documentStatus = 'CL'
+// ════════════════════════════════════════════════════
+const FINACC_TXN_CHECK_BASE = '/org.openbravo.service.json.jsonrest/FIN_Finacc_Transaction'
+const PAY_SCHED_DETAIL_BASE = '/org.openbravo.service.json.jsonrest/FIN_Payment_ScheduleDetail'
+
+export async function cancelInvoice(invoiceId, invoiceData) {
+  if (!['CO', 'DR'].includes(invoiceData?.documentStatus)) {
+    throw new Error(`Invoice tidak bisa di-Cancel dari status "${invoiceData?.documentStatus}".`)
+  }
+
+  let iotError = null
+
+  // ── Step 1a: Cek apakah sudah ada Payment In yang terhubung ke invoice ini ──
+  // Caranya: cari FIN_Payment_ScheduleDetail yang merujuk ke schedule invoice ini,
+  // lalu cek apakah paymentDetails.finPayment masih aktif (status bukan RPAP kosong)
+  try {
+    const schedRes = await api.get(PAY_SCHED_BASE, {
+      params: {
+        _where:    `e.invoice.id = '${invoiceId}'`,
+        _startRow: 0,
+        _endRow:   50,
+        _selectedProperties: 'id',
+      },
+    })
+    const schedules = schedRes.data?.response?.data ?? []
+    if (schedules.length > 0) {
+      const schedIds = schedules.map(s => `'${s.id}'`).join(',')
+      const detailRes = await api.get(PAY_SCHED_DETAIL_BASE, {
+        params: {
+          _where:    `e.invoicePaymentSchedule.id in (${schedIds}) and e.canceled = false`,
+          _startRow: 0,
+          _endRow:   1,
+          _selectedProperties: 'id,amount,invoicePaymentSchedule',
+        },
+      })
+      const details = detailRes.data?.response?.data ?? []
+      if (details.length > 0) {
+        throw new Error(
+          'Invoice ini tidak bisa di-Cancel karena sudah memiliki Payment In yang terhubung. ' +
+          'Hapus atau batalkan Payment In terkait terlebih dahulu sebelum melakukan Cancel.'
+        )
+      }
+    }
+  } catch (e) {
+    // Re-throw error validasi, abaikan error network/query
+    if (e.message?.includes('Payment In')) throw e
+    console.warn('[cancelInvoice] Cek Payment In gagal (diabaikan):', e.message)
+  }
+
+  // ── Step 1b: Cek apakah sudah ada Financial Account Transaction untuk invoice ini ──
+  // FIN_Finacc_Transaction terhubung ke invoice melalui finPayment, dan finPayment
+  // terhubung ke invoice melalui FIN_Payment_ScheduleDetail.
+  // Cara lebih langsung: cek via finPayment yang terhubung ke schedule detail invoice ini.
+  try {
+    const schedRes2 = await api.get(PAY_SCHED_BASE, {
+      params: {
+        _where:    `e.invoice.id = '${invoiceId}'`,
+        _startRow: 0,
+        _endRow:   50,
+        _selectedProperties: 'id',
+      },
+    })
+    const schedules2 = schedRes2.data?.response?.data ?? []
+    if (schedules2.length > 0) {
+      const schedIds2 = schedules2.map(s => `'${s.id}'`).join(',')
+      // Ambil payment IDs dari schedule detail yang tidak di-cancel
+      const detailRes2 = await api.get(PAY_SCHED_DETAIL_BASE, {
+        params: {
+          _where:    `e.invoicePaymentSchedule.id in (${schedIds2}) and e.canceled = false`,
+          _startRow: 0,
+          _endRow:   50,
+          _selectedProperties: 'id,paymentDetails',
+        },
+      })
+      const details2 = detailRes2.data?.response?.data ?? []
+      if (details2.length > 0) {
+        // Sudah dicek di step 1a — jika sampai sini ada details2, berarti ada payment
+        // Step ini sebagai double-check sekaligus cek Finacc Transaction via finPayment
+        const paymentIds = [...new Set(
+          details2
+            .map(d => {
+              const pd = d.paymentDetails
+              return typeof pd === 'object' ? pd?.finPayment?.id ?? pd?.finPayment : null
+            })
+            .filter(Boolean)
+        )]
+        if (paymentIds.length > 0) {
+          const payIdList = paymentIds.map(id => `'${id}'`).join(',')
+          const txnRes = await api.get(FINACC_TXN_CHECK_BASE, {
+            params: {
+              _where:    `e.finPayment.id in (${payIdList})`,
+              _startRow: 0,
+              _endRow:   1,
+              _selectedProperties: 'id,finPayment',
+            },
+          })
+          const txns = txnRes.data?.response?.data ?? []
+          if (txns.length > 0) {
+            throw new Error(
+              'Invoice ini tidak bisa di-Cancel karena sudah tercatat di Financial Account Transaction. ' +
+              'Batalkan transaksi keuangan terkait terlebih dahulu sebelum melakukan Cancel.'
+            )
+          }
+        }
+      }
+    }
+  } catch (e) {
+    if (e.message?.includes('Financial Account Transaction')) throw e
+    console.warn('[cancelInvoice] Cek Financial Account Transaction gagal (diabaikan):', e.message)
+  }
+
+  const isPostedFlag = invoiceData?.posted === true || invoiceData?.posted === 'Y'
+
+  // ── Step 2: Jika sudah di-post, hapus jurnal accounting (Unpost) ──
+  if (isPostedFlag) {
+    const factsRes = await api.get(FACT_BASE, {
+      params: {
+        _where:    `e.recordID = '${invoiceId}' and e.table.id = '318'`,
+        _startRow: 0,
+        _endRow:   200,
+      },
+    })
+    const facts = factsRes.data?.response?.data ?? []
+    await Promise.all(facts.map(f => api.delete(`${FACT_BASE}/${f.id}`)))
+
+    await api.put(`${INV_BASE}/${invoiceId}`, {
+      data: {
+        id:          invoiceId,
+        _entityName: 'Invoice',
+        documentNo:  invoiceData.documentNo,
+        posted:      'N',
+      },
+    })
+  }
+
+  // ── Step 3: Jika status CO, kembalikan ke Draft (Reactivate) ──
+  if (invoiceData?.documentStatus === 'CO') {
+    const reactivateRes = await api.put(`${INV_BASE}/${invoiceId}`, {
+      data: {
+        id:             invoiceId,
+        _entityName:    'Invoice',
+        documentNo:     invoiceData.documentNo,
+        documentStatus: 'DR',
+        documentAction: 'CO',
+        processed:      'N',
+      },
+    })
+    const st = reactivateRes.data?.response?.status
+    if (st !== undefined && st < 0) {
+      throw new Error(reactivateRes.data?.response?.error?.message || 'Reactivate saat Cancel gagal.')
+    }
+
+    // Hapus payment schedules agar tidak menggantung
+    try {
+      await deletePaymentSchedules(invoiceId)
+    } catch (e) {
+      console.warn('[cancelInvoice] Gagal hapus payment schedules:', e.message)
+    }
+
+    // Sync status Back to Draft ke IoT/PSI
+    try {
+      await backToDraftIot(invoiceId)
+    } catch (e) {
+      iotError = e.message
+      console.warn('[cancelInvoice] Back to Draft IoT gagal:', e.message)
+    }
+  }
+
+  // ── Step 4: Set semua invoicedQuantity di invoice lines menjadi 0 ──
+  const linesRes = await api.get(LINE_BASE, {
+    params: {
+      _where:    `e.invoice.id = '${invoiceId}'`,
+      _startRow: 0,
+      _endRow:   200,
+      _orderBy:  'e.lineNo asc',
+    },
+  })
+  const invoiceLines = linesRes.data?.response?.data ?? []
+
+  for (const line of invoiceLines) {
+    await api.put(`${LINE_BASE}/${line.id}`, {
+      data: {
+        id:               line.id,
+        _entityName:      'InvoiceLine',
+        invoicedQuantity: 0,
+        lineNetAmount:    0,
+        grossUnitPrice:   line.grossUnitPrice ?? line.unitPrice ?? 0,
+        unitPrice:        line.unitPrice ?? 0,
+        listPrice:        line.listPrice ?? line.unitPrice ?? 0,
+      },
+    })
+  }
+
+  // ── Step 5: Tutup invoice → documentStatus = 'CL' ──
+  const closeRes = await api.put(`${INV_BASE}/${invoiceId}`, {
+    data: {
+      id:             invoiceId,
+      _entityName:    'Invoice',
+      documentNo:     invoiceData.documentNo,
+      documentStatus: 'CL',
+      documentAction: 'CL',
+    },
+  })
+  const closeSt = closeRes.data?.response?.status
+  if (closeSt !== undefined && closeSt < 0) {
+    throw new Error(closeRes.data?.response?.error?.message || 'Menutup invoice (CL) gagal.')
+  }
+
+  const invoice = await fetchInvoice(invoiceId)
+  return { invoice, iotError }
+}
+
+
+// ════════════════════════════════════════════════════
+// ADJUSTMENT
+// Mirip Cancel namun:
+//  - Invoice dikembalikan ke Draft (bukan CL)
+//  - Ditambahkan satu line baru: product Adjustment, qty -1,
+//    unitPrice = grandTotalAmount invoice, tax = Free Tax (0%)
+// ════════════════════════════════════════════════════
+
+// Cari Tax Rate dengan name mengandung "Free" atau rate = 0
+let _freeTaxId = null
+export async function fetchFreeTaxId() {
+  if (_freeTaxId) return _freeTaxId
+  const res = await api.get('/org.openbravo.service.json.jsonrest/FinancialMgmtTaxRate', {
+    params: {
+      _where:    `e.active = true and (upper(e.name) like upper('%free%') or e.rate = 0)`,
+      _startRow: 0,
+      _endRow:   10,
+      _orderBy:  'e.name asc',
+    },
+  })
+  const list = res.data?.response?.data ?? []
+  if (!list.length) throw new Error('Free Tax (rate 0%) tidak ditemukan di sistem.')
+  _freeTaxId = list[0].id
+  return _freeTaxId
+}
+
+export async function adjustmentInvoice(invoiceId, invoiceData) {
+  if (!['CO', 'DR'].includes(invoiceData?.documentStatus)) {
+    throw new Error(`Invoice tidak bisa di-Adjustment dari status "${invoiceData?.documentStatus}".`)
+  }
+
+  const isPostedFlag = invoiceData?.posted === true || invoiceData?.posted === 'Y'
+
+  // Step 1: Jika sudah di-post, Unpost dulu
+  if (isPostedFlag) {
+    const factsRes = await api.get(FACT_BASE, {
+      params: {
+        _where:    `e.recordID = '${invoiceId}' and e.table.id = '318'`,
+        _startRow: 0,
+        _endRow:   200,
+      },
+    })
+    const facts = factsRes.data?.response?.data ?? []
+    await Promise.all(facts.map(f => api.delete(`${FACT_BASE}/${f.id}`)))
+    await api.put(`${INV_BASE}/${invoiceId}`, {
+      data: { id: invoiceId, _entityName: 'Invoice', documentNo: invoiceData.documentNo, posted: 'N' },
+    })
+  }
+
+  // Step 2: Jika status CO, kembalikan ke Draft
+  if (invoiceData?.documentStatus === 'CO') {
+    const reactivateRes = await api.put(`${INV_BASE}/${invoiceId}`, {
+      data: {
+        id: invoiceId, _entityName: 'Invoice', documentNo: invoiceData.documentNo,
+        documentStatus: 'DR', documentAction: 'CO', processed: 'N',
+      },
+    })
+    const st = reactivateRes.data?.response?.status
+    if (st !== undefined && st < 0) {
+      throw new Error(reactivateRes.data?.response?.error?.message || 'Reactivate saat Adjustment gagal.')
+    }
+    try { await deletePaymentSchedules(invoiceId) } catch (e) {
+      console.warn('[adjustmentInvoice] Gagal hapus payment schedules:', e.message)
+    }
+  }
+
+  // Step 3: Tentukan lineNo berikutnya
+  const linesRes = await api.get(LINE_BASE, {
+    params: { _where: `e.invoice.id = '${invoiceId}'`, _startRow: 0, _endRow: 200, _orderBy: 'e.lineNo desc' },
+  })
+  const existingLines = linesRes.data?.response?.data ?? []
+  const maxLineNo = existingLines.reduce((max, l) => Math.max(max, l.lineNo || 0), 0)
+  const nextLineNo = maxLineNo + 10
+
+  // Step 4: Cari Free Tax ID
+  const freeTaxId = await fetchFreeTaxId()
+
+  // Step 5: Tambah line Adjustment: qty -1, unitPrice = grandTotalAmount
+  const adjustAmount = invoiceData.grandTotalAmount ?? 0
+  const getId = (v) => !v ? null : (typeof v === 'object' ? v.id : String(v))
+  const bpId  = getId(invoiceData.businessPartner)
+  const orgId = getId(invoiceData.organization) || DEFAULT_ORGANIZATION
+
+  await api.post(LINE_BASE, {
+    data: {
+      _entityName:      'InvoiceLine',
+      invoice:          invoiceId,
+      organization:     orgId,
+      lineNo:           nextLineNo,
+      product:          ADJUSTMENT_PRODUCT_ID,
+      uOM:              ADJUSTMENT_UOM_ID,
+      invoicedQuantity: -1,
+      unitPrice:        adjustAmount,
+      listPrice:        adjustAmount,
+      grossUnitPrice:   adjustAmount,
+      lineNetAmount:    -adjustAmount,
+      discount:         0,
+      tax:              freeTaxId,
+      ...(bpId && { businessPartner: bpId }),
+    },
+  })
+
+  const invoice = await fetchInvoice(invoiceId)
+  return { invoice }
 }
 
 // ════════════════════════════════════════════════════
