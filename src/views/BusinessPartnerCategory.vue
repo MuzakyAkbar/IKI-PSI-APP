@@ -1,18 +1,13 @@
 <template>
   <div class="app">
 
-    <!-- ══════════════════════════════════════════════════════════
-         LIST VIEW
-    ══════════════════════════════════════════════════════════ -->
     <div v-if="!page.show" class="page-wrap">
       <div class="content-card">
 
-        <!-- Header -->
         <div class="card-header">
           <h2 class="page-title">Business Partner Category</h2>
         </div>
 
-        <!-- ══ LIST TAB ══ -->
         <div v-if="activeTab==='list'">
           <div class="toolbar">
             <div class="search-wrap">
@@ -97,9 +92,6 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════
-         CREATE / EDIT PAGE — FULL PAGE
-    ══════════════════════════════════════════════════════════ -->
     <Transition name="slide">
       <div v-if="page.show" class="page-wrap">
 
@@ -114,62 +106,153 @@
 
         <div class="form-page-title">{{ page.mode==='create' ? 'Create Business Partner Category' : 'Edit Business Partner Category' }}</div>
 
-        <!-- Category Info Card -->
-        <div class="form-card">
-          <div class="form-card-title">
+        <div class="page-tabs">
+          <button
+            :class="['page-tab', pageTab==='info' ? 'page-tab--active' : '']"
+            @click="pageTab = 'info'"
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             Category Info
-          </div>
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label>Category Code <span class="req">*</span></label>
-              <input
-                v-model="form.searchKey"
-                placeholder="e.g. CUSTOMER"
-                :class="{'input-error': formErrors.searchKey}"
-                :disabled="page.mode==='edit'"
-              />
-              <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
-            </div>
-            <div class="form-group">
-              <label>Category Name <span class="req">*</span></label>
-              <input
-                v-model="form.name"
-                placeholder="e.g. Customer"
-                :class="{'input-error': formErrors.name}"
-              />
-              <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
-            </div>
-            <div class="form-group" style="grid-column: 1 / -1">
-              <label>Description</label>
-              <input v-model="form.description" placeholder="Optional description" />
-            </div>
-          </div>
-          <div class="form-checks" style="margin-top:14px">
-            <label class="check-label"><input type="checkbox" v-model="form.active" /> Active</label>
-            <label class="check-label"><input type="checkbox" v-model="form.default" /> Set as Default</label>
-          </div>
-        </div>
-
-        <div v-if="formError" class="form-api-error">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          {{ formError }}
-        </div>
-
-        <div class="page-footer">
-          <button class="btn btn--ghost" @click="closePage" :disabled="formLoading">Cancel</button>
-          <button class="btn btn--primary" @click="submitForm" :disabled="formLoading">
-            <span v-if="formLoading" class="btn-spinner"></span>
-            {{ formLoading ? 'Saving...' : 'Save' }}
           </button>
+          <button
+            :class="['page-tab', pageTab==='coa' ? 'page-tab--active' : '']"
+            @click="switchToCoaTab"
+            :disabled="page.mode==='create' && !page.id"
+            :title="page.mode==='create' && !page.id ? 'Save category first to configure Chart of Accounts' : ''"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Chart of Accounts
+            <span v-if="page.mode==='create' && !page.id" class="tab-lock-icon">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div v-if="pageTab==='info'">
+          <div class="form-card">
+            <div class="form-card-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Category Info
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Category Code <span class="req">*</span></label>
+                <input
+                  v-model="form.searchKey"
+                  placeholder="e.g. CUSTOMER"
+                  :class="{'input-error': formErrors.searchKey}"
+                  :disabled="page.mode==='edit'"
+                />
+                <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
+              </div>
+              <div class="form-group">
+                <label>Category Name <span class="req">*</span></label>
+                <input
+                  v-model="form.name"
+                  placeholder="e.g. Customer"
+                  :class="{'input-error': formErrors.name}"
+                />
+                <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1">
+                <label>Description</label>
+                <input v-model="form.description" placeholder="Optional description" />
+              </div>
+            </div>
+            <div class="form-checks" style="margin-top:14px">
+              <label class="check-label"><input type="checkbox" v-model="form.active" /> Active</label>
+              <label class="check-label"><input type="checkbox" v-model="form.default" /> Set as Default</label>
+            </div>
+          </div>
+
+          <div v-if="formError" class="form-api-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ formError }}
+          </div>
+
+          <div class="page-footer">
+            <button class="btn btn--ghost" @click="closePage" :disabled="formLoading">Cancel</button>
+            <button class="btn btn--primary" @click="submitForm" :disabled="formLoading">
+              <span v-if="formLoading" class="btn-spinner"></span>
+              {{ formLoading ? 'Saving...' : (page.mode === 'create' ? 'Save & Continue' : 'Save') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="pageTab==='coa'">
+          <div class="form-card">
+            <div class="form-card-title" style="justify-content: space-between; display: flex; align-items: center;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Chart of Accounts
+              </div>
+              <button
+                v-if="!coaEntry && !coaLoading"
+                class="btn btn--primary btn--sm"
+                @click="openCoaForm('create')"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                Add Accounts
+              </button>
+              <button
+                v-if="coaEntry"
+                class="btn btn--ghost btn--sm"
+                @click="openCoaForm('edit')"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit Accounts
+              </button>
+            </div>
+
+            <div v-if="coaLoading" class="coa-loading">
+              <div class="loading-dots"><span></span><span></span><span></span></div>
+              <p>Loading account configuration...</p>
+            </div>
+
+            <div v-else-if="!coaEntry" class="coa-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color:var(--text-muted)"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              <p>No Chart of Accounts configured for this category.</p>
+              <button class="btn btn--primary" @click="openCoaForm('create')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                Configure Accounts
+              </button>
+            </div>
+
+            <div v-else class="coa-summary">
+              <div class="coa-schema-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Accounting Schema: <strong>{{ coaSchemaName }}</strong>
+              </div>
+              <table class="coa-table">
+                <thead>
+                  <tr>
+                    <th>Account Type</th>
+                    <th>Account Code</th>
+                    <th>Account Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in coaSummaryRows" :key="row.key">
+                    <td class="coa-label-cell">{{ row.label }}</td>
+                    <td>
+                      <span v-if="row.value" class="code-badge">{{ row.value }}</span>
+                      <span v-else class="td-secondary">—</span>
+                    </td>
+                    <td class="td-secondary">{{ row.name || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="page-footer">
+            <button class="btn btn--ghost" @click="closePage">Close</button>
+          </div>
         </div>
 
       </div>
     </Transition>
 
-    <!-- ══════════════════════════════════════════════════════════
-         VIEW DETAIL MODAL
-    ══════════════════════════════════════════════════════════ -->
     <Transition name="fade">
       <div v-if="viewModal.show" class="modal-overlay" @click.self="viewModal.show=false">
         <div class="modal modal--detail">
@@ -216,6 +299,52 @@
                 </div>
               </div>
             </div>
+
+            <div class="detail-divider"></div>
+            <h4 class="detail-section-title">Chart of Accounts</h4>
+            <div v-if="viewModal.loadingCoa" class="coa-loading" style="padding: 20px 0;">
+              <div class="loading-dots"><span></span><span></span><span></span></div>
+            </div>
+            <div v-else-if="!viewModal.coa" class="td-secondary" style="font-size:13.5px; text-align:center; padding: 20px 0;">
+              No Chart of Accounts configured for this category.
+            </div>
+            <div v-else class="detail-cols">
+              <div class="detail-col">
+                <div class="detail-item">
+                  <span class="detail-label">Accounting Schema</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'accountingSchema') }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Vendor Liability</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'vendorLiability') }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Vendor Prepayment</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'vendorPrepayment') }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Write-off</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'writeoff') }}</span>
+                </div>
+              </div>
+              <div class="detail-col">
+                <div class="detail-item" style="visibility:hidden">
+                  <span class="detail-label">Spacer</span><span class="detail-value">—</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Customer Receivables</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'customerReceivablesNo') }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Customer Prepayment</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'customerPrepayment') }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Non-Invoiced Receipts</span>
+                  <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'nonInvoicedReceipts') }}</span>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="openEditPage(viewModal.data); viewModal.show=false">Edit</button>
@@ -225,7 +354,6 @@
       </div>
     </Transition>
 
-    <!-- ══ TOGGLE ACTIVE MODAL ══ -->
     <Transition name="fade">
       <div v-if="toggleModal.show" class="modal-overlay" @click.self="toggleModal.show=false">
         <div class="modal modal--sm">
@@ -251,7 +379,284 @@
       </div>
     </Transition>
 
-    <!-- ══ TOAST ══ -->
+    <Transition name="fade">
+      <div v-if="coaModal.show" class="modal-overlay" @click.self="coaModal.show=false">
+        <div class="modal modal--coa">
+          <div class="modal-header">
+            <h3 class="modal-title">
+              {{ coaModal.mode==='create' ? 'Configure' : 'Edit' }} Chart of Accounts
+            </h3>
+            <button class="modal-close" @click="coaModal.show=false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="modal-body">
+
+            <div class="form-group" style="margin-bottom:16px">
+              <label>Accounting Schema <span class="req">*</span></label>
+              <select
+                v-model="coaForm.accountingSchema"
+                class="form-select"
+                :class="{'input-error': coaFormErrors.accountingSchema}"
+                :disabled="coaModal.mode==='edit'"
+              >
+                <option value="">— Select Schema —</option>
+                <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+              <span class="field-error" v-if="coaFormErrors.accountingSchema">{{ coaFormErrors.accountingSchema }}</span>
+            </div>
+
+            <div class="coa-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              Vendor Accounts
+            </div>
+            <div class="form-grid-2" style="margin-bottom:16px">
+              <div class="form-group">
+                <label>Vendor Liability</label>
+                <div class="account-select-wrap">
+                  <input
+                    v-model="coaForm._search.vendorLiability"
+                    class="form-input"
+                    placeholder="Search account..."
+                    @input="debouncedAccountSearch('vendorLiability')"
+                    @focus="showAccountDropdown='vendorLiability'; searchAccounts('vendorLiability')"
+                    autocomplete="off"
+                  />
+                  <div v-if="showAccountDropdown==='vendorLiability'" class="account-dropdown">
+                    <div v-if="!accountOptions.vendorLiability.length" class="account-option account-option--empty">
+                      {{ coaForm._search.vendorLiability ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                    </div>
+                    <template v-else>
+                      <div
+                        v-for="a in accountOptions.vendorLiability"
+                        :key="a.id"
+                        class="account-option"
+                        @mousedown.prevent="selectAccount('vendorLiability', a)"
+                      >
+                        <span class="account-option-name">{{ a._identifier || a.id }}</span>
+                      </div>
+                    </template>
+                  </div>
+                  <button v-if="coaForm.vendorLiability" class="account-clear" @click.stop.prevent="clearAccount('vendorLiability')" title="Clear">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <span v-if="coaForm.vendorLiability" class="account-selected-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ coaForm._labels.vendorLiability }}
+                </span>
+              </div>
+              
+              <div class="form-group">
+                <label>Vendor Prepayment</label>
+                <div class="account-select-wrap">
+                  <input
+                    v-model="coaForm._search.vendorPrepayment"
+                    class="form-input"
+                    placeholder="Search account..."
+                    @input="debouncedAccountSearch('vendorPrepayment')"
+                    @focus="showAccountDropdown='vendorPrepayment'; searchAccounts('vendorPrepayment')"
+                    autocomplete="off"
+                  />
+                  <div v-if="showAccountDropdown==='vendorPrepayment'" class="account-dropdown">
+                    <div v-if="!accountOptions.vendorPrepayment.length" class="account-option account-option--empty">
+                      {{ coaForm._search.vendorPrepayment ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                    </div>
+                    <template v-else>
+                      <div
+                        v-for="a in accountOptions.vendorPrepayment"
+                        :key="a.id"
+                        class="account-option"
+                        @mousedown.prevent="selectAccount('vendorPrepayment', a)"
+                      >
+                        <span class="account-option-name">{{ a._identifier || a.id }}</span>
+                      </div>
+                    </template>
+                  </div>
+                  <button v-if="coaForm.vendorPrepayment" class="account-clear" @click.stop.prevent="clearAccount('vendorPrepayment')" title="Clear">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <span v-if="coaForm.vendorPrepayment" class="account-selected-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ coaForm._labels.vendorPrepayment }}
+                </span>
+              </div>
+            </div>
+
+            <div class="coa-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Customer Accounts
+            </div>
+            <div class="form-grid-2" style="margin-bottom:16px">
+              <div class="form-group">
+                <label>Customer Receivables</label>
+                <div class="account-select-wrap">
+                  <input
+                    v-model="coaForm._search.customerReceivablesNo"
+                    class="form-input"
+                    placeholder="Search account..."
+                    @input="debouncedAccountSearch('customerReceivablesNo')"
+                    @focus="showAccountDropdown='customerReceivablesNo'; searchAccounts('customerReceivablesNo')"
+                    autocomplete="off"
+                  />
+                  <div v-if="showAccountDropdown==='customerReceivablesNo'" class="account-dropdown">
+                    <div v-if="!accountOptions.customerReceivablesNo.length" class="account-option account-option--empty">
+                      {{ coaForm._search.customerReceivablesNo ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                    </div>
+                    <template v-else>
+                      <div
+                        v-for="a in accountOptions.customerReceivablesNo"
+                        :key="a.id"
+                        class="account-option"
+                        @mousedown.prevent="selectAccount('customerReceivablesNo', a)"
+                      >
+                        <span class="account-option-name">{{ a._identifier || a.id }}</span>
+                      </div>
+                    </template>
+                  </div>
+                  <button v-if="coaForm.customerReceivablesNo" class="account-clear" @click.stop.prevent="clearAccount('customerReceivablesNo')" title="Clear">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <span v-if="coaForm.customerReceivablesNo" class="account-selected-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ coaForm._labels.customerReceivablesNo }}
+                </span>
+              </div>
+              
+              <div class="form-group">
+                <label>Customer Prepayment</label>
+                <div class="account-select-wrap">
+                  <input
+                    v-model="coaForm._search.customerPrepayment"
+                    class="form-input"
+                    placeholder="Search account..."
+                    @input="debouncedAccountSearch('customerPrepayment')"
+                    @focus="showAccountDropdown='customerPrepayment'; searchAccounts('customerPrepayment')"
+                    autocomplete="off"
+                  />
+                  <div v-if="showAccountDropdown==='customerPrepayment'" class="account-dropdown">
+                    <div v-if="!accountOptions.customerPrepayment.length" class="account-option account-option--empty">
+                      {{ coaForm._search.customerPrepayment ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                    </div>
+                    <template v-else>
+                      <div
+                        v-for="a in accountOptions.customerPrepayment"
+                        :key="a.id"
+                        class="account-option"
+                        @mousedown.prevent="selectAccount('customerPrepayment', a)"
+                      >
+                        <span class="account-option-name">{{ a._identifier || a.id }}</span>
+                      </div>
+                    </template>
+                  </div>
+                  <button v-if="coaForm.customerPrepayment" class="account-clear" @click.stop.prevent="clearAccount('customerPrepayment')" title="Clear">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <span v-if="coaForm.customerPrepayment" class="account-selected-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ coaForm._labels.customerPrepayment }}
+                </span>
+              </div>
+            </div>
+
+            <div class="coa-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              Other Accounts
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Write-off</label>
+                <div class="account-select-wrap">
+                  <input
+                    v-model="coaForm._search.writeoff"
+                    class="form-input"
+                    placeholder="Search account..."
+                    @input="debouncedAccountSearch('writeoff')"
+                    @focus="showAccountDropdown='writeoff'; searchAccounts('writeoff')"
+                    autocomplete="off"
+                  />
+                  <div v-if="showAccountDropdown==='writeoff'" class="account-dropdown">
+                    <div v-if="!accountOptions.writeoff.length" class="account-option account-option--empty">
+                      {{ coaForm._search.writeoff ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                    </div>
+                    <template v-else>
+                      <div
+                        v-for="a in accountOptions.writeoff"
+                        :key="a.id"
+                        class="account-option"
+                        @mousedown.prevent="selectAccount('writeoff', a)"
+                      >
+                        <span class="account-option-name">{{ a._identifier || a.id }}</span>
+                      </div>
+                    </template>
+                  </div>
+                  <button v-if="coaForm.writeoff" class="account-clear" @click.stop.prevent="clearAccount('writeoff')" title="Clear">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <span v-if="coaForm.writeoff" class="account-selected-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ coaForm._labels.writeoff }}
+                </span>
+              </div>
+              
+              <div class="form-group">
+                <label>Non-Invoiced Receipts</label>
+                <div class="account-select-wrap">
+                  <input
+                    v-model="coaForm._search.nonInvoicedReceipts"
+                    class="form-input"
+                    placeholder="Search account..."
+                    @input="debouncedAccountSearch('nonInvoicedReceipts')"
+                    @focus="showAccountDropdown='nonInvoicedReceipts'; searchAccounts('nonInvoicedReceipts')"
+                    autocomplete="off"
+                  />
+                  <div v-if="showAccountDropdown==='nonInvoicedReceipts'" class="account-dropdown">
+                    <div v-if="!accountOptions.nonInvoicedReceipts.length" class="account-option account-option--empty">
+                      {{ coaForm._search.nonInvoicedReceipts ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                    </div>
+                    <template v-else>
+                      <div
+                        v-for="a in accountOptions.nonInvoicedReceipts"
+                        :key="a.id"
+                        class="account-option"
+                        @mousedown.prevent="selectAccount('nonInvoicedReceipts', a)"
+                      >
+                        <span class="account-option-name">{{ a._identifier || a.id }}</span>
+                      </div>
+                    </template>
+                  </div>
+                  <button v-if="coaForm.nonInvoicedReceipts" class="account-clear" @click.stop.prevent="clearAccount('nonInvoicedReceipts')" title="Clear">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <span v-if="coaForm.nonInvoicedReceipts" class="account-selected-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ coaForm._labels.nonInvoicedReceipts }}
+                </span>
+              </div>
+            </div>
+
+            <div v-if="coaFormError" class="form-api-error" style="margin-top:16px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {{ coaFormError }}
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn--ghost" @click="coaModal.show=false" :disabled="coaSaving">Cancel</button>
+            <button class="btn btn--primary" @click="saveCoaForm" :disabled="coaSaving">
+              <span v-if="coaSaving" class="btn-spinner"></span>
+              {{ coaSaving ? 'Saving...' : 'Save Accounts' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="toast">
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
         <svg v-if="toast.type==='success'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -270,6 +675,11 @@ import {
   createBPCategory,
   updateBPCategory,
   deleteBPCategory,
+  fetchBPCategoryAccount,
+  createBPCategoryAccount,
+  updateBPCategoryAccount,
+  fetchGLAccounts,
+  fetchAccountingSchemas,
 } from '@/services/businessPartnerCategory'
 
 // ── click-outside directive ──────────────────────────────────
@@ -347,7 +757,27 @@ function goPage(p) {
   loadCategories(p)
 }
 
-onMounted(() => loadCategories(1))
+// Global click listener untuk dropdown COA di dalam modal
+onMounted(() => {
+  loadCategories(1)
+  document.addEventListener('click', (e) => {
+    // Jika user click di luar wrapper dropdown, maka tutup.
+    if (e.target && e.target.closest && !e.target.closest('.account-select-wrap')) {
+      showAccountDropdown.value = null
+    }
+  })
+})
+
+// ════════════════════════════════════════════════════════════
+// PAGE TAB (Info / CoA)
+// ════════════════════════════════════════════════════════════
+const pageTab = ref('info')
+
+async function switchToCoaTab() {
+  if (page.mode === 'create' && !page.id) return
+  pageTab.value = 'coa'
+  await loadCoaData()
+}
 
 // ════════════════════════════════════════════════════════════
 // CREATE / EDIT PAGE
@@ -382,6 +812,7 @@ function openCreatePage() {
   page.mode = 'create'
   page.id   = null
   page.show = true
+  pageTab.value = 'info'
   closeDropdown()
 }
 
@@ -395,11 +826,15 @@ function openEditPage(item) {
   page.mode = 'edit'
   page.id   = item.id
   page.show = true
+  pageTab.value = 'info'
+  coaEntry.value = null
   closeDropdown()
 }
 
 function closePage() {
   page.show = false
+  pageTab.value = 'info'
+  coaEntry.value = null
 }
 
 function validateForm() {
@@ -417,13 +852,16 @@ async function submitForm() {
   formError.value   = ''
   try {
     if (page.mode === 'create') {
-      await createBPCategory({ ...form })
-      showToast('Category created successfully.', 'success')
+      const result = await createBPCategory({ ...form })
+      page.id   = result.id
+      page.mode = 'edit'
+      showToast('Category created. You can now configure Chart of Accounts.', 'success')
+      pageTab.value = 'coa'
+      await loadCoaData()
     } else {
       await updateBPCategory(page.id, { ...form })
       showToast('Category updated successfully.', 'success')
     }
-    page.show = false
     await loadCategories(currentPage.value)
   } catch (e) {
     formError.value = e.message || 'Failed to save category.'
@@ -433,14 +871,40 @@ async function submitForm() {
 }
 
 // ════════════════════════════════════════════════════════════
-// VIEW MODAL
+// VIEW MODAL (WITH COA)
 // ════════════════════════════════════════════════════════════
-const viewModal = reactive({ show: false, data: null })
+const viewModal = reactive({ show: false, data: null, coa: null, loadingCoa: false })
 
-function openViewModal(item) {
+async function openViewModal(item) {
   viewModal.data = item
   viewModal.show = true
+  viewModal.coa = null
+  viewModal.loadingCoa = true
   closeDropdown()
+
+  try {
+    const coaData = await fetchBPCategoryAccount(item.id)
+    viewModal.coa = coaData ?? null
+  } catch (e) {
+    console.error('Gagal mengambil data COA untuk modal View', e)
+  } finally {
+    viewModal.loadingCoa = false
+  }
+}
+
+// Format Label untuk Modal View
+function getCoaLabel(coaRecord, key) {
+  if (!coaRecord) return '—'
+  const identifier = coaRecord[`${key}$_identifier`]
+  if (identifier) return identifier
+  const fk = coaRecord[key]
+  if (!fk) return '—'
+  if (typeof fk === 'object') {
+    const code = fk.searchKey || fk.value || ''
+    const name = fk.name || ''
+    return code ? `${code} - ${name}` : name
+  }
+  return fk
 }
 
 // ════════════════════════════════════════════════════════════
@@ -466,6 +930,207 @@ async function doToggle() {
     showToast(e.message || 'Action failed.', 'error')
   } finally {
     toggleLoading.value = false
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// CHART OF ACCOUNTS
+// ════════════════════════════════════════════════════════════
+const coaEntry      = ref(null) 
+const coaLoading    = ref(false)
+const accountingSchemas = ref([])
+
+const COA_FIELDS = ['vendorLiability', 'vendorPrepayment', 'customerReceivablesNo', 'customerPrepayment', 'writeoff', 'nonInvoicedReceipts']
+
+const COA_LABELS = {
+  vendorLiability:       'Vendor Liability',
+  vendorPrepayment:      'Vendor Prepayment',
+  customerReceivablesNo: 'Customer Receivables',
+  customerPrepayment:    'Customer Prepayment',
+  writeoff:              'Write-off',
+  nonInvoicedReceipts:   'Non-Invoiced Receipts',
+}
+
+async function loadCoaData() {
+  coaLoading.value = true
+  try {
+    const [found, schemas] = await Promise.all([
+      fetchBPCategoryAccount(page.id),
+      fetchAccountingSchemas(),
+    ])
+    accountingSchemas.value = schemas
+    coaEntry.value = found ?? null
+  } catch (e) {
+    showToast('Failed to load CoA data: ' + (e.message || ''), 'error')
+  } finally {
+    coaLoading.value = false
+  }
+}
+
+const coaSchemaName = computed(() => {
+  if (!coaEntry.value) return '—'
+  const identifier = coaEntry.value['accountingSchema$_identifier']
+  if (identifier) return identifier
+  const s = coaEntry.value.accountingSchema
+  return typeof s === 'object' ? (s?.name ?? s?.id ?? '—') : (s ?? '—')
+})
+
+const coaSummaryRows = computed(() => {
+  if (!coaEntry.value) return []
+  return COA_FIELDS.map(key => {
+    const fk = coaEntry.value[key]
+    const identifier = coaEntry.value[`${key}$_identifier`]
+    const id = typeof fk === 'object' ? fk?.id : fk
+    
+    let displayCode = null
+    let displayName = null
+
+    if (identifier) {
+      const parts = identifier.split(' - ')
+      if (parts.length >= 2) {
+        displayCode = parts[0].trim()
+        displayName = parts.slice(1).join(' - ').trim()
+      } else {
+        displayName = identifier
+      }
+    } else if (typeof fk === 'object') {
+      displayCode = fk?.value ?? fk?.searchKey ?? null
+      displayName = fk?.name ?? null
+    }
+
+    return { 
+      key, 
+      label: COA_LABELS[key], 
+      value: displayCode || (id ? id.substring(0, 8) + '…' : null), 
+      name: displayName, 
+      id 
+    }
+  })
+})
+
+// ── CoA Form Modal ──────────────────────────────────────────
+const coaModal    = reactive({ show: false, mode: 'create' })
+const coaSaving   = ref(false)
+const coaFormError = ref('')
+
+function makeCoaForm() {
+  const f = { accountingSchema: '', _search: {}, _labels: {} }
+  COA_FIELDS.forEach(key => {
+    f[key]         = ''
+    f._search[key] = ''
+    f._labels[key] = ''
+  })
+  return f
+}
+
+const coaForm = reactive(makeCoaForm())
+const coaFormErrors = reactive({ accountingSchema: '' })
+
+const accountOptions   = reactive(Object.fromEntries(COA_FIELDS.map(k => [k, []])))
+const showAccountDropdown = ref(null)
+
+let _accountSearchTimers = {}
+function debouncedAccountSearch(field) {
+  clearTimeout(_accountSearchTimers[field])
+  _accountSearchTimers[field] = setTimeout(() => searchAccounts(field), 300)
+}
+
+async function searchAccounts(field) {
+  const q = coaForm._search[field] || ''
+  try {
+    accountOptions[field] = await fetchGLAccounts(q)
+  } catch { accountOptions[field] = [] }
+}
+
+function selectAccount(field, account) {
+  coaForm[field]         = account.id
+  // FinancialMgmtAccountingCombination returns _identifier directly
+  const label = account._identifier || account.searchKey || account.name || account.id
+  coaForm._search[field] = label
+  coaForm._labels[field] = label
+  accountOptions[field]  = []
+  showAccountDropdown.value = null
+}
+
+function clearAccount(field) {
+  coaForm[field]          = ''
+  coaForm._search[field]  = ''
+  coaForm._labels[field]  = ''
+  accountOptions[field]   = []
+}
+
+function openCoaForm(mode) {
+  coaModal.mode = mode
+  coaFormError.value = ''
+  coaFormErrors.accountingSchema = ''
+
+  const fresh = makeCoaForm()
+  Object.assign(coaForm, fresh)
+  COA_FIELDS.forEach(k => { accountOptions[k] = [] })
+
+  if (mode === 'edit' && coaEntry.value) {
+    const e = coaEntry.value
+    const schemaId = typeof e.accountingSchema === 'object' ? e.accountingSchema?.id : e.accountingSchema
+    coaForm.accountingSchema = schemaId ?? ''
+
+    COA_FIELDS.forEach(key => {
+      const fk = e[key]
+      if (!fk) return
+      
+      const id = typeof fk === 'object' ? fk?.id : fk
+      const identifier = e[`${key}$_identifier`]
+      
+      let displayLabel = id
+      if (identifier) {
+        displayLabel = identifier
+      } else if (typeof fk === 'object') {
+        const name = fk?.name ?? ''
+        const code = fk?.value ?? fk?.searchKey ?? ''
+        if (code || name) displayLabel = code ? `${code} — ${name}` : name
+      }
+
+      coaForm[key]           = id ?? ''
+      coaForm._search[key]   = displayLabel
+      coaForm._labels[key]   = displayLabel
+    })
+  }
+
+  coaModal.show = true
+}
+
+async function saveCoaForm() {
+  coaFormError.value = ''
+  coaFormErrors.accountingSchema = ''
+
+  if (!coaForm.accountingSchema) {
+    coaFormErrors.accountingSchema = 'Accounting schema is required.'
+    return
+  }
+
+  coaSaving.value = true
+  try {
+    const payload = {
+      businessPartnerCategory: page.id,
+      accountingSchema:        coaForm.accountingSchema,
+    }
+    COA_FIELDS.forEach(key => {
+      if (coaForm[key]) payload[key] = coaForm[key]
+    })
+
+    if (coaModal.mode === 'create') {
+      await createBPCategoryAccount(payload)
+      showToast('Chart of Accounts configured successfully.', 'success')
+    } else {
+      await updateBPCategoryAccount(coaEntry.value.id, payload)
+      showToast('Chart of Accounts updated successfully.', 'success')
+    }
+
+    coaModal.show = false
+    await loadCoaData()
+  } catch (e) {
+    coaFormError.value = e.message || 'Failed to save accounts.'
+  } finally {
+    coaSaving.value = false
   }
 }
 
@@ -537,14 +1202,23 @@ function formatDate(iso) {
 /* ── Buttons ────────────────────────────────────────────────── */
 .btn { display: inline-flex; align-items: center; gap: 7px; padding: 0 16px; height: 36px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: background .15s, opacity .15s; font-family: var(--font); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
-.btn--primary { background: var(--accent); color: #fff; }
-.btn--primary:hover:not(:disabled) { background: var(--accent-h); }
-.btn--ghost { background: var(--surface2); color: var(--text-secondary); border: 1px solid var(--border); }
-.btn--ghost:hover:not(:disabled) { background: var(--border); }
-.btn--danger { background: var(--danger); color: #fff; }
-.btn--danger:hover:not(:disabled) { background: #b91c1c; }
+.btn--primary { background: #4f46e5; color: #fff; }
+.btn--primary:hover:not(:disabled) { background: #4338ca; color: #fff; }
+.btn--ghost { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+.btn--ghost:hover:not(:disabled) { background: #e2e8f0; color: #475569; }
+.btn--danger { background: #dc2626; color: #fff; }
+.btn--danger:hover:not(:disabled) { background: #b91c1c; color: #fff; }
+.btn--sm { height: 30px; padding: 0 12px; font-size: 12px; }
 .btn-spinner { width: 13px; height: 13px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Page Tabs ──────────────────────────────────────────────── */
+.page-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; width: fit-content; }
+.page-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--text-secondary); font-family: var(--font); transition: all .15s; }
+.page-tab:hover:not(:disabled) { color: var(--text-primary); background: rgba(0,0,0,.04); }
+.page-tab--active { background: var(--surface); color: var(--accent); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.page-tab:disabled { opacity: .5; cursor: not-allowed; }
+.tab-lock-icon { color: var(--text-muted); }
 
 /* ── Table ─────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
@@ -569,7 +1243,7 @@ function formatDate(iso) {
 /* ── Dropdown ─────────────────────────────────────────── */
 .action-group { display: flex; justify-content: flex-end; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); transition: background .12s; }
-.action-btn:hover { background: var(--border); }
+.action-btn:hover { background: #1d4ed8; }
 .dropdown-wrap { position: relative; }
 .dropdown-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 9999; min-width: 160px; overflow: hidden; }
 .dropdown-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; font-size: 12.5px; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text-secondary); font-family: var(--font); transition: background .1s; white-space: nowrap; }
@@ -612,9 +1286,13 @@ function formatDate(iso) {
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-.form-group input { height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); transition: border-color .15s; font-family: var(--font); color: var(--text-primary); box-sizing: border-box; width: 100%; }
+.form-group input, .form-input { height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); transition: border-color .15s; font-family: var(--font); color: var(--text-primary); box-sizing: border-box; width: 100%; }
+.form-input:focus { border-color: var(--accent); background: #fff; }
 .form-group input:focus { border-color: var(--accent); background: #fff; }
 .form-group input:disabled { background: #f1f5f9; color: var(--text-muted); cursor: not-allowed; }
+.form-select { height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); transition: border-color .15s; font-family: var(--font); color: var(--text-primary); box-sizing: border-box; width: 100%; cursor: pointer; }
+.form-select:focus { border-color: var(--accent); background: #fff; }
+.form-select:disabled { background: #f1f5f9; color: var(--text-muted); cursor: not-allowed; }
 .input-error { border-color: var(--danger) !important; }
 .field-error { font-size: 11.5px; color: var(--danger); }
 .req { color: var(--danger); }
@@ -626,15 +1304,16 @@ function formatDate(iso) {
 
 /* ── Modals ───────────────────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
-.modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 480px; overflow: hidden; }
-.modal--detail { max-width: 600px; }
+.modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 480px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
+.modal--detail { max-width: 720px; }
 .modal--sm { max-width: 400px; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.modal--coa { max-width: 680px; }
+.modal-header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0; }
 .modal-close { background: none; border: none; color: var(--text-muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
 .modal-close:hover { background: var(--surface2); color: var(--text-primary); }
-.modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
-.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+.modal-body { flex: 1; padding: 20px; overflow-y: auto; }
+.modal-footer { flex-shrink: 0; padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ── Detail View ──────────────────────────────────────── */
 .detail-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -648,6 +1327,32 @@ function formatDate(iso) {
 .status-pill--inactive { background: #fff1f2; color: var(--danger); }
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); margin: 0; }
 .delete-text strong { color: var(--text-primary); }
+.detail-divider { height: 1px; background: var(--border); margin: 20px 0; }
+.detail-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 16px; margin-top: 0; }
+
+/* ── CoA section ──────────────────────────────────────── */
+.coa-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 0; color: var(--text-muted); font-size: 13px; }
+.coa-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 40px 0; color: var(--text-muted); font-size: 13.5px; text-align: center; }
+.coa-schema-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; margin-bottom: 14px; }
+.coa-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.coa-table th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); background: var(--surface2); border-bottom: 2px solid var(--border); }
+.coa-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.coa-table tr:last-child td { border-bottom: none; }
+.coa-label-cell { font-weight: 600; color: var(--text-secondary); font-size: 12.5px; width: 200px; }
+.coa-section-title { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 10px; margin-top: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+/* ── Account Select ───────────────────────────────────── */
+.account-select-wrap { position: relative; }
+.account-dropdown { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 2000; max-height: 200px; overflow-y: auto; }
+.account-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; transition: background .1s; }
+.account-option:hover { background: var(--surface2); }
+.account-option--empty { justify-content: center; color: var(--text-muted); font-size: 12px; font-style: italic; cursor: default; }
+.account-option--empty:hover { background: transparent; }
+.account-option-code { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: #1d4ed8; background: #eff6ff; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.account-option-name { font-size: 12.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; padding: 2px; border-radius: 4px; transition: color .1s; }
+.account-clear:hover { color: var(--danger); }
+.account-selected-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--success); font-weight: 500; margin-top: 2px; }
 
 /* ── Transitions ──────────────────────────────────────── */
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }

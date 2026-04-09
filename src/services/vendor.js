@@ -32,6 +32,7 @@ const LOC_BASE      = '/org.openbravo.service.json.jsonrest/Location'
 const BPLOC_REST    = '/org.openbravo.service.json.jsonrest/BusinessPartnerLocation'
 const BPC_BASE      = '/org.openbravo.service.json.jsonrest/BusinessPartnerCategory'
 const BPC_ACCT_BASE = '/org.openbravo.service.json.jsonrest/BusinessPartnerCategoryAccount'
+const GL_ACCT_BASE  = '/org.openbravo.service.json.jsonrest/FinancialMgmtElementValue'
 
 // Helper: wrap FK value as { id } object
 const fkWrap = (val) => (val ? { id: val } : undefined)
@@ -184,6 +185,113 @@ export async function fetchBPCategories() {
     params: { _startRow: 0, _endRow: 100, _where: `e.active = true and upper(e.name) like upper('%Vendor%')` },
   })
   return res.data?.response?.data ?? []
+}
+
+// ==============================
+// LINK GL — BusinessPartnerCategoryAccount
+// ==============================
+export async function fetchBPCategoryAccounts() {
+  const res = await api.get(BPC_ACCT_BASE, {
+    params: { _startRow: 0, _endRow: 200 },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function createBPCategoryAccount(data) {
+  const payload = {
+    data: {
+      _entityName: 'BusinessPartnerCategoryAccount',
+      organization: '0',
+      active: true,
+      businessPartnerCategory: fkWrap(data.businessPartnerCategory),
+      accountingSchema: fkWrap(data.accountingSchema),
+      ...(data.customerReceivablesNo && { customerReceivablesNo: fkWrap(data.customerReceivablesNo) }),
+      ...(data.customerPrepayment    && { customerPrepayment:    fkWrap(data.customerPrepayment) }),
+      ...(data.vendorLiability       && { vendorLiability:       fkWrap(data.vendorLiability) }),
+      ...(data.vendorPrepayment      && { vendorPrepayment:      fkWrap(data.vendorPrepayment) }),
+      ...(data.writeoff              && { writeoff:              fkWrap(data.writeoff) }),
+      ...(data.nonInvoicedReceipts   && { nonInvoicedReceipts:   fkWrap(data.nonInvoicedReceipts) }),
+    },
+  }
+  const res = await api.post(BPC_ACCT_BASE, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function updateBPCategoryAccount(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'BusinessPartnerCategoryAccount',
+      organization: '0',
+      active: data.active ?? true,
+      businessPartnerCategory: fkWrap(data.businessPartnerCategory),
+      accountingSchema: fkWrap(data.accountingSchema),
+      ...(data.customerReceivablesNo && { customerReceivablesNo: fkWrap(data.customerReceivablesNo) }),
+      ...(data.customerPrepayment    && { customerPrepayment:    fkWrap(data.customerPrepayment) }),
+      ...(data.vendorLiability       && { vendorLiability:       fkWrap(data.vendorLiability) }),
+      ...(data.vendorPrepayment      && { vendorPrepayment:      fkWrap(data.vendorPrepayment) }),
+      ...(data.writeoff              && { writeoff:              fkWrap(data.writeoff) }),
+      ...(data.nonInvoicedReceipts   && { nonInvoicedReceipts:   fkWrap(data.nonInvoicedReceipts) }),
+    },
+  }
+  const res = await api.put(`${BPC_ACCT_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw ?? res.data
+}
+
+export async function deleteBPCategoryAccount(id) {
+  const payload = { data: { id, _entityName: 'BusinessPartnerCategoryAccount', active: false } }
+  const res = await api.put(`${BPC_ACCT_BASE}/${id}`, payload)
+  return res.data?.response?.data ?? res.data
+}
+
+// ==============================
+// Lookup: GL Accounts
+// ==============================
+export async function fetchGLAccounts(search = '') {
+  let where = `e.active = true`
+  if (search.trim()) {
+    const s = search.trim().replace(/'/g, "''")
+    where += ` and (upper(e.name) like upper('%${s}%') or upper(e.value) like upper('%${s}%'))`
+  }
+  const res = await api.get(GL_ACCT_BASE, {
+    params: { _startRow: 0, _endRow: 50, _where: where },
+  })
+  return res.data?.response?.data ?? []
+}
+
+const ACCT_SCHEMA_ENTITIES = [
+  'FinancialMgmtAcctSchema',
+  'FinancialMgmtAccountingSchema',
+  'AcctSchema',
+]
+
+export async function fetchAccountingSchemas() {
+  for (const entity of ACCT_SCHEMA_ENTITIES) {
+    try {
+      const res = await api.get(`/org.openbravo.service.json.jsonrest/${entity}`, {
+        params: { _startRow: 0, _endRow: 50, _where: 'e.active = true' },
+      })
+      const data = res.data?.response?.data
+      if (Array.isArray(data) && data.length > 0) return data
+    } catch (_) { /* try next */ }
+  }
+  try {
+    const res = await api.get(BPC_ACCT_BASE, { params: { _startRow: 0, _endRow: 10 } })
+    const rows = res.data?.response?.data ?? []
+    const seen = new Map()
+    for (const r of rows) {
+      const s = r.accountingSchema
+      if (s) {
+        const id = typeof s === 'object' ? s.id : s
+        const name = typeof s === 'object' ? (s.name ?? s.id) : s
+        if (id && !seen.has(id)) seen.set(id, { id, name })
+      }
+    }
+    if (seen.size) return [...seen.values()]
+  } catch (_) { /* ignore */ }
+  return []
 }
 
 // ==============================

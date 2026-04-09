@@ -382,7 +382,7 @@ export async function closeOrder(orderId, orderData) {
     throw new Error(`Order tidak bisa di-Close dari status "${orderData?.documentStatus}". Harus Booked (CO).`)
   }
 
-  // 1. Nol-kan semua payment schedule (amount & outstandingAmount = 0)
+  // 1. Nol-kan semua payment schedule (expected amount & outstanding = 0)
   try {
     const schedRes = await api.get(PAYMENT_SCHEDULE_BASE, {
       params: { _where: `e.order.id = '${orderId}'`, _startRow: 0, _endRow: 50 },
@@ -395,7 +395,6 @@ export async function closeOrder(orderId, orderData) {
           _entityName:       'FIN_Payment_Schedule',
           amount:            0,
           outstandingAmount: 0,
-          paidAmount:        s.paidAmount ?? 0,
         },
       }).catch(e => console.warn('[closeOrder] skip zero-out schedule:', e.message))
     }
@@ -403,7 +402,7 @@ export async function closeOrder(orderId, orderData) {
     console.warn('[closeOrder] Gagal nol-kan payment schedule:', e.message)
   }
 
-  // 2. Reactivate: Kembalikan status ke Draft (DR) agar dokumen "terbuka" kembali
+  // 2. Reactivate: Kembalikan status ke Draft (DR) sementara agar dokumen "terbuka"
   const reactivateRes = await api.put(`${ORDER_BASE}/${orderId}`, {
     data: {
       id:             orderId,
@@ -420,29 +419,17 @@ export async function closeOrder(orderId, orderData) {
     throw new Error(reactivateRes.data?.response?.error?.message || 'Gagal membuka kembali order (Reactivate).')
   }
 
-  // 2b. Hapus semua order lines agar grandTotalAmount & summedLineAmount = 0
-  try {
-    const linesRes = await api.get('/org.openbravo.service.json.jsonrest/OrderLine', {
-      params: { _where: `e.salesOrder.id = '${orderId}'`, _startRow: 0, _endRow: 200 },
-    })
-    const existingLines = linesRes.data?.response?.data ?? []
-    for (const line of existingLines) {
-      await api.delete(`/org.openbravo.service.json.jsonrest/OrderLine/${line.id}`)
-        .catch(e => console.warn('[closeOrder] skip delete line:', e.message))
-    }
-  } catch (e) {
-    console.warn('[closeOrder] Gagal hapus order lines:', e.message)
-  }
-
-  // 3. Langsung set status akhir ke Closed (CL) 
+  // 3. Set status ke Closed (CL) dan PAKSA nilai total header menjadi 0
   const closeRes = await api.put(`${ORDER_BASE}/${orderId}`, {
     data: {
-      id:             orderId,
-      _entityName:    'Order',
-      documentNo:     orderData.documentNo,
-      documentStatus: 'CL',
-      documentAction: '--',
-      processed:      true,
+      id:               orderId,
+      _entityName:      'Order',
+      documentNo:       orderData.documentNo,
+      documentStatus:   'CL',
+      documentAction:   '--',
+      processed:        true,
+      grandTotalAmount: 0, // <-- Memaksa Grand Total jadi 0
+      summedLineAmount: 0  // <-- Memaksa Summed Line jadi 0
     },
   })
 
