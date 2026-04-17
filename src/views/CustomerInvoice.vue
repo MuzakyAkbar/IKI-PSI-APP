@@ -23,13 +23,13 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>Invoice No.</th>
-              <th>Invoice Date</th>
-              <th>Customer</th>
-              <th>Customer Code</th>
-              <th>Grand Total</th>
-              <th>Status</th>
-              <th>Payment</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">Invoice No.</th>
+              <th class="sortable" :class="{ asc: sortCol === 'invoiceDate', desc: sortCol === 'invoiceDate' && sortDir === 'desc' }" @click="toggleSort('invoiceDate')">Invoice Date</th>
+              <th class="sortable" :class="{ asc: sortCol === 'businessPartner.name', desc: sortCol === 'businessPartner.name' && sortDir === 'desc' }" @click="toggleSort('businessPartner.name')">Customer</th>
+              <th class="sortable" :class="{ asc: sortCol === 'kodePelanggan', desc: sortCol === 'kodePelanggan' && sortDir === 'desc' }" @click="toggleSort('kodePelanggan')">Customer Code</th>
+              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Grand Total</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentStatus', desc: sortCol === 'documentStatus' && sortDir === 'desc' }" @click="toggleSort('documentStatus')">Status</th>
+              <th class="sortable" :class="{ asc: sortCol === 'paymentComplete', desc: sortCol === 'paymentComplete' && sortDir === 'desc' }" @click="toggleSort('paymentComplete')">Payment</th>
               <th class="th-action">Action</th>
             </tr></thead>
             <tbody>
@@ -576,7 +576,12 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showViewModal = false">Close</button>
+           <button class="btn btn--ghost" @click="showViewModal = false">Close</button>
+  
+          <button class="btn btn--ghost" @click="doPrint">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+          </button>
 
             <!-- DR: Edit + Complete -->
             <template v-if="viewRow?.documentStatus === 'DR'">
@@ -695,6 +700,7 @@ import {
   createPaymentPlan, fetchPaymentSchedules,
   DEFAULT_ORGANIZATION, ADJUSTMENT_PRODUCT_ID,
 } from '@/services/customerInvoice.js'
+import { generateDocumentPDF } from '@/services/pdfGenerator.js'
 
 // ── directive
 const vClickOutside = {
@@ -715,6 +721,23 @@ const totalCount = ref(0)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 const searchQuery = ref('')
 let searchTimer = null
+
+// ── sorting state
+const sortCol = ref('invoiceDate')
+const sortDir = ref('desc')
+
+function toggleSort(col) {
+  if (sortCol.value === col) {
+    // Jika kolom yang sama diklik, balik arahnya
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // Jika ganti kolom, defaultkan ke descending
+    sortCol.value = col
+    sortDir.value = 'desc'
+  }
+  currentPage.value = 1 // Reset ke halaman 1 saat sorting berubah
+  loadInvoices()
+}
 
 // ── dropdown
 const openDropdown = ref(null)
@@ -894,10 +917,17 @@ async function loadInvoices() {
   loading.value = true; error.value = ''
   try {
     const startRow = (currentPage.value - 1) * pageSize
-    const data = await fetchAllInvoices({ startRow, pageSize, searchKey: searchQuery.value })
+    
+    // Pastikan sortCol dan sortDir ikut dikirim ke dalam fungsi API!
+    const data = await fetchAllInvoices({ 
+      startRow, 
+      pageSize, 
+      searchKey: searchQuery.value,
+      sortCol: sortCol.value, // <--- Baris ini wajib ada
+      sortDir: sortDir.value  // <--- Baris ini wajib ada
+    })
+    
     rows.value = data.data ?? []
-    // Openbravo kadang mengembalikan totalRows yang salah di halaman 2+.
-    // Hanya update totalCount dari halaman pertama (startRow=0) atau saat belum ada nilai.
     const apiTotal = Number(data.totalRows ?? data.total ?? 0)
     if (startRow === 0 || totalCount.value === 0) {
       totalCount.value = apiTotal > 0 ? apiTotal : rows.value.length
@@ -1577,6 +1607,19 @@ watch(() => form.value.paymentTerms, async (newVal) => {
   } finally { paymentLinesLoading.value = false }
 })
 
+// ── FUNGSI PRINT PDF ──
+async function doPrint() {
+  if (!viewRow.value) return
+  try {
+    // Generate PDF pakai service
+    await generateDocumentPDF('Customer Invoice', viewRow.value, viewLines.value)
+    showToast('Dokumen PDF berhasil diunduh.')
+  } catch (error) {
+    console.error('Error printing PDF:', error)
+    showToast('Gagal men-generate PDF.', 'error')
+  }
+}
+
 onMounted(() => { loadInvoices(); loadLookups() })
 </script>
 
@@ -1640,6 +1683,45 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table thead th { background: var(--surface2); color: var(--text-muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 10px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: left; }
+
+/* ── Sorting Headers ── */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 20px !important; /* Ruang untuk panah */
+  transition: color 0.15s;
+}
+.sortable:hover {
+  color: var(--text-primary);
+}
+.sortable::after, .sortable::before {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  border: 4px solid transparent;
+  opacity: 0.3; /* Samar jika kolom tidak aktif */
+}
+.sortable::before {
+  /* Panah Atas (Ascending) */
+  border-bottom-color: currentColor;
+  margin-top: -9px;
+}
+.sortable::after {
+  /* Panah Bawah (Descending) */
+  border-top-color: currentColor;
+  margin-top: 1px;
+}
+.sortable.asc::before {
+  opacity: 1; /* Terang saat Ascending */
+  color: var(--accent);
+}
+.sortable.desc::after {
+  opacity: 1; /* Terang saat Descending */
+  color: var(--accent);
+}
+
 .table--lines thead th { padding: 8px 12px; }
 .table--lines tbody td { padding: 6px 12px; }
 .th-action { text-align: right; width: 80px; }

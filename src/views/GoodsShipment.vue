@@ -7,7 +7,6 @@
           <h2 class="page-title">Goods Shipment</h2>
         </div>
 
-        <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -19,10 +18,8 @@
           </button>
         </div>
 
-        <!-- ══ LIST LABEL ══ -->
         <div class="list-label">List Goods Shipment</div>
 
-        <!-- ══ TABLE ══ -->
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
@@ -52,7 +49,7 @@
                         <button class="action-btn action-btn--more" @click.stop="toggleDropdown(r.id, $event)">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                         </button>
-                        <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }">
+                        <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }" @click.stop>
                           <button class="dropdown-item" @click="openViewModal(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
                           </button>
@@ -72,7 +69,6 @@
           </table>
         </div>
 
-        <!-- ══ PAGINATION ══ -->
         <div v-if="totalPages > 1" class="pagination">
           <button class="page-btn" :disabled="currentPage === 1" @click="goPage(currentPage - 1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -89,9 +85,6 @@
       </div>
     </main>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- CREATE / EDIT MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showFormModal" class="modal-overlay" @mousedown.self="closeFormModal">
         <div class="modal modal--xl">
@@ -113,36 +106,28 @@
           </div>
 
           <div class="modal-body">
-            <!-- ── Row 1 ── -->
             <div class="form-grid-3">
               <div class="form-group">
                 <label>Goods Shipment No.</label>
                 <input v-model="form.documentNo" class="form-input" placeholder="GS000000" disabled />
               </div>
+              
               <div class="form-group">
-                <label>Document Type</label>
-                <div class="acc-wrap">
-                  <input v-model="docTypeSearch" class="acc-input" placeholder="Select document type..." @input="showDocTypeDrop = true" @focus="showDocTypeDrop = true" @blur="onBlur('docType')" />
-                  <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                  <ul v-if="showDocTypeDrop && filteredDocTypes.length" class="acc-dropdown">
-                    <li v-for="d in filteredDocTypes" :key="d.id" class="acc-opt" @mousedown.prevent="selectDocType(d)">{{ d.name }}</li>
-                  </ul>
-                </div>
+                <label>Document Type <span class="req">*</span></label>
+                <input :value="docTypeSearch" class="form-input" disabled />
               </div>
+
               <div class="form-group">
-                <label>Warehouse</label>
+                <label>Warehouse <span class="req">*</span></label>
                 <select v-model="form.warehouse" class="form-input">
                   <option value="">Select</option>
                   <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
                 </select>
               </div>
 
-              <!-- ── Row 2 ── -->
               <div class="form-group">
                 <label>Organization</label>
-                <select v-model="form.organization" class="form-input" disabled>
-                  <option value="">Select</option>
-                </select>
+                <input :value="form.organization_name" class="form-input" disabled />
               </div>
               <div class="form-group">
                 <label>Partner Address</label>
@@ -156,9 +141,8 @@
                 <input v-model="form.description" class="form-input" placeholder="Description" />
               </div>
 
-              <!-- ── Row 3 ── -->
               <div class="form-group">
-                <label>Customer</label>
+                <label>Customer <span class="req">*</span></label>
                 <div class="acc-wrap">
                   <input v-model="customerSearch" class="acc-input" placeholder="Search customer..." @input="onCustomerSearch" @focus="showCustomerDrop = true" @blur="onBlur('customer')" />
                   <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -179,9 +163,8 @@
               </div>
               <div></div>
 
-              <!-- ── Row 4 ── -->
               <div class="form-group">
-                <label>Movement Date</label>
+                <label>Movement Date <span class="req">*</span></label>
                 <input v-model="form.movementDate" type="date" class="form-input" />
               </div>
               <div class="form-group">
@@ -191,7 +174,6 @@
               <div></div>
             </div>
 
-            <!-- ── More Information ── -->
             <div class="section-divider">More Information</div>
             <div class="form-grid-3">
               <div class="form-group">
@@ -201,7 +183,7 @@
               <div class="form-group">
                 <label>Sales Order</label>
                 <div class="acc-wrap">
-                  <input v-model="soSearch" class="acc-input" placeholder="Search sales order..." @input="onSoSearch" @focus="showSoDrop = true" @blur="onBlur('so')" />
+                  <input v-model="soSearch" class="acc-input" placeholder="Search sales order..." @input="onSoSearch" @focus="onSoFocus" @blur="onBlur('so')" :disabled="!form.businessPartner" />
                   <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                   <ul v-if="showSoDrop && filteredSOs.length" class="acc-dropdown">
                     <li v-for="o in filteredSOs" :key="o.id" class="acc-opt" @mousedown.prevent="selectSO(o)">{{ o.documentNo }} — {{ o['businessPartner$_identifier'] || '' }}</li>
@@ -223,7 +205,6 @@
               <div></div>
             </div>
 
-            <!-- ── Shipment Lines ── -->
             <div class="section-divider">
               Shipment Lines
               <button class="btn-add-line" @click="addLine">
@@ -293,9 +274,6 @@
       </div>
     </transition>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- VIEW MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showViewModal" class="modal-overlay" @mousedown.self="showViewModal = false">
         <div class="modal modal--xl">
@@ -351,9 +329,6 @@
       </div>
     </transition>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- DELETE CONFIRM -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal--sm">
@@ -378,7 +353,6 @@
       </div>
     </transition>
 
-    <!-- ══ TOAST ══ -->
     <transition name="fade">
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -397,17 +371,18 @@ import { ref, computed, onMounted } from 'vue'
 import {
   fetchAllShipments, createShipment, updateShipment, deleteShipment,
   fetchShipmentLines, createShipmentLine, updateShipmentLine,
-  fetchCustomers, fetchPartnerLocations, fetchWarehouses, fetchDocumentTypes,
-  fetchSalesOrders, fetchProducts, fetchUOMs,
+  fetchCurrentUser, fetchCustomers, fetchPartnerLocations, fetchWarehouses, 
+  fetchDocumentTypes, fetchSalesOrders, fetchProducts, fetchUOMs,
+  fetchOrderLines // <== PERBAIKAN: Import fetchOrderLines
 } from '@/services/goodsShipment.js'
 
 // ── directive
 const vClickOutside = {
   mounted(el, binding) {
     el._handler = (e) => { if (!el.contains(e.target)) binding.value(e) }
-    document.addEventListener('mousedown', el._handler)
+    document.addEventListener('click', el._handler, true)
   },
-  unmounted(el) { document.removeEventListener('mousedown', el._handler) },
+  unmounted(el) { document.removeEventListener('click', el._handler, true) },
 }
 
 // ── table state
@@ -426,6 +401,7 @@ const openDropdown = ref(null)
 const dropdownPos = ref({ top: 0, right: 0 })
 
 // ── lookups
+const defaultUserOrg = ref({ id: '', name: '' })
 const warehouses = ref([])
 const documentTypes = ref([])
 const uoms = ref([])
@@ -442,7 +418,8 @@ const emptyForm = () => ({
   documentNo: '',
   documentType: '',
   warehouse: '',
-  organization: '',
+  organization: defaultUserOrg.value.id,
+  organization_name: defaultUserOrg.value.name,
   partnerAddress: '',
   description: '',
   businessPartner: '',
@@ -461,11 +438,6 @@ const filteredCustomers = ref([])
 const showCustomerDrop = ref(false)
 
 const docTypeSearch = ref('')
-const showDocTypeDrop = ref(false)
-const filteredDocTypes = computed(() => {
-  const q = docTypeSearch.value.toLowerCase()
-  return documentTypes.value.filter(d => !q || (d.name || '').toLowerCase().includes(q)).slice(0, 30)
-})
 
 const soSearch = ref('')
 const filteredSOs = ref([])
@@ -548,9 +520,17 @@ function closeDropdown() { openDropdown.value = null }
 
 // ── load lookups
 async function loadLookups() {
-  const [w, dt, u] = await Promise.allSettled([
-    fetchWarehouses(), fetchDocumentTypes(), fetchUOMs(),
+  const [user, w, dt, u] = await Promise.allSettled([
+    fetchCurrentUser(), fetchWarehouses(), fetchDocumentTypes(), fetchUOMs(),
   ])
+
+  if (user.value) {
+    defaultUserOrg.value = {
+      id: user.value.organization || '',
+      name: user.value['organization$_identifier'] || ''
+    }
+  }
+
   warehouses.value = w.value ?? []
   documentTypes.value = dt.value ?? []
   uoms.value = u.value ?? []
@@ -560,7 +540,6 @@ async function loadLookups() {
 function onBlur(type) {
   setTimeout(() => {
     if (type === 'customer') showCustomerDrop.value = false
-    if (type === 'docType') showDocTypeDrop.value = false
     if (type === 'so') showSoDrop.value = false
   }, 150)
 }
@@ -580,7 +559,16 @@ function selectCustomer(c) {
   customerSearch.value = c.name
   showCustomerDrop.value = false
   loadPartnerLocations(c.id)
+
+  // PERBAIKAN: Reset Sales Order dan Lines jika Customer diubah
+  if (form.value.salesOrder) {
+    form.value.salesOrder = ''
+    soSearch.value = ''
+    lines.value = []
+  }
+  filteredSOs.value = []
 }
+
 async function loadPartnerLocations(bpId) {
   form.value.partnerAddress = ''; form.value.deliveryLocation = ''
   partnerLocations.value = await fetchPartnerLocations(bpId)
@@ -590,27 +578,56 @@ async function loadPartnerLocations(bpId) {
   }
 }
 
-// ── doc type
-function selectDocType(d) {
-  form.value.documentType = d.id
-  docTypeSearch.value = d.name
-  showDocTypeDrop.value = false
-}
-
 // ── sales order search
 let soTimer = null
+async function onSoFocus() {
+  showSoDrop.value = true
+  // Memuat otomatis order list milik customer yang dipilih tanpa harus mengetik
+  if (filteredSOs.value.length === 0 && form.value.businessPartner) {
+    onSoSearch()
+  }
+}
+
 async function onSoSearch() {
   showSoDrop.value = true
   clearTimeout(soTimer)
   soTimer = setTimeout(async () => {
-    if (!soSearch.value.trim()) { filteredSOs.value = []; return }
-    filteredSOs.value = await fetchSalesOrders(soSearch.value)
+    // Jika tidak ada text pencarian DAN tidak ada customer yang dipilih, kosongkan list
+    if (!soSearch.value.trim() && !form.value.businessPartner) { filteredSOs.value = []; return }
+    
+    // PERBAIKAN: Melempar businessPartnerId (Customer ID) untuk filter list di API
+    filteredSOs.value = await fetchSalesOrders(soSearch.value, form.value.businessPartner)
   }, 300)
 }
-function selectSO(o) {
+
+async function selectSO(o) {
   form.value.salesOrder = o.id
   soSearch.value = o.documentNo
   showSoDrop.value = false
+
+  // PERBAIKAN: Auto-fill shipment lines dari order lines
+  try {
+    const orderLines = await fetchOrderLines(o.id)
+    if (orderLines && orderLines.length > 0) {
+      lines.value = orderLines.map(ol => {
+        const foundUom = uoms.value.find(u => u.id === ol.uOM)
+        return {
+          orderLine: ol.id, // Simpan referensi ID dari sales order line untuk di Payload API
+          product: ol.product || '',
+          productSearch: ol['product$_identifier'] || '',
+          movementQuantity: ol.orderedQuantity || 1, // Mengambil quantity dari pesanan
+          uOM: ol.uOM || '',
+          uomSearch: foundUom ? (foundUom.uOMSymbol || foundUom.name) : (ol['uOM$_identifier'] || ''),
+          uomOptions: foundUom ? [foundUom] : [],
+          showDrop: false,
+          showUomDrop: false,
+          productOptions: []
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Gagal mengambil Order Lines', error)
+  }
 }
 
 // ── product search per line
@@ -665,6 +682,21 @@ function openCreateModal() {
   form.value = emptyForm(); lines.value = []
   customerSearch.value = ''; docTypeSearch.value = ''; soSearch.value = ''
   partnerLocations.value = []; formError.value = ''
+
+  // AUTO-SELECT Document Type: prioritaskan "MM Shipment" dan dikunci UI-nya
+  if (documentTypes.value.length > 0) {
+    const defaultDoc = 
+      documentTypes.value.find(d => d.name?.toLowerCase() === 'mm shipment') || 
+      documentTypes.value.find(d => d.name?.toLowerCase().includes('mm shipment')) || 
+      documentTypes.value.find(d => d.name?.toLowerCase().includes('shipment')) || 
+      documentTypes.value[0]
+      
+    if (defaultDoc) {
+      form.value.documentType = defaultDoc.id
+      docTypeSearch.value = defaultDoc.name
+    }
+  }
+
   showFormModal.value = true
 }
 
@@ -677,7 +709,8 @@ async function openEditModal(r) {
     documentNo: r.documentNo || '',
     documentType: r.documentType || '',
     warehouse: r.warehouse || '',
-    organization: r['organization$_identifier'] || '',
+    organization: r.organization || '',
+    organization_name: r['organization$_identifier'] || defaultUserOrg.value.name,
     partnerAddress: r.partnerAddress || '',
     description: r.description || '',
     businessPartner: r.businessPartner || '',
@@ -699,6 +732,7 @@ async function openEditModal(r) {
     const foundUom = uoms.value.find(u => u.id === l.uOM)
     return {
       id: l.id,
+      orderLine: l.salesOrderLine || '', // Mengambil SO line existing
       product: l.product || '',
       productSearch: l['product$_identifier'] || '',
       movementQuantity: l.movementQuantity || 1,
@@ -721,7 +755,14 @@ async function openViewModal(r) {
 
 // ── save
 async function saveShipment() {
-  saving.value = true; formError.value = ''
+  formError.value = ''
+
+  if (!form.value.documentType) { formError.value = 'Document Type is required.'; return }
+  if (!form.value.warehouse) { formError.value = 'Warehouse is required.'; return }
+  if (!form.value.businessPartner) { formError.value = 'Customer is required.'; return }
+  if (!form.value.movementDate) { formError.value = 'Movement Date is required.'; return }
+
+  saving.value = true
   try {
     let shipmentId
     if (isEdit.value) {
@@ -734,9 +775,18 @@ async function saveShipment() {
 
     // Save lines
     if (shipmentId) {
-      for (const line of lines.value) {
+      for (const [index, line] of lines.value.entries()) {
         if (!line.product) continue
-        const linePayload = { movementQuantity: line.movementQuantity, uOM: line.uOM, product: line.product }
+        
+        // PERBAIKAN: Menambahkan 'orderLine' ke payload (dipakai di goodsShipment.js => salesOrderLine)
+        const linePayload = { 
+          lineNo: (index + 1) * 10,
+          movementQuantity: line.movementQuantity, 
+          uOM: line.uOM, 
+          product: line.product,
+          ...(line.orderLine && { orderLine: line.orderLine })
+        }
+
         if (line.id) await updateShipmentLine(line.id, linePayload)
         else await createShipmentLine(shipmentId, linePayload)
       }
@@ -882,6 +932,7 @@ button { box-sizing: border-box; }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.req { color: var(--danger); margin-left: 2px; }
 .form-input { width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); transition: border-color .15s; font-family: var(--font); color: var(--text-primary); }
 .form-input:focus { border-color: var(--accent); background: #fff; }
 .form-input:disabled { opacity: .6; cursor: not-allowed; background: #f1f5f9; }

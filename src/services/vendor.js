@@ -43,19 +43,24 @@ const ORG_ID = 'B3FE20F490CF49989D7250C0D3341603'
 // ==============================
 // GET - list vendors
 // ==============================
-export async function fetchVendors({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
-  let where = `e.businessPartnerCategory.name = 'Vendor'`
+// vendor.js
+export async function fetchVendors({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'name', sortDir = 'asc' } = {}) {
+  let where = `e.active = true and e.businessPartnerCategory.name = 'Vendor'`
   if (searchKey.trim()) {
-    const escaped = searchKey.trim().replace(/'/g, "''")
-    where += ` and (upper(e.name) like upper('%${escaped}%') or upper(e.searchKey) like upper('%${escaped}%'))`
+    const s = searchKey.trim().replace(/'/g, "''")
+    where += ` and (upper(e.name) like upper('%${s}%') or upper(e.searchKey) like upper('%${s}%'))`
   }
+
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'searchKey') sortBy += ',searchKey'
+
   const res = await api.get(BP_BASE, {
     params: {
       _startRow: startRow,
-      _endRow: startRow + pageSize,
-      _where: where,
-      _noCount: false,
-      _sortBy: 'searchKey',
+      _endRow:   startRow + pageSize,
+      _noCount:  false,
+      _sortBy:   sortBy,
+      _where:    where,
     },
   })
   return res.data?.response ?? res.data

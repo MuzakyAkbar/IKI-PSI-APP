@@ -20,14 +20,18 @@ const fkWrap = (val) => (val ? { id: val } : undefined)
 // ════════════════════════════════════════════════════
 const BASE = '/org.openbravo.service.json.jsonrest/Product'
 
-export async function fetchAllProducts({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllProducts({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'name', sortDir = 'asc' } = {}) {
   let where = ''
   if (searchKey.trim()) {
     const e = searchKey.trim().replace(/'/g, "''")
     where = `upper(e.name) like upper('%${e}%') or upper(e.searchKey) like upper('%${e}%')`
   }
+  
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'searchKey') sortBy += ',searchKey' // Fallback stabilisasi data
+
   const res = await api.get(BASE, {
-    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false },
+    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false, _sortBy: sortBy },
   })
   return res.data?.response ?? res.data
 }
@@ -98,7 +102,6 @@ export async function fetchTaxCategories() {
   return res.data?.response?.data ?? []
 }
 
-// Accounting Combinations - untuk dropdown 4 account fields
 export async function fetchAccountingCombinations(searchKey = '') {
   let where = ''
   if (searchKey.trim()) {
@@ -117,19 +120,22 @@ export async function fetchAccountingCombinations(searchKey = '') {
 const CAT_BASE = '/org.openbravo.service.json.jsonrest/ProductCategory'
 const CAT_ACC_BASE = '/org.openbravo.service.json.jsonrest/ProductCategoryAccounts'
 
-export async function fetchCategoriesPage({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchCategoriesPage({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'name', sortDir = 'asc' } = {}) {
   let where = ''
   if (searchKey.trim()) {
     const e = searchKey.trim().replace(/'/g, "''")
-    where = `upper(e.name) like upper('%${e}%') or upper(e.value) like upper('%${e}%')`
+    where = `upper(e.name) like upper('%${e}%') or upper(e.searchKey) like upper('%${e}%')`
   }
+  
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'searchKey') sortBy += ',searchKey'
+
   const res = await api.get(CAT_BASE, {
-    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false },
+    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false, _sortBy: sortBy },
   })
   return res.data?.response ?? res.data
 }
 
-// Fetch existing CategoryAccounts record for a given category id
 export async function fetchCategoryAccounts(productCategoryId) {
   const res = await api.get(CAT_ACC_BASE, {
     params: { _where: `e.productCategory.id = '${productCategoryId}'`, _startRow: 0, _endRow: 5 },
@@ -138,15 +144,11 @@ export async function fetchCategoryAccounts(productCategoryId) {
   return data[0] ?? null
 }
 
-// Create: POST category then POST accounts
 export async function createCategory({ productRevenue, productExpense, productCOGS, fixedAsset, value, ...catData }) {
-  // Step 1: POST ProductCategory
-  // Openbravo ProductCategory API menggunakan 'searchKey' bukan 'value'
   const catRes = await api.post(CAT_BASE, {
     data: { _entityName: 'ProductCategory', searchKey: value, plannedMargin: 0, ...catData },
   })
 
-  // Robust ID extraction — API bisa kembalikan array atau object
   const raw = catRes.data?.response?.data
   const createdObj = Array.isArray(raw) ? raw[0] : raw
   const categoryId = createdObj?.id
@@ -156,7 +158,6 @@ export async function createCategory({ productRevenue, productExpense, productCO
     throw new Error(msg)
   }
 
-  // Step 2: POST ProductCategoryAccounts (4 field akun wajib diisi)
   await api.post(CAT_ACC_BASE, {
     data: {
       _entityName: 'ProductCategoryAccounts',
@@ -171,15 +172,11 @@ export async function createCategory({ productRevenue, productExpense, productCO
   return createdObj
 }
 
-// Update: PUT category then PUT/POST accounts
 export async function updateCategory(id, { productRevenue, productExpense, productCOGS, fixedAsset, value, ...catData }) {
-  // Step 1: PUT ProductCategory
-  // Openbravo ProductCategory API menggunakan 'searchKey' bukan 'value'
   await api.put(`${CAT_BASE}/${id}`, {
     data: { id, _entityName: 'ProductCategory', searchKey: value, ...catData },
   })
 
-  // Step 2: upsert ProductCategoryAccounts (4 field akun wajib diisi)
   const accPayload = {
     _entityName: 'ProductCategoryAccounts',
     productCategory: { id },
@@ -215,20 +212,24 @@ export async function deleteCategory(id) {
 // ════════════════════════════════════════════════════
 const UOM_BASE = '/org.openbravo.service.json.jsonrest/UOM'
 
-export async function fetchUOMsPage({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchUOMsPage({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'name', sortDir = 'asc' } = {}) {
   let where = ''
   if (searchKey.trim()) {
     const e = searchKey.trim().replace(/'/g, "''")
     where = `upper(e.name) like upper('%${e}%') or upper(e.eDICode) like upper('%${e}%')`
   }
+
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'eDICode') sortBy += ',eDICode' 
+
   const res = await api.get(UOM_BASE, {
-    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false },
+    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false, _sortBy: sortBy },
   })
   return res.data?.response ?? res.data
 }
 
 export async function createUOM({ uOMSymbol, name, active }) {
-  const ediCode = (uOMSymbol || '').substring(0, 2) // max 2 chars
+  const ediCode = (uOMSymbol || '').substring(0, 2) 
   const res = await api.post(UOM_BASE, {
     data: {
       _entityName: 'UOM',

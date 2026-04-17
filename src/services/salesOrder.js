@@ -45,35 +45,38 @@ export const STANDARD_ORDER_DOCTYPE_ID = '3F571AFD234A4811AFA75C22AEC72B4F'
 // ════════════════════════════════════════════════════
 const ORDER_BASE = '/org.openbravo.service.json.jsonrest/Order'
 
-export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'documentNo', sortDir = 'desc' } = {}) {
   let where = `e.salesTransaction = true`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`
   }
+
+  // 1. Format _sortBy (Standar DataSource Openbravo)
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'documentNo') sortBy += ',-documentNo'
+
+  // 2. Format _orderBy (Standar HQL Openbravo fallback)
+  let orderBy = `e.${sortCol} ${sortDir}`
+  if (sortCol !== 'documentNo') orderBy += `, e.documentNo desc`
+
   const res = await api.get(ORDER_BASE, {
     params: {
       _startRow:  startRow,
       _endRow:    startRow + pageSize,
       _noCount:   false,
-      _orderBy:   'e.documentNo asc',
+      _sortBy:    sortBy,   // <--- Tambahkan ini
+      _orderBy:   orderBy,  // <--- Timpa nilai statis sebelumnya
       _where:     where,
       _selectedProperties: 'id,documentNo,orderDate,scheduledDeliveryDate,businessPartner,businessPartner$_identifier,documentStatus,grandTotalAmount,summedLineAmount,transactionDocument,transactionDocument$_identifier,organization,organization$_identifier,processed,posted',
     },
   })
+  
   const response = res.data?.response ?? res.data
-  if (Array.isArray(response?.data)) {
-    response.data = response.data.slice().sort((a, b) => {
-      const nA = parseInt(a.documentNo, 10)
-      const nB = parseInt(b.documentNo, 10)
-      const aIsNum = !isNaN(nA)
-      const bIsNum = !isNaN(nB)
-      if (aIsNum && bIsNum) return nA - nB
-      if (aIsNum && !bIsNum) return -1
-      if (!aIsNum && bIsNum) return 1
-      return (a.documentNo || '').localeCompare(b.documentNo || '')
-    })
-  }
+  
+  // NOTE: Blok "if (Array.isArray(response?.data)) { ... sort(...) }" 
+  // sudah dihapus sepenuhnya di sini agar pengurutan dari API tidak tertimpa.
+
   return response
 }
 
@@ -729,4 +732,16 @@ export async function fetchTaxRates() {
     },
   })
   return res.data?.response?.data ?? []
+}
+
+export async function fetchCurrentUser() {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/ADUser', {
+    params: {
+      _where: `e.username = '${USERNAME}'`,
+      _startRow: 0,
+      _endRow: 1
+    }
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
 }

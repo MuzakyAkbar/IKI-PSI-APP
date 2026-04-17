@@ -48,7 +48,7 @@ export async function fetchShipment(id) {
 export async function createShipment(data) {
   const payload = buildShipmentPayload(data)
   const res = await api.post(BASE, {
-    data: { _entityName: 'ShipmentInOut', movementType: 'C-', ...payload },
+    data: { _entityName: 'MaterialMgmtShipmentInOut', movementType: 'C-', ...payload },
   })
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
@@ -57,7 +57,7 @@ export async function createShipment(data) {
 export async function updateShipment(id, data) {
   const payload = buildShipmentPayload(data)
   const res = await api.put(`${BASE}/${id}`, {
-    data: { id, _entityName: 'ShipmentInOut', ...payload },
+    data: { id, _entityName: 'MaterialMgmtShipmentInOut', ...payload },
   })
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
@@ -67,7 +67,7 @@ export async function deleteShipment(id) {
   const ex = await api.get(`${BASE}/${id}`)
   const r = (ex.data?.response?.data ?? [])[0] ?? {}
   const res = await api.put(`${BASE}/${id}`, {
-    data: { id, _entityName: 'ShipmentInOut', documentNo: r.documentNo, active: false },
+    data: { id, _entityName: 'MaterialMgmtShipmentInOut', documentNo: r.documentNo, active: false },
   })
   return res.data?.response?.data ?? res.data
 }
@@ -77,12 +77,14 @@ function buildShipmentPayload(data) {
     businessPartner, partnerAddress, warehouse, documentType,
     salesOrder, deliveryLocation, movementDate, accountingDate,
     documentNo, description, orderReference, isNettingShipment,
+    organization,
     ...rest
   } = data
-  const { active, movementType, ...safeRest } = rest
+  const { active, movementType, organization_name, ...safeRest } = rest
   return {
     ...safeRest,
     ...(documentNo         && { documentNo }),
+    ...(organization       && { organization:     fkWrap(organization) }),
     ...(businessPartner    && { businessPartner:  fkWrap(businessPartner) }),
     ...(partnerAddress     && { partnerAddress:   fkWrap(partnerAddress) }),
     ...(warehouse          && { warehouse:        fkWrap(warehouse) }),
@@ -118,7 +120,7 @@ export async function createShipmentLine(shipmentId, data) {
   const { product, uOM, storageBin, orderLine, ...rest } = data
   const res = await api.post(LINE_BASE, {
     data: {
-      _entityName: 'ShipmentInOutLine',
+      _entityName: 'MaterialMgmtShipmentInOutLine',
       shipmentReceipt: { id: shipmentId },
       ...rest,
       ...(product    && { product:    fkWrap(product) }),
@@ -136,7 +138,7 @@ export async function updateShipmentLine(id, data) {
   const res = await api.put(`${LINE_BASE}/${id}`, {
     data: {
       id,
-      _entityName: 'ShipmentInOutLine',
+      _entityName: 'MaterialMgmtShipmentInOutLine',
       ...rest,
       ...(product    && { product:    fkWrap(product) }),
       ...(uOM        && { uOM:        fkWrap(uOM) }),
@@ -156,6 +158,14 @@ export async function deleteShipmentLine(id) {
 // ════════════════════════════════════════════════════
 // LOOKUPS
 // ════════════════════════════════════════════════════
+
+export async function fetchCurrentUser() {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/ADUser', {
+    params: { _startRow: 0, _endRow: 1, _where: `username = '${USERNAME}'` },
+  })
+  const data = res.data?.response?.data ?? []
+  return data[0] ?? null
+}
 
 export async function fetchCustomers(search = '') {
   let where = `e.businessPartnerCategory.name = 'Customer'`
@@ -193,14 +203,33 @@ export async function fetchDocumentTypes() {
   return res.data?.response?.data ?? []
 }
 
-export async function fetchSalesOrders(search = '') {
-  let where = ``
+// PERBAIKAN: Menambahkan parameter businessPartnerId untuk mem-filter
+export async function fetchSalesOrders(search = '', businessPartnerId = null) {
+  let whereFilters = []
+  if (businessPartnerId) {
+    whereFilters.push(`e.businessPartner.id = '${businessPartnerId}'`)
+  }
   if (search.trim()) {
     const s = search.trim().replace(/'/g, "''")
-    where = `upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%')`
+    whereFilters.push(`(upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`)
   }
+  const where = whereFilters.join(' and ')
+
   const res = await api.get('/org.openbravo.service.json.jsonrest/Order', {
     params: { _startRow: 0, _endRow: 50, ...(where && { _where: where }) },
+  })
+  return res.data?.response?.data ?? []
+}
+
+// PERBAIKAN: Menambahkan fungsi untuk mengambil Order Lines berdasarkan Order ID
+export async function fetchOrderLines(orderId) {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/OrderLine', {
+    params: {
+      _where: `e.salesOrder.id = '${orderId}'`,
+      _startRow: 0,
+      _endRow: 200,
+      _orderBy: 'e.lineNo asc',
+    },
   })
   return res.data?.response?.data ?? []
 }
@@ -223,3 +252,19 @@ export async function fetchUOMs() {
   })
   return res.data?.response?.data ?? []
 }
+
+api.interceptors.response.use(
+  (res) => {
+    const s = res.data?.response?.status
+    if (s !== undefined && s < 0) {
+      console.error('[Goods Shipment API error]', JSON.stringify(res.data?.response))
+      const msg = res.data?.response?.error?.message
+      if (msg) throw new Error(msg)
+    }
+    return res
+  },
+  (err) => {
+    console.error('[Goods Shipment HTTP error]', err.response?.status, JSON.stringify(err.response?.data))
+    return Promise.reject(err)
+  }
+)

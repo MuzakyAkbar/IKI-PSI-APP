@@ -13,7 +13,6 @@
           <button :class="['tab', activeTab==='uom'?'tab--active':'']" @click="switchTab('uom')">UOM</button>
         </div>
 
-        <!-- ══ PRODUCT TAB ══ -->
         <div v-if="activeTab==='product'">
           <div class="toolbar">
             <div class="search-wrap">
@@ -37,8 +36,12 @@
                 <col style="width:80px; min-width:80px">
               </colgroup>
               <thead><tr>
-                <th>Code</th><th>Product Name</th><th class="col-hide-md">Category</th>
-                <th class="col-hide-lg">Unit of Measure</th><th class="col-hide-sm">Type</th><th class="col-hide-md">Description</th>
+                <th class="sortable" :class="{ asc: sortCol === 'searchKey', desc: sortCol === 'searchKey' && sortDir === 'desc' }" @click="toggleSort('searchKey')">Code</th>
+                <th class="sortable" :class="{ asc: sortCol === 'name', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Product Name</th>
+                <th class="col-hide-md sortable" :class="{ asc: sortCol === 'productCategory.name', desc: sortCol === 'productCategory.name' && sortDir === 'desc' }" @click="toggleSort('productCategory.name')">Category</th>
+                <th class="col-hide-lg sortable" :class="{ asc: sortCol === 'uOM.name', desc: sortCol === 'uOM.name' && sortDir === 'desc' }" @click="toggleSort('uOM.name')">Unit of Measure</th>
+                <th class="col-hide-sm sortable" :class="{ asc: sortCol === 'productType', desc: sortCol === 'productType' && sortDir === 'desc' }" @click="toggleSort('productType')">Type</th>
+                <th class="col-hide-md">Description</th>
                 <th class="th-action">Action</th>
               </tr></thead>
               <tbody>
@@ -104,7 +107,6 @@
           </div>
         </div>
 
-        <!-- ══ CATEGORY TAB ══ -->
         <div v-if="activeTab==='category'">
           <div class="toolbar">
             <div class="search-wrap">
@@ -129,9 +131,14 @@
                 <col style="width:140px">
               </colgroup>
               <thead><tr>
-                <th>Code</th><th>Category Name</th><th>Product Revenue</th>
-                <th>Product Expense</th><th>Product COGS</th><th>Product Asset</th>
-                <th>Status</th><th class="th-action">Action</th>
+                <th class="sortable" :class="{ asc: sortCol === 'searchKey', desc: sortCol === 'searchKey' && sortDir === 'desc' }" @click="toggleSort('searchKey')">Code</th>
+                <th class="sortable" :class="{ asc: sortCol === 'name', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Category Name</th>
+                <th>Product Revenue</th>
+                <th>Product Expense</th>
+                <th>Product COGS</th>
+                <th>Product Asset</th>
+                <th class="sortable" :class="{ asc: sortCol === 'active', desc: sortCol === 'active' && sortDir === 'desc' }" @click="toggleSort('active')">Status</th>
+                <th class="th-action">Action</th>
               </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
@@ -184,7 +191,6 @@
           </div>
         </div>
 
-        <!-- ══ UOM TAB ══ -->
         <div v-if="activeTab==='uom'">
           <div class="toolbar">
             <div class="search-wrap">
@@ -204,7 +210,12 @@
                 <col style="width:110px">
                 <col style="width:140px">
               </colgroup>
-              <thead><tr><th>Code</th><th>UOM Name</th><th>Status</th><th class="th-action">Action</th></tr></thead>
+              <thead><tr>
+                <th class="sortable" :class="{ asc: sortCol === 'eDICode', desc: sortCol === 'eDICode' && sortDir === 'desc' }" @click="toggleSort('eDICode')">Code</th>
+                <th class="sortable" :class="{ asc: sortCol === 'name', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">UOM Name</th>
+                <th class="sortable" :class="{ asc: sortCol === 'active', desc: sortCol === 'active' && sortDir === 'desc' }" @click="toggleSort('active')">Status</th>
+                <th class="th-action">Action</th>
+              </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="4" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
                 <tr v-else-if="rows.length===0"><td colspan="4" class="td-empty">No UOM found.</td></tr>
@@ -252,7 +263,6 @@
       </div>
     </main>
 
-    <!-- Toast -->
     <Transition name="toast">
       <div v-if="toast.show" :class="['toast',`toast--${toast.type}`]">
         <svg v-if="toast.type==='success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -261,7 +271,6 @@
       </div>
     </Transition>
 
-    <!-- VIEW MODAL -->
     <Transition name="fade">
       <div v-if="viewModal" class="modal-overlay" @click.self="viewModal=null">
         <div class="modal">
@@ -289,7 +298,6 @@
       </div>
     </Transition>
 
-    <!-- CATEGORY VIEW MODAL -->
     <Transition name="fade">
       <div v-if="viewCatModal" class="modal-overlay" @click.self="viewCatModal=null">
         <div class="modal modal--wide">
@@ -325,7 +333,6 @@
       </div>
     </Transition>
 
-    <!-- CREATE / EDIT MODAL -->
     <Transition name="fade">
       <div v-if="formModal.show" class="modal-overlay" @click.self="closeFormModal">
         <div class="modal modal--wide">
@@ -344,7 +351,6 @@
           </div>
           <div class="modal-body">
 
-            <!-- PRODUCT FORM -->
             <template v-if="formModal.type==='product'">
               <div class="form-grid-2">
                 <div class="form-group">
@@ -391,7 +397,6 @@
               </div>
             </template>
 
-            <!-- CATEGORY FORM -->
             <template v-else-if="formModal.type==='category'">
               <div class="form-grid-2">
                 <div class="form-group">
@@ -486,7 +491,6 @@
               </div>
             </template>
 
-            <!-- UOM FORM -->
             <template v-else-if="formModal.type==='uom'">
               <div class="form-grid-2">
                 <div class="form-group">
@@ -521,7 +525,6 @@
       </div>
     </Transition>
 
-    <!-- DEACTIVATE CONFIRM -->
     <Transition name="fade">
       <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show=false">
         <div class="modal modal--sm">
@@ -587,6 +590,21 @@ const openDropdown = ref(null)
 const dropdownPos = ref({ top: 0, right: 0 })
 let searchTimeout = null
 
+// ── Sorting state
+const sortCol = ref('name')
+const sortDir = ref('asc')
+
+function toggleSort(col) {
+  if (sortCol.value === col) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortCol.value = col
+    sortDir.value = 'asc' 
+  }
+  currentPage.value = 1 
+  load()
+}
+
 const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize)))
 const lookups = reactive({ categories: [], uoms: [], taxCategories: [], accounts: [] })
 
@@ -619,10 +637,8 @@ async function loadLookups() {
     lookups.categories = cats
     lookups.uoms = uoms
     lookups.taxCategories = taxes
-    // Ambil tax category pertama sebagai default
     if (taxes.length > 0) {
       defaultTaxCategoryId.value = taxes[0].id
-      console.log('[Tax Categories]', taxes.map(t => `${t.name}: ${t.id}`))
     }
   } catch (e) { console.warn('Lookup failed', e) }
 }
@@ -634,6 +650,16 @@ async function loadAccountsLookup() {
   } catch (e) { console.warn('Accounts lookup failed', e) }
 }
 
+// ── switch tab
+function switchTab(tab) {
+  activeTab.value = tab
+  currentPage.value = 1
+  searchQuery.value = ''
+  sortCol.value = 'name' 
+  sortDir.value = 'asc'
+  load()
+}
+
 // ── Load
 async function load() {
   loading.value = true
@@ -641,13 +667,18 @@ async function load() {
   const startRow = (currentPage.value - 1) * pageSize
   try {
     let res
-    if (activeTab.value === 'product') res = await fetchAllProducts({ startRow, pageSize, searchKey: searchQuery.value })
-    else if (activeTab.value === 'category') res = await fetchCategoriesPage({ startRow, pageSize, searchKey: searchQuery.value })
-    else res = await fetchUOMsPage({ startRow, pageSize, searchKey: searchQuery.value })
+    if (activeTab.value === 'product') {
+      res = await fetchAllProducts({ startRow, pageSize, searchKey: searchQuery.value, sortCol: sortCol.value, sortDir: sortDir.value })
+    } else if (activeTab.value === 'category') {
+      res = await fetchCategoriesPage({ startRow, pageSize, searchKey: searchQuery.value, sortCol: sortCol.value, sortDir: sortDir.value })
+    } else {
+      res = await fetchUOMsPage({ startRow, pageSize, searchKey: searchQuery.value, sortCol: sortCol.value, sortDir: sortDir.value })
+    }
+    
     rows.value = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : [])
     totalRows.value = res.totalRows ?? rows.value.length
 
-    // Enrich category rows with account data from ProductCategoryAccounts
+    // Enrich category rows with account data
     if (activeTab.value === 'category' && rows.value.length > 0) {
       const enriched = await Promise.all(rows.value.map(async (row) => {
         try {
@@ -674,7 +705,6 @@ async function load() {
   }
 }
 
-function switchTab(tab) { activeTab.value = tab; currentPage.value = 1; searchQuery.value = ''; load() }
 function onSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage.value = 1; load() }, 400) }
 function goPage(p) { if (p < 1 || p > totalPages.value) return; currentPage.value = p; load() }
 function toggleDropdown(id, event) {
@@ -708,14 +738,13 @@ const formLoading = ref(false)
 const formError = ref(null)
 const formErrors = reactive({})
 
-const formModalTitle = computed(() => ({ product: 'Product', category: 'Category Product', uom: 'Category Product' })[formModal.type] || 'Product')
+const formModalTitle = computed(() => ({ product: 'Product', category: 'Category Product', uom: 'Unit of Measure' })[formModal.type] || 'Product')
 
 const defaultForm = () => ({
   searchKey: '', name: '', description: '', active: true,
   productType: 'I', productCategory: '', uOM: '', taxCategory: '',
   purchase: true, sale: true, stocked: true,
   value: '', uOMSymbol: '',
-  // category accounts
   productRevenue: '', productExpense: '', productCOGS: '', fixedAsset: '',
 })
 
@@ -750,7 +779,6 @@ async function openEditModal(type, r) {
   formModal.id = r.id
   formModal.show = true
 
-  // Load accounts if category
   if (type === 'category') {
     await loadAccountsLookup()
     try {
@@ -795,7 +823,6 @@ async function submitForm() {
   formError.value = null
   try {
     if (formModal.type === 'product') {
-      // Auto-generate searchKey from name if creating new
       const autoKey = form.name.trim().toUpperCase().replace(/\s+/g, '-').substring(0, 40) + '-' + Date.now().toString().slice(-4)
       const payload = {
         searchKey: formModal.mode === 'create' ? autoKey : form.searchKey,
@@ -832,7 +859,6 @@ async function submitForm() {
     load()
   } catch (e) {
     formError.value = e.response?.data?.response?.error?.message ?? e.message ?? 'Terjadi kesalahan.'
-    console.error('[submitForm]', e.response?.data ?? e)
   } finally {
     formLoading.value = false
   }
@@ -857,7 +883,6 @@ async function doDelete() {
     const msg = e.response?.data?.response?.error?.message ?? e.message ?? 'Gagal menonaktifkan'
     showToast(msg, 'error')
     deleteModal.show = false
-    console.error('[doDelete]', e.response?.data ?? e)
   } finally {
     deleteLoading.value = false
   }
@@ -909,34 +934,11 @@ button { box-sizing: border-box; }
 .td-meta-item { overflow: hidden; text-overflow: ellipsis; }
 .td-meta-sep { color: var(--border); }
 
-/* Responsive column visibility */
-/* ≤ 1024px: hide Description + UOM columns */
-@media (max-width: 1024px) {
-  .col-hide-lg { display: none; }
-  .col-show-lg { display: inline; }
-  .td-mobile-meta { display: block; }
-}
-@media (min-width: 1025px) {
-  .col-show-lg { display: none; }
-}
-
-/* ≤ 768px: also hide Category + Description */
-@media (max-width: 768px) {
-  .col-hide-md { display: none; }
-  .col-show-md { display: inline; }
-  .td-mobile-meta { display: block; }
-}
-@media (min-width: 769px) {
-  .col-show-md { display: none; }
-}
-
-/* ≤ 480px: hide Type too */
-@media (max-width: 480px) {
-  .col-hide-sm { display: none; }
-  .table td, .table th { padding: 10px 12px; }
-  .toolbar { flex-wrap: wrap; }
-  .search-wrap { max-width: 100%; width: 100%; }
-}
+@media (max-width: 1024px) { .col-hide-lg { display: none; } .col-show-lg { display: inline; } .td-mobile-meta { display: block; } }
+@media (min-width: 1025px) { .col-show-lg { display: none; } }
+@media (max-width: 768px) { .col-hide-md { display: none; } .col-show-md { display: inline; } .td-mobile-meta { display: block; } }
+@media (min-width: 769px) { .col-show-md { display: none; } }
+@media (max-width: 480px) { .col-hide-sm { display: none; } .table td, .table th { padding: 10px 12px; } .toolbar { flex-wrap: wrap; } .search-wrap { max-width: 100%; width: 100%; } }
 .td-secondary { color: var(--text-secondary); font-size: 13px; }
 .td-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1022,4 +1024,13 @@ button { box-sizing: border-box; }
 .acc-opt:hover { background: var(--accent-light); }
 .acc-opt--active { background: var(--accent-light); font-weight: 600; color: var(--accent); }
 .acc-empty { padding: 8px 12px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
+
+/* ── Sorting Headers ── */
+.sortable { cursor: pointer; user-select: none; position: relative; padding-right: 20px !important; transition: color 0.15s; }
+.sortable:hover { color: var(--accent); }
+.sortable::after, .sortable::before { content: ''; position: absolute; right: 6px; top: 50%; border: 4px solid transparent; opacity: 0.3; }
+.sortable::before { border-bottom-color: currentColor; margin-top: -9px; }
+.sortable::after { border-top-color: currentColor; margin-top: 1px; }
+.sortable.asc::before { opacity: 1; color: var(--accent); }
+.sortable.desc::after { opacity: 1; color: var(--accent); }
 </style>

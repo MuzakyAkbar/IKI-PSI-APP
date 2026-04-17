@@ -25,19 +25,30 @@ const FACT_BASE     = '/org.openbravo.service.json.jsonrest/FinancialMgmtAccount
 // GL Journal table ID di Openbravo (GL_Journal = table id 224)
 const GL_JOURNAL_TABLE_ID = '224'
 
-export async function fetchAllJournals({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllJournals({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'documentNo', sortDir = 'desc' } = {}) {
   let where = `e.active = true`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.description) like upper('%${s}%'))`
   }
+
+  // 1. Format _sortBy (Standar DataSource Openbravo)
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'documentNo') sortBy += ',-documentNo'
+
+  // 2. Format _orderBy (Standar HQL Openbravo fallback)
+  let orderBy = `e.${sortCol} ${sortDir}`
+  if (sortCol !== 'documentNo') orderBy += `, e.documentNo desc`
+
   const res = await api.get(JOURNAL_BASE, {
     params: {
-      _startRow: startRow,
-      _endRow: startRow + pageSize,
-      _noCount: false,
-      _orderBy: 'e.creationDate desc',
-      _where: where,
+      _startRow:  startRow,
+      _endRow:    startRow + pageSize,
+      _noCount:   false,
+      _sortBy:    sortBy,   // <--- Tambahkan untuk sorting dinamis
+      _orderBy:   orderBy,  // <--- Timpa nilai statis sebelumnya
+      _where:     where,
+      _selectedProperties: 'id,documentNo,documentDate,description,documentStatus,posted,totalDebitAmount,totalCreditAmount,organization,organization$_identifier,currency,currency$_identifier',
     },
   })
   return res.data?.response ?? res.data
@@ -362,6 +373,14 @@ export async function fetchAccountingFacts(journalId) {
 // ════════════════════════════════════════════════════
 // LOOKUPS
 // ════════════════════════════════════════════════════
+
+export async function fetchCurrentUser() {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/ADUser', {
+    params: { _startRow: 0, _endRow: 1, _where: `username = '${USERNAME}'` },
+  })
+  const data = res.data?.response?.data ?? []
+  return data[0] ?? null
+}
 
 export async function fetchOrganizations() {
   const res = await api.get('/org.openbravo.service.json.jsonrest/Organization', {

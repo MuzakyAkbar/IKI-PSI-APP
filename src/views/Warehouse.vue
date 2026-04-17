@@ -22,22 +22,22 @@
           <table class="table">
             <colgroup>
               <col style="width:160px">
-              <col style="width:24%">
-              <col style="width:18%">
-              <col style="width:18%">
+              <col style="width:30%">
               <col>
               <col style="width:100px">
               <col style="width:140px">
             </colgroup>
             <thead><tr>
-              <th>Warehouse Code</th><th>Warehouse Name</th><th>PIC Name</th>
-              <th>Phone</th><th>Location/Address</th><th>Status</th>
+              <th>Warehouse Code</th>
+              <th>Warehouse Name</th>
+              <th>Location/Address</th>
+              <th>Status</th>
               <th class="th-action">Action</th>
             </tr></thead>
             <tbody>
-              <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
-              <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">No warehouses found.</td></tr>
+              <tr v-if="loading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
+              <tr v-else-if="error"><td colspan="5" class="td-empty td-error">{{ error }}</td></tr>
+              <tr v-else-if="rows.length===0"><td colspan="5" class="td-empty">No warehouses found.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.searchKey || r.id?.slice(0,8) || '—' }}</span></td>
@@ -45,8 +45,6 @@
                     <span class="td-name-text">{{ r.name }}</span>
                     <span :class="['status-dot', r.active?'status-dot--active':'status-dot--inactive']"></span>
                   </td>
-                  <td class="td-secondary td-clip">{{ r.picName || '—' }}</td>
-                  <td class="td-secondary td-clip">{{ r.phone || '—' }}</td>
                   <td class="td-secondary td-clip">{{ r['locationAddress$_identifier'] || '—' }}</td>
                   <td><span :class="['status-pill', r.active?'status-pill--active':'status-pill--inactive']">{{ r.active?'Active':'Inactive' }}</span></td>
                   <td class="td-action-cell">
@@ -91,7 +89,6 @@
       </div>
     </main>
 
-    <!-- ══ VIEW MODAL ══ -->
     <transition name="fade">
       <div v-if="viewModal" class="modal-overlay" @click.self="viewModal=null">
         <div class="modal modal--wide">
@@ -117,14 +114,6 @@
               <div class="detail-item">
                 <div class="detail-label">Warehouse Name</div>
                 <div class="detail-value">{{ viewModal.name }}</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">PIC Name</div>
-                <div class="detail-value">{{ viewModal.picName || '—' }}</div>
-              </div>
-              <div class="detail-item">
-                <div class="detail-label">Phone</div>
-                <div class="detail-value">{{ viewModal.phone || '—' }}</div>
               </div>
               <div class="detail-item" style="grid-column:1/-1">
                 <div class="detail-label">Location/Address</div>
@@ -174,7 +163,6 @@
       </div>
     </transition>
 
-    <!-- ══ FORM MODAL ══ -->
     <transition name="fade">
       <div v-if="formModal.show" class="modal-overlay" @click.self="closeFormModal">
         <div class="modal modal--wide">
@@ -193,28 +181,44 @@
           </div>
           <div class="modal-body">
             <div class="form-grid-2">
-              <div class="form-group" style="grid-column:1/-1">
+              <div class="form-group">
                 <label>Warehouse Name <span class="req">*</span></label>
                 <input v-model="form.name" placeholder="Warehouse Name" :class="{'input-error':formErrors.name}" />
                 <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
               </div>
               <div class="form-group">
-                <label>PIC Name</label>
-                <input v-model="form.picName" placeholder="PIC Name" />
-              </div>
-              <div class="form-group">
-                <label>Phone</label>
-                <input v-model="form.phone" placeholder="Phone" />
-              </div>
-              <div class="form-group" style="grid-column:1/-1">
-                <label>Location/Address</label>
-                <input v-model="form.locationAddress" placeholder="Location/Address" />
-              </div>
-              <div class="form-group" style="grid-column:1/-1">
                 <label>Description</label>
                 <input v-model="form.description" placeholder="Description" />
               </div>
+              
+              <div class="form-group" style="grid-column:1/-1; margin-top: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
+                <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display:flex; align-items:center; gap:5px">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  Location / Address
+                </label>
+              </div>
+              <div class="form-group">
+                <label>Province</label>
+                <input v-model="form.province" placeholder="Province" />
+              </div>
+              <div class="form-group">
+                <label>City</label>
+                <input v-model="form.city" placeholder="City" />
+              </div>
+              <div class="form-group">
+                <label>Street Address</label>
+                <input v-model="form.streetAddress" placeholder="Street Address" />
+              </div>
+              <div class="form-group">
+                <label>Postal Code</label>
+                <input v-model="form.postalCode" placeholder="Postal Code" />
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label>Other Details</label>
+                <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
+              </div>
             </div>
+
             <div class="form-checks">
               <label class="check-label"><input type="checkbox" v-model="form.active" />Active</label>
             </div>
@@ -234,7 +238,6 @@
       </div>
     </transition>
 
-    <!-- ══ DELETE CONFIRM MODAL ══ -->
     <transition name="fade">
       <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show=false">
         <div class="modal modal--sm">
@@ -259,7 +262,6 @@
       </div>
     </transition>
 
-    <!-- ══ TOAST ══ -->
     <transition name="toast">
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -275,7 +277,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { fetchWarehousesPage, createWarehouse, updateWarehouse, deleteWarehouse, fetchStorageBinsPage } from '@/services/warehouse.js'
+import { fetchWarehousesPage, createWarehouse, updateWarehouse, deleteWarehouse, fetchStorageBinsPage, createLocation, updateLocation } from '@/services/warehouse.js'
 
 const vClickOutside = {
   mounted(el, binding) { el._co = (e) => { if (!el.contains(e.target)) binding.value(e) }; document.addEventListener('click', el._co) },
@@ -350,32 +352,83 @@ const formModal = reactive({ show: false, mode: 'create', id: null })
 const formLoading = ref(false)
 const formError = ref(null)
 const formErrors = reactive({})
-const defaultForm = () => ({ name: '', description: '', picName: '', phone: '', locationAddress: '', active: true })
+
+const defaultForm = () => ({ 
+  name: '', description: '', active: true,
+  streetAddress: '', city: '', province: '', postalCode: '', otherDetails: '', locationId: null
+})
 const form = reactive(defaultForm())
 
 function openCreateModal() {
   Object.assign(form, defaultForm()); Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; formModal.mode = 'create'; formModal.id = null; formModal.show = true
 }
+
 function openEditModal(r) {
   openDropdown.value = null
-  Object.assign(form, { name: r.name ?? '', description: r.description ?? '', picName: r.picName ?? '', phone: r.phone ?? '', locationAddress: r.locationAddress ?? '', active: r.active ?? true })
+  const ident = r['locationAddress$_identifier'] || ''
+  const parts = ident.split(' - ')
+  
+  Object.assign(form, { 
+    name: r.name ?? '', 
+    description: r.description ?? '', 
+    active: r.active ?? true,
+    streetAddress: parts[0] && parts[0].trim() !== 'null' ? parts[0].trim() : '',
+    otherDetails: parts[1] && parts[1].trim() !== 'null' ? parts[1].trim() : '',
+    postalCode: parts[2] && parts[2].trim() !== 'null' ? parts[2].trim() : '',
+    city: parts[3] && parts[3].trim() !== 'null' ? parts[3].trim() : (parts[0]?.trim() || ''),
+    locationId: r.locationAddress?.id || r.locationAddress || null
+  })
+  
   Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; formModal.mode = 'edit'; formModal.id = r.id; formModal.show = true
 }
+
 function closeFormModal() { if (formLoading.value) return; formModal.show = false }
+
 function validateForm() {
   Object.keys(formErrors).forEach(k => delete formErrors[k])
   if (!form.name.trim()) formErrors.name = 'Warehouse Name is required'
   return Object.keys(formErrors).length === 0
 }
+
 async function submitForm() {
   if (!validateForm()) return
   formLoading.value = true; formError.value = null
   try {
-    const payload = { name: form.name.trim(), description: form.description.trim() || null, picName: form.picName.trim() || null, phone: form.phone.trim() || null, locationAddress: form.locationAddress.trim() || null, active: form.active }
-    if (formModal.mode === 'create') await createWarehouse(payload)
-    else await updateWarehouse(formModal.id, payload)
+    let finalLocationId = form.locationId
+
+    // Handle Location Record Create/Update First
+    if (form.streetAddress || form.city || form.province || form.postalCode) {
+      const locPayload = {
+        addressLine1: form.streetAddress || '-',
+        addressLine2: form.otherDetails || null,
+        cityName: form.city || '-',
+        postalCode: form.postalCode || null,
+        country: '209'
+      }
+
+      if (form.locationId) {
+        await updateLocation(form.locationId, locPayload)
+      } else {
+        const newLoc = await createLocation(locPayload)
+        finalLocationId = newLoc.id
+      }
+    }
+
+    const payload = { 
+      name: form.name.trim(), 
+      description: form.description.trim() || null, 
+      active: form.active,
+      ...(finalLocationId && { locationAddress: { id: finalLocationId } })
+    }
+    
+    if (formModal.mode === 'create') {
+      await createWarehouse(payload)
+    } else {
+      await updateWarehouse(formModal.id, payload)
+    }
+    
     formModal.show = false
     showToast(formModal.mode === 'create' ? 'Warehouse created successfully!' : 'Warehouse updated successfully!')
     load()

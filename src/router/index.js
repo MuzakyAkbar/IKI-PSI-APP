@@ -22,6 +22,8 @@ import FinancialAccountView from '@/views/FinancialAccount.vue'
 import TaxRateView from '@/views/TaxRate.vue'
 import PaymentTermView from '@/views/PaymentTerm.vue'
 import BusinessPartnerCategoryView from '@/views/BusinessPartnerCategory.vue'
+import BudgetView from '@/views/Budget.vue'
+import PurchaseRequisitionView from '@/views/PurchaseRequisition.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -48,6 +50,8 @@ const routes = [
   { path: '/tax-rate', component: TaxRateView },
   { path: '/payment-term', component: PaymentTermView },
   { path: '/bp-category', component: BusinessPartnerCategoryView },
+  { path: '/budget', component: BudgetView },
+  { path: '/purchase-requisition', component: PurchaseRequisitionView },
 ]
 
 const router = createRouter({

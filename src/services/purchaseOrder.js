@@ -45,36 +45,35 @@ export const PURCHASE_ORDER_DOCTYPE_ID = '53F55A814CA045AE9561B7E247FF9569'
 // ════════════════════════════════════════════════════
 const ORDER_BASE = '/org.openbravo.service.json.jsonrest/Order'
 
-export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllOrders({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'documentNo', sortDir = 'desc' } = {}) {
   let where = `e.salesTransaction = false and e.transactionDocument.id = '${PURCHASE_ORDER_DOCTYPE_ID}'`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`
   }
+
+  // 1. Format _sortBy (Standar DataSource Openbravo)
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'documentNo') sortBy += ',-documentNo'
+
+  // 2. Format _orderBy (Standar HQL Openbravo fallback)
+  let orderBy = `e.${sortCol} ${sortDir}`
+  if (sortCol !== 'documentNo') orderBy += `, e.documentNo desc`
+
   const res = await api.get(ORDER_BASE, {
     params: {
       _startRow:  startRow,
       _endRow:    startRow + pageSize,
       _noCount:   false,
-      _orderBy:   'e.documentNo asc',
+      _sortBy:    sortBy,   // <--- Tambahkan _sortBy
+      _orderBy:   orderBy,  // <--- Fallback query HQL
       _where:     where,
       _selectedProperties: 'id,documentNo,orderDate,scheduledDeliveryDate,businessPartner,businessPartner$_identifier,documentStatus,grandTotalAmount,summedLineAmount,transactionDocument,transactionDocument$_identifier,organization,organization$_identifier,processed,posted',
     },
   })
-  const response = res.data?.response ?? res.data
-  if (Array.isArray(response?.data)) {
-    response.data = response.data.slice().sort((a, b) => {
-      const nA = parseInt(a.documentNo, 10)
-      const nB = parseInt(b.documentNo, 10)
-      const aIsNum = !isNaN(nA)
-      const bIsNum = !isNaN(nB)
-      if (aIsNum && bIsNum) return nA - nB
-      if (aIsNum && !bIsNum) return -1
-      if (!aIsNum && bIsNum) return 1
-      return (a.documentNo || '').localeCompare(b.documentNo || '')
-    })
-  }
-  return response
+  
+  // NOTE: Sorting manual secara client-side dihapus agar API dinamis bisa berjalan
+  return res.data?.response ?? res.data
 }
 
 export async function fetchOrder(id) {
@@ -567,6 +566,17 @@ function addDays(dateStr, days) {
 // ════════════════════════════════════════════════════
 // LOOKUPS
 // ════════════════════════════════════════════════════
+
+export async function fetchCurrentUserProfile() {
+  const res = await api.get('/org.openbravo.service.json.jsonrest/ADUser', {
+    params: {
+      _where: `e.username = '${USERNAME}'`,
+      _startRow: 0,
+      _endRow: 1
+    }
+  })
+  return res.data?.response?.data?.[0] || null
+}
 
 export async function fetchVendors(search = '') {
   let where = `e.vendor = true and e.active = true`

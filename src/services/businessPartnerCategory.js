@@ -426,5 +426,5 @@ api.interceptors.response.use(
   (err) => {
     console.error('[Openbravo HTTP error]', err.response?.status, JSON.stringify(err.response?.data))
     return Promise.reject(err)
-  },
+  },    
 )

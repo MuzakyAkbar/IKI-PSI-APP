@@ -13,6 +13,55 @@ const api = axios.create({
   },
 })
 
+// Gunakan ORG_ID yang sama untuk pembuatan entitas dasar
+const ORG_ID = 'B3FE20F490CF49989D7250C0D3341603'
+
+// ════════════════════════════════════════════════════
+// LOCATION (Master Data)
+// ════════════════════════════════════════════════════
+const LOC_MASTER_BASE = '/org.openbravo.service.json.jsonrest/Location'
+
+export async function createLocation(data) {
+  const payload = {
+    data: {
+      _entityName: 'Location',
+      organization: ORG_ID,
+      active: true,
+      addressLine1: data.addressLine1,
+      addressLine2: data.addressLine2 || null,
+      cityName: data.cityName,
+      postalCode: data.postalCode || null,
+      country: data.country || '209',
+      region: null,
+    },
+  }
+  const res = await api.post(LOC_MASTER_BASE, payload)
+  const raw = res.data?.response?.data
+  const result = Array.isArray(raw) ? raw[0] : raw
+  if (!result?.id) throw new Error('Failed to create location: no ID returned from server.')
+  return result
+}
+
+export async function updateLocation(id, data) {
+  const payload = {
+    data: {
+      id,
+      _entityName: 'Location',
+      organization: ORG_ID,
+      addressLine1: data.addressLine1,
+      addressLine2: data.addressLine2 || null,
+      cityName: data.cityName,
+      postalCode: data.postalCode || null,
+      country: data.country || '209',
+      region: null,
+    },
+  }
+  const res = await api.put(`${LOC_MASTER_BASE}/${id}`, payload)
+  const raw = res.data?.response?.data
+  if (Array.isArray(raw)) return raw[0]
+  return raw ?? res.data
+}
+
 // ════════════════════════════════════════════════════
 // WAREHOUSE
 // ════════════════════════════════════════════════════

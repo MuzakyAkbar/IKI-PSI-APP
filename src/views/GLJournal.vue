@@ -7,7 +7,6 @@
           <h2 class="page-title">G/L Journal</h2>
         </div>
 
-        <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -19,17 +18,16 @@
           </button>
         </div>
 
-        <!-- ══ TABLE ══ -->
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>Journal No.</th>
-              <th>Doc. Date</th>
-              <th>Description</th>
-              <th>Status</th>
-              <th>Posted</th>
-              <th>Total Debit</th>
-              <th>Total Credit</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">Journal No.</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentDate', desc: sortCol === 'documentDate' && sortDir === 'desc' }" @click="toggleSort('documentDate')">Doc. Date</th>
+              <th class="sortable" :class="{ asc: sortCol === 'description', desc: sortCol === 'description' && sortDir === 'desc' }" @click="toggleSort('description')">Description</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentStatus', desc: sortCol === 'documentStatus' && sortDir === 'desc' }" @click="toggleSort('documentStatus')">Status</th>
+              <th class="sortable" :class="{ asc: sortCol === 'posted', desc: sortCol === 'posted' && sortDir === 'desc' }" @click="toggleSort('posted')">Posted</th>
+              <th class="sortable" :class="{ asc: sortCol === 'totalDebitAmount', desc: sortCol === 'totalDebitAmount' && sortDir === 'desc' }" @click="toggleSort('totalDebitAmount')">Total Debit</th>
+              <th class="sortable" :class="{ asc: sortCol === 'totalCreditAmount', desc: sortCol === 'totalCreditAmount' && sortDir === 'desc' }" @click="toggleSort('totalCreditAmount')">Total Credit</th>
               <th class="th-action">Action</th>
             </tr></thead>
             <tbody>
@@ -75,7 +73,6 @@
           </table>
         </div>
 
-        <!-- ══ PAGINATION ══ -->
         <div v-if="totalPages > 1" class="pagination">
           <button class="page-btn" :disabled="currentPage===1" @click="goPage(currentPage-1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -92,9 +89,6 @@
       </div>
     </main>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- CREATE / EDIT MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showFormModal" class="modal-overlay" @mousedown.self="closeFormModal">
         <div class="modal modal--xl">
@@ -119,10 +113,7 @@
 
               <div class="form-group">
                 <label>Organization <span class="req">*</span></label>
-                <select v-model="form.organization" class="form-input">
-                  <option value="">Select</option>
-                  <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
-                </select>
+                <input :value="form.organization_name" class="form-input" disabled />
               </div>
 
               <div class="form-group">
@@ -196,7 +187,6 @@
 
             </div>
 
-            <!-- Lines -->
             <div class="section-divider">
               Journal Lines
               <button class="btn-add-line" @click="addLine">
@@ -296,9 +286,6 @@
       </div>
     </transition>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- VIEW MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showViewModal" class="modal-overlay" @mousedown.self="showViewModal=false">
         <div class="modal modal--xl">
@@ -329,7 +316,6 @@
 
           <div class="modal-body" v-if="viewRow">
 
-            <!-- Detail Tab -->
             <div v-if="viewTab==='detail'">
               <div class="detail-grid" style="margin-bottom:16px">
                 <div class="detail-item"><span class="detail-label">Journal No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
@@ -361,7 +347,6 @@
                       <td style="text-align:right" class="acc-debit">{{ l.debit > 0 ? formatCurrency(l.debit) : '—' }}</td>
                       <td style="text-align:right" class="acc-credit">{{ l.credit > 0 ? formatCurrency(l.credit) : '—' }}</td>
                     </tr>
-                    <!-- totals row -->
                     <tr v-if="viewLines.length > 0" class="acc-totals-row">
                       <td colspan="3" style="text-align:right;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em">Total</td>
                       <td style="text-align:right" class="acc-debit">{{ formatCurrency(viewLines.reduce((s,l)=>s+(l.debit||0),0)) }}</td>
@@ -372,7 +357,6 @@
               </div>
             </div>
 
-            <!-- Accounting Tab -->
             <div v-if="viewTab==='accounting'">
               <div v-if="accountingLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else-if="accountingError" class="form-api-error" style="margin-top:0">
@@ -384,7 +368,6 @@
                 No accounting entries. Post the journal to generate entries.
               </div>
               <div v-else>
-                <!-- Summary -->
                 <div class="acc-summary-grid">
                   <div class="acc-summary-item">
                     <span class="acc-summary-label">Total Debit</span>
@@ -434,11 +417,9 @@
             </div>
           </div>
 
-          <!-- ── Footer buttons mengikuti pola CustomerInvoice ── -->
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="showViewModal=false">Close</button>
 
-            <!-- DR: Edit + Complete -->
             <template v-if="viewRow?.documentStatus==='DR'">
               <button class="btn btn--edit" @click="openEditFromView">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -451,7 +432,6 @@
               </button>
             </template>
 
-            <!-- CO + belum posted: Post -->
             <template v-else-if="viewRow?.documentStatus==='CO' && !viewIsPosted">
               <button class="btn btn--post" :disabled="posting" @click="doPostAccounting">
                 <span v-if="posting" class="spinner"></span>
@@ -460,7 +440,6 @@
               </button>
             </template>
 
-            <!-- CO + posted: Unpost -->
             <template v-else-if="viewRow?.documentStatus==='CO' && viewIsPosted">
               <button class="btn btn--unpost" :disabled="unposting" @click="doUnpostAccounting">
                 <span v-if="unposting" class="spinner"></span>
@@ -473,7 +452,6 @@
       </div>
     </transition>
 
-    <!-- ══ DELETE MODAL ══ -->
     <transition name="fade">
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal=false">
         <div class="modal modal--sm">
@@ -498,7 +476,6 @@
       </div>
     </transition>
 
-    <!-- ══ TOAST ══ -->
     <transition name="fade">
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -519,7 +496,7 @@ import {
   runJournalComplete, postAccountingProcess, unpostAccountingProcess,
   fetchJournalLines, createJournalLine, updateJournalLine, deleteJournalLine,
   fetchAccountingFacts,
-  fetchOrganizations, fetchAccountingSchemas, fetchGLCategories,
+  fetchCurrentUser, fetchAccountingSchemas, fetchGLCategories,
   fetchDocumentTypes, fetchPeriodByDate,
   fetchCurrencies, fetchAccountingCombinations,
 } from '@/services/glJournal.js'
@@ -544,12 +521,26 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageS
 const searchQuery = ref('')
 let searchTimer = null
 
+const sortCol = ref('documentNo')
+const sortDir = ref('desc')
+
+function toggleSort(col) {
+  if (sortCol.value === col) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortCol.value = col
+    sortDir.value = 'desc'
+  }
+  currentPage.value = 1 
+  loadJournals()
+}
+
 // ── dropdown
 const openDropdown = ref(null)
 const dropdownPos = ref({ top: 0, right: 0 })
 
 // ── lookups
-const organizations = ref([])
+const defaultUserOrg = ref({ id: '', name: '' })
 const accountingSchemas = ref([])
 const glCategories = ref([])
 const documentTypes = ref([])
@@ -591,7 +582,10 @@ function selectCurrency(c) { form.value.currency = c.id; currencySearch.value = 
 function onCurrencyBlur() { setTimeout(() => { showCurrencyDrop.value = false }, 150) }
 
 const emptyForm = () => ({
-  documentNo: '', organization: '', accountingSchema: '',
+  documentNo: '', 
+  organization: defaultUserOrg.value.id,
+  organization_name: defaultUserOrg.value.name, 
+  accountingSchema: '',
   documentType: '', documentDate: today(), accountingDate: today(),
   period: '', gLCategory: '', currency: '303', postingType: 'A',
   controlAmount: 0, description: '',
@@ -690,7 +684,13 @@ async function resolvePeriod(dateStr) {
 async function loadJournals() {
   loading.value = true; error.value = ''
   try {
-    const data = await fetchAllJournals({ startRow: (currentPage.value - 1) * pageSize, pageSize, searchKey: searchQuery.value })
+    const data = await fetchAllJournals({ 
+      startRow: (currentPage.value - 1) * pageSize, 
+      pageSize, 
+      searchKey: searchQuery.value,
+      sortCol: sortCol.value, // <--- Kirim kolom sort
+      sortDir: sortDir.value  // <--- Kirim arah sort
+    })
     rows.value = data.data ?? []
     totalCount.value = data.totalRows ?? rows.value.length
   } catch (e) {
@@ -710,11 +710,18 @@ function closeDropdown() { openDropdown.value = null }
 
 // ── load lookups
 async function loadLookups() {
-  const [org, schema, cat, dt, cur] = await Promise.allSettled([
-    fetchOrganizations(), fetchAccountingSchemas(), fetchGLCategories(),
+  const [user, schema, cat, dt, cur] = await Promise.allSettled([
+    fetchCurrentUser(), fetchAccountingSchemas(), fetchGLCategories(),
     fetchDocumentTypes(), fetchCurrencies('IDR'),
   ])
-  organizations.value = org.value ?? []
+  
+  if (user.value) {
+    defaultUserOrg.value = {
+      id: user.value.organization || '',
+      name: user.value['organization$_identifier'] || ''
+    }
+  }
+
   accountingSchemas.value = schema.value ?? []
   glCategories.value = cat.value ?? []
   documentTypes.value = dt.value ?? []
@@ -729,7 +736,7 @@ function applyDefaults() {
   if (glDT) { form.value.documentType = glDT.id; docTypeSearch.value = glDT.name }
   const stdCat = glCategories.value.find(c => c.name?.toLowerCase() === 'standard')
   if (stdCat) form.value.gLCategory = stdCat.id
-  if (organizations.value.length === 1) form.value.organization = organizations.value[0].id
+
   if (accountingSchemas.value.length === 1) form.value.accountingSchema = accountingSchemas.value[0].id
 }
 
@@ -786,6 +793,7 @@ async function openEditModal(r) {
   form.value = {
     documentNo: r.documentNo || '',
     organization: extractId(r.organization),
+    organization_name: r['organization$_identifier'] || defaultUserOrg.value.name,
     accountingSchema: extractId(r.accountingSchema),
     documentType: extractId(r.documentType),
     documentDate: r.documentDate?.slice(0, 10) || today(),
@@ -1189,4 +1197,40 @@ onMounted(async () => {
 /* Spinner */
 .spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sorting Headers ── */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 20px !important; 
+  transition: color 0.15s;
+}
+.sortable:hover {
+  color: var(--text-primary);
+}
+.sortable::after, .sortable::before {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  border: 4px solid transparent;
+  opacity: 0.3;
+}
+.sortable::before {
+  border-bottom-color: currentColor;
+  margin-top: -9px;
+}
+.sortable::after {
+  border-top-color: currentColor;
+  margin-top: 1px;
+}
+.sortable.asc::before {
+  opacity: 1; 
+  color: var(--accent);
+}
+.sortable.desc::after {
+  opacity: 1; 
+  color: var(--accent);
+}
 </style>

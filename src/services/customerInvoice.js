@@ -63,24 +63,34 @@ export const ADJUSTMENT_UOM_ID      = '100'                               // Uni
 // ════════════════════════════════════════════════════
 const INV_BASE = '/org.openbravo.service.json.jsonrest/Invoice'
 
-export async function fetchAllInvoices({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllInvoices({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'invoiceDate', sortDir = 'desc' } = {}) {
   let where = `e.salesTransaction = true and e.documentType.id = '${AR_INVOICE_DOCTYPE_ID}'`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`
   }
+
+  // 1. Format _sortBy (Standar DataSource Openbravo: "invoiceDate" atau "-invoiceDate")
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'documentNo') sortBy += ',-documentNo'
+
+  // 2. Format _orderBy (Standar HQL Openbravo: "e.invoiceDate desc")
+  let orderBy = `e.${sortCol} ${sortDir}`
+  if (sortCol !== 'documentNo') orderBy += `, e.documentNo desc`
+
   const res = await api.get(INV_BASE, {
     params: {
       _startRow:  startRow,
       _endRow:    startRow + pageSize,
       _noCount:   false,
-      _orderBy:   'e.documentNo desc',
+      _sortBy:    sortBy,     // <--- WAJIB: Tambahkan _sortBy ini
+      _orderBy:   orderBy,    // <--- Fallback HQL
       _where:     where,
       _selectedProperties: 'id,documentNo,invoiceDate,businessPartner,businessPartner$_identifier,kodePelanggan,grandTotalAmount,summedLineAmount,documentStatus,posted,paymentComplete,organization,organization$_identifier',
     },
   })
+  
   const result = res.data?.response ?? res.data
-  console.log('[DEBUG] startRow:', startRow, '| totalRows:', result.totalRows, '| data.length:', result.data?.length, '| paymentComplete[0]:', result.data?.[0]?.paymentComplete)
   return result
 }
 

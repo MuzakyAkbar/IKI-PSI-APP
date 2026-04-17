@@ -37,8 +37,8 @@
                 <col style="width:140px">
               </colgroup>
               <thead><tr>
-                <th>Code</th>
-                <th>Customer Name</th>
+                <th class="sortable" :class="{ asc: sortCol==='searchKey' && sortDir==='asc', desc: sortCol==='searchKey' && sortDir==='desc' }" @click="toggleSort('searchKey')">Code</th>
+                <th class="sortable" :class="{ asc: sortCol==='name' && sortDir==='asc', desc: sortCol==='name' && sortDir==='desc' }" @click="toggleSort('name')">Customer Name</th>
                 <th>City</th>
                 <th>Phone</th>
                 <th class="th-action">Action</th>
@@ -85,7 +85,7 @@
             </table>
           </div>
 
-          <div v-if="totalPages > 1" class="pagination">
+          <div class="pagination">
             <button class="page-btn" :disabled="currentPage===1" @click="goPage(currentPage-1)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
@@ -655,9 +655,24 @@ const loading      = ref(false)
 const error        = ref(null)
 const searchQuery  = ref('')
 const currentPage  = ref(1)
-const pageSize     = 20
+const pageSize     = 10
 const totalRows    = ref(0)
 let   searchTimeout = null
+
+// ── Sorting state ─────────────────────────────────────────────
+const sortCol = ref('searchKey')
+const sortDir = ref('asc')
+
+function toggleSort(col) {
+  if (sortCol.value === col) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortCol.value = col
+    sortDir.value = 'asc'
+  }
+  currentPage.value = 1
+  load()
+}
 
 const openDropdown = ref(null)
 const dropdownPos  = ref({ top: 0, right: 0 })
@@ -697,7 +712,7 @@ const paginationPages = computed(() => {
 async function load() {
   loading.value = true; error.value = null
   try {
-    const res = await fetchCustomers({ startRow: (currentPage.value-1)*pageSize, pageSize, searchKey: searchQuery.value })
+    const res = await fetchCustomers({ startRow: (currentPage.value-1)*pageSize, pageSize, searchKey: searchQuery.value, sortCol: sortCol.value, sortDir: sortDir.value })
     const list = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : [])
     totalRows.value = res.totalRows ?? list.length
     customers.value = await enrichWithLocation(list)
@@ -1353,6 +1368,15 @@ onMounted(() => { load(); loadLookups() })
 /* ── Delete confirm ───────────────────────────────────── */
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); margin: 0; }
 .delete-text strong { color: var(--text-primary); }
+
+/* ── Sorting Headers ── */
+.sortable { cursor: pointer; user-select: none; position: relative; padding-right: 20px !important; transition: color 0.15s; }
+.sortable:hover { color: var(--text-primary); }
+.sortable::after, .sortable::before { content: ''; position: absolute; right: 6px; top: 50%; border: 4px solid transparent; opacity: 0.3; }
+.sortable::before { border-bottom-color: currentColor; margin-top: -9px; }
+.sortable::after { border-top-color: currentColor; margin-top: 1px; }
+.sortable.asc::before { opacity: 1; color: var(--accent); }
+.sortable.desc::after { opacity: 1; color: var(--accent); }
 
 /* ── Transitions ──────────────────────────────────────── */
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }

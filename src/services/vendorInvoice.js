@@ -85,19 +85,30 @@ async function buildDocumentNo(seq) {
 // ════════════════════════════════════════════════════
 const INV_BASE = '/org.openbravo.service.json.jsonrest/Invoice'
 
-export async function fetchAllInvoices({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllInvoices({ startRow = 0, pageSize = 20, searchKey = '', sortCol = 'invoiceDate', sortDir = 'desc' } = {}) {
   let where = `e.salesTransaction = false and e.documentType.id = '${AP_INVOICE_DOCTYPE_ID}'`
   if (searchKey.trim()) {
     const s = searchKey.trim().replace(/'/g, "''")
     where += ` and (upper(e.documentNo) like upper('%${s}%') or upper(e.businessPartner.name) like upper('%${s}%'))`
   }
+
+  // 1. Format _sortBy (Standar DataSource Openbravo)
+  let sortBy = (sortDir === 'desc' ? '-' : '') + sortCol
+  if (sortCol !== 'documentNo') sortBy += ',-documentNo'
+
+  // 2. Format _orderBy (Standar HQL Openbravo fallback)
+  let orderBy = `e.${sortCol} ${sortDir}`
+  if (sortCol !== 'documentNo') orderBy += `, e.documentNo desc`
+
   const res = await api.get(INV_BASE, {
     params: {
       _startRow: startRow,
       _endRow: startRow + pageSize,
       _noCount: false,
-      _orderBy: 'e.creationDate desc',
+      _sortBy: sortBy,      // <--- Parameter sort dari klik tabel
+      _orderBy: orderBy,    // <--- Fallback query
       _where: where,
+      _selectedProperties: 'id,documentNo,invoiceDate,businessPartner,businessPartner$_identifier,grandTotalAmount,summedLineAmount,documentStatus,posted,organization,organization$_identifier',
     },
   })
   return res.data?.response ?? res.data

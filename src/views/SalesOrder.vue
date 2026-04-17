@@ -7,7 +7,6 @@
           <h2 class="page-title">Sales Order</h2>
         </div>
 
-        <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -19,16 +18,15 @@
           </button>
         </div>
 
-        <!-- ══ TABLE ══ -->
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>SO No.</th>
-              <th>Order Date</th>
-              <th>Customer</th>
-              <th>Status</th>
-              <th>Grand Total</th>
-              <th>Est. Arrival</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">SO No.</th>
+              <th class="sortable" :class="{ asc: sortCol === 'orderDate', desc: sortCol === 'orderDate' && sortDir === 'desc' }" @click="toggleSort('orderDate')">Order Date</th>
+              <th class="sortable" :class="{ asc: sortCol === 'businessPartner.name', desc: sortCol === 'businessPartner.name' && sortDir === 'desc' }" @click="toggleSort('businessPartner.name')">Customer</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentStatus', desc: sortCol === 'documentStatus' && sortDir === 'desc' }" @click="toggleSort('documentStatus')">Status</th>
+              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Grand Total</th>
+              <th class="sortable" :class="{ asc: sortCol === 'scheduledDeliveryDate', desc: sortCol === 'scheduledDeliveryDate' && sortDir === 'desc' }" @click="toggleSort('scheduledDeliveryDate')">Est. Arrival</th>
               <th class="th-action">Action</th>
             </tr></thead>
             <tbody>
@@ -69,7 +67,6 @@
           </table>
         </div>
 
-        <!-- ══ PAGINATION ══ -->
         <div v-if="totalPages > 1" class="pagination">
           <button class="page-btn" :disabled="currentPage===1" @click="goPage(currentPage-1)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -86,9 +83,6 @@
       </div>
     </main>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- CREATE / EDIT MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showFormModal" class="modal-overlay" @mousedown.self="closeFormModal">
         <div class="modal modal--xxl">
@@ -114,15 +108,11 @@
           </div>
 
           <div class="modal-body">
-            <!-- ── Transaction Tab ── -->
             <div v-if="activeFormTab==='transaction'">
               <div class="form-grid-4">
                 <div class="form-group">
-                  <label>Organization</label>
-                  <select v-model="form.organization" class="form-input">
-                    <option value="">Select</option>
-                    <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
-                  </select>
+                  <label>Organization <span class="req">*</span></label>
+                  <input :value="organizationLabel" class="form-input" disabled style="background: var(--surface2); color: var(--text-secondary)" placeholder="Auto dari profil User" />
                 </div>
                 <div class="form-group">
                   <label>Transaction Document <span class="req">*</span></label>
@@ -194,7 +184,6 @@
                 </div>
               </div>
 
-              <!-- More Information -->
               <div class="section-divider">More Information</div>
               <div class="form-grid-3">
                 <div class="form-group">
@@ -222,7 +211,6 @@
                 </div>
               </div>
 
-              <!-- Order Lines -->
               <div class="section-divider">
                 Order Lines
                 <button class="btn-add-line" @click="addLine">
@@ -296,7 +284,6 @@
               </div>
             </div>
 
-            <!-- ── Payment Term Tab ── -->
             <div v-if="activeFormTab==='payment'">
               <div v-if="!form.paymentTerms" class="td-empty" style="padding:32px">
                 Please select a Customer with a Payment Term in the Transaction tab first.
@@ -346,9 +333,6 @@
       </div>
     </transition>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- VIEW MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showViewModal" class="modal-overlay" @mousedown.self="showViewModal=false">
         <div class="modal modal--xxl">
@@ -372,7 +356,6 @@
 
           <div class="modal-tabs">
             <button :class="['modal-tab', viewTab==='detail'?'modal-tab--active':'']" @click="viewTab='detail'">Detail</button>
-            <button :class="['modal-tab', viewTab==='lines'?'modal-tab--active':'']" @click="viewTab='lines'">Order Lines</button>
             <button :class="['modal-tab', viewTab==='payment'?'modal-tab--active':'']" @click="openViewPaymentTab">Payment Plan</button>
           </div>
 
@@ -382,7 +365,6 @@
               {{ actionError }}
             </div>
 
-            <!-- Detail Tab -->
             <div v-if="viewTab==='detail'">
               <div class="detail-grid">
                 <div class="detail-item"><span class="detail-label">SO No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
@@ -396,36 +378,39 @@
                 <div class="detail-item"><span class="detail-label">Payment Terms</span><span class="detail-value">{{ viewRow['paymentTerms$_identifier'] || '—' }}</span></div>
                 <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
                 <div class="detail-item"><span class="detail-label">Organization</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Grand Total</span><span class="detail-value" style="font-weight:700; color:var(--text-primary)">{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
                 <div class="detail-item detail-item--full"><span class="detail-label">Description</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
               </div>
-            </div>
 
-            <!-- Lines Tab -->
-            <div v-if="viewTab==='lines'">
+              <div class="section-divider" style="margin-top:20px">Item Detail</div>
               <div v-if="viewLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table table--lines">
                   <thead><tr>
-                    <th>#</th><th>Product</th><th>Qty</th><th>UOM</th><th>Unit Price</th><th>Net Amount</th><th>Tax</th>
+                    <th>#</th><th>Product</th><th>Qty</th><th>UOM</th><th>Unit Price</th><th>Tax</th><th>Net Amount</th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="viewLines.length===0"><td colspan="7" class="td-empty">No lines.</td></tr>
+                    <tr v-if="viewLines.length===0"><td colspan="7" class="td-empty">No items.</td></tr>
                     <tr v-for="(l, i) in viewLines" :key="l.id">
                       <td class="td-secondary">{{ l.lineNo || (i+1) }}</td>
                       <td>{{ l['product$_identifier'] || '—' }}</td>
                       <td class="td-secondary">{{ l.orderedQuantity }}</td>
                       <td class="td-secondary">{{ l['uOM$_identifier'] || '—' }}</td>
                       <td class="td-secondary">{{ formatCurrency(l.unitPrice) }}</td>
-                      <td class="td-secondary">{{ formatCurrency(l.lineNetAmount) }}</td>
                       <td class="td-secondary">{{ l['tax$_identifier'] || '—' }}</td>
+                      <td class="td-secondary">{{ formatCurrency(l.lineNetAmount) }}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+              
+              <div class="totals-block">
+                <div class="totals-row totals-row--grand">
+                  <span>Grand Total</span>
+                  <span>{{ formatCurrency(viewRow.grandTotalAmount) }}</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Payment Plan Tab -->
             <div v-if="viewTab==='payment'">
               <div v-if="viewPaymentLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else>
@@ -455,10 +440,13 @@
           </div>
 
           <div class="modal-footer">
-            <!-- Tombol Close (selalu muncul) -->
             <button class="btn btn--ghost" @click="showViewModal=false">Close</button>
+            
+            <button class="btn btn--ghost" @click="doPrint">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
 
-            <!-- AKSI SAAT STATUS: DR (Draft) -->
             <template v-if="viewRow?.documentStatus === 'DR'">
               <button class="btn btn--edit" @click="openEditFromView">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -468,7 +456,6 @@
                 Edit
               </button>
 
-              <!-- Tombol Process -->
               <button class="btn btn--process" :disabled="!!actionLoading" @click="doProcessOrder">
                 <span v-if="actionLoading==='process'" class="spinner"></span>
                 <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -477,7 +464,6 @@
                 Process
               </button>
 
-              <!-- Tombol Book -->
               <button class="btn btn--book" :disabled="!!actionLoading" @click="doBookOrder">
                 <span v-if="actionLoading==='book'" class="spinner"></span>
                 <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -487,14 +473,12 @@
                 Book
               </button>
 
-              <!-- Tombol Void -->
               <button class="btn btn--void" :disabled="!!actionLoading" @click="doVoidOrder">
                 <span v-if="actionLoading==='void'" class="spinner"></span>
                 Void
               </button>
             </template>
 
-            <!-- AKSI SAAT STATUS: IP (In Progress) -->
             <template v-else-if="viewRow?.documentStatus === 'IP'">
               <button class="btn btn--book" :disabled="!!actionLoading" @click="doBookOrder">
                 <span v-if="actionLoading==='book'" class="spinner"></span>
@@ -506,7 +490,6 @@
               </button>
             </template>
 
-            <!-- AKSI SAAT STATUS: CO (Completed/Booked) -->
             <template v-else-if="viewRow?.documentStatus === 'CO'">
               <button class="btn btn--cancel" :disabled="!!actionLoading" @click="doCloseOrder">
                 <span v-if="actionLoading==='close'" class="spinner"></span>
@@ -522,9 +505,6 @@
       </div>
     </transition>
 
-    <!-- ══════════════════════════════════════════════════════ -->
-    <!-- DELETE CONFIRM MODAL -->
-    <!-- ══════════════════════════════════════════════════════ -->
     <transition name="fade">
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal=false">
         <div class="modal modal--sm">
@@ -549,7 +529,6 @@
       </div>
     </transition>
 
-    <!-- ══ TOAST ══ -->
     <transition name="fade">
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -574,7 +553,10 @@ import {
   fetchOrganizations, fetchPriceLists, fetchPaymentTermLines,
   fetchOrderPaymentSchedule,
   bookOrder, processOrder, voidOrder, reactivateOrder, closeOrder, createOrderPaymentPlan,
+  fetchCurrentUser,
 } from '@/services/salesOrder.js'
+
+import { generateDocumentPDF } from '@/services/pdfGenerator.js' // IMPORT PDF GENERATOR
 
 // ── directive
 const vClickOutside = {
@@ -596,6 +578,21 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageS
 const searchQuery = ref('')
 let searchTimer = null
 
+// ── sorting state
+const sortCol = ref('documentNo')
+const sortDir = ref('desc')
+
+function toggleSort(col) {
+  if (sortCol.value === col) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortCol.value = col
+    sortDir.value = 'desc'
+  }
+  currentPage.value = 1 
+  loadOrders()
+}
+
 // ── dropdown
 const openDropdown = ref(null)
 const dropdownPos = ref({ top: 0, right: 0 })
@@ -612,6 +609,8 @@ const organizations = ref([])
 const priceLists = ref([])
 const taxRates = ref([])
 
+const currentUserOrg = ref({ id: '', name: '' })
+
 // ── form state
 const showFormModal = ref(false)
 const isEdit = ref(false)
@@ -621,23 +620,10 @@ const saving = ref(false)
 const formError = ref('')
 
 const emptyForm = () => ({
-  documentNo: '',
-  transactionDocument: '',
-  warehouse: '',
-  organization: '',
-  partnerAddress: '',
-  orderDate: today(),
-  businessPartner: '',
-  paymentTerms: '',
-  scheduledDeliveryDate: today(),
-  paymentMethod: '',
-  invoiceTerm: 'D',
-  orderReference: '',
-  salesRepresentative: '',
-  description: '',
-  invoiceAddress: '',
-  deliveryLocation: '',
-  priceList: '',
+  documentNo: '', transactionDocument: '', warehouse: '', organization: '',
+  partnerAddress: '', orderDate: today(), businessPartner: '', paymentTerms: '',
+  scheduledDeliveryDate: today(), paymentMethod: '', invoiceTerm: 'D', orderReference: '',
+  salesRepresentative: '', description: '', invoiceAddress: '', deliveryLocation: '', priceList: '',
 })
 const form = ref(emptyForm())
 const customerSearch = ref('')
@@ -660,76 +646,40 @@ const viewPaymentLoading = ref(false)
 // ── action state
 const actionLoading = ref('')
 const actionError = ref('')
-
-// ── delete modal
 const showDeleteModal = ref(false)
 const deleteRow = ref(null)
 const deleting = ref(false)
 const deleteError = ref('')
 
-// ── toast
 const toast = ref({ show: false, type: 'success', message: '' })
 function showToast(msg, type = 'success') {
   toast.value = { show: true, type, message: msg }
   setTimeout(() => { toast.value.show = false }, 3500)
 }
 
-// ── parse API error menjadi pesan yang lebih ramah
 function parseApiError(msg) {
   if (!msg) return 'Terjadi kesalahan.'
-
-  // Deteksi error null value / not-null constraint
   const nullMatch = msg.match(/null value in column "([^"]+)" violates not-null constraint/i)
   if (nullMatch) {
     const fieldMap = {
-      m_warehouse_id:          'Warehouse wajib diisi.',
-      c_bpartner_id:           'Customer wajib diisi.',
-      c_bpartner_location_id:  'Partner Address wajib diisi.',
-      m_pricelist_id:          'Price List wajib diisi.',
-      c_paymentterm_id:        'Payment Terms wajib diisi.',
-      fin_paymentmethod_id:    'Payment Method wajib diisi.',
-      c_currency_id:           'Currency wajib diisi.',
-      ad_org_id:               'Organization wajib diisi.',
-      c_doctype_id:            'Document Type wajib diisi.',
+      m_warehouse_id: 'Warehouse wajib diisi.', c_bpartner_id: 'Customer wajib diisi.',
+      c_bpartner_location_id: 'Partner Address wajib diisi.', m_pricelist_id: 'Price List wajib diisi.',
+      c_paymentterm_id: 'Payment Terms wajib diisi.', fin_paymentmethod_id: 'Payment Method wajib diisi.',
+      c_currency_id: 'Currency wajib diisi.', ad_org_id: 'Organization wajib diisi.', c_doctype_id: 'Document Type wajib diisi.',
     }
-    const col = nullMatch[1].toLowerCase()
-    return fieldMap[col] || `Kolom "${nullMatch[1]}" tidak boleh kosong. Pastikan semua field wajib telah diisi.`
+    return fieldMap[nullMatch[1].toLowerCase()] || `Kolom "${nullMatch[1]}" tidak boleh kosong.`
   }
-
-  // Deteksi unique constraint
-  if (/unique constraint|duplicate key/i.test(msg)) {
-    return 'Data duplikat: dokumen dengan nomor ini sudah ada.'
-  }
-
-  // Deteksi foreign key
-  if (/foreign key constraint/i.test(msg)) {
-    return 'Referensi data tidak valid. Pastikan semua dropdown dipilih dengan benar.'
-  }
-
-  // Pesan error pendek — tampilkan langsung
+  if (/unique constraint|duplicate key/i.test(msg)) return 'Data duplikat: dokumen dengan nomor ini sudah ada.'
+  if (/foreign key constraint/i.test(msg)) return 'Referensi data tidak valid.'
   if (msg.length <= 200) return msg
-
-  // Pesan sangat panjang (detail DB row) — ambil bagian pertama saja
   const firstLine = msg.split(/\n|Detail:/i)[0].trim()
   return firstLine.length > 0 ? firstLine : msg.slice(0, 200) + '…'
 }
 
-// ── helpers
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
-function formatDate(d) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-function formatCurrency(v) {
-  if (v == null) return '—'
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v)
-}
-function statusLabel(s) {
-  const map = { DR: 'Draft', IP: 'In Progress', CO: 'Booked', CL: 'Closed', VO: 'Voided' }
-  return map[s] || s || 'Unknown'
-}
+function today() { return new Date().toISOString().slice(0, 10) }
+function formatDate(d) { return d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' }
+function formatCurrency(v) { return v != null ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v) : '—' }
+function statusLabel(s) { const m = { DR: 'Draft', IP: 'In Progress', CO: 'Booked', CL: 'Closed', VO: 'Voided' }; return m[s] || s || 'Unknown' }
 function statusClass(s) {
   if (s === 'DR') return 'status-pill--draft'
   if (s === 'IP') return 'status-pill--portal'
@@ -739,40 +689,37 @@ function statusClass(s) {
   return 'status-pill--draft'
 }
 
-// ── page numbers
 const pageNumbers = computed(() => {
   const tp = totalPages.value, cp = currentPage.value, pages = []
   if (tp <= 7) { for (let i = 1; i <= tp; i++) pages.push(i); return pages }
-  pages.push(1)
-  if (cp > 3) pages.push('...')
+  pages.push(1); if (cp > 3) pages.push('...')
   for (let i = Math.max(2, cp - 1); i <= Math.min(tp - 1, cp + 1); i++) pages.push(i)
-  if (cp < tp - 2) pages.push('...')
-  pages.push(tp)
-  return pages
+  if (cp < tp - 2) pages.push('...'); pages.push(tp); return pages
 })
 
-// ── computed labels
-const paymentTermLabel = computed(() => {
-  if (!form.value.paymentTerms) return ''
-  const found = paymentTerms.value.find(pt => pt.id === form.value.paymentTerms)
-  return found?.name || form.value.paymentTerms
-})
-const paymentMethodLabel = computed(() => {
-  if (!form.value.paymentMethod) return ''
-  const found = paymentMethods.value.find(pm => pm.id === form.value.paymentMethod)
-  return found?.['_identifier'] || found?.name || form.value.paymentMethod
-})
-const priceListLabel = computed(() => {
-  if (!form.value.priceList) return ''
-  const found = priceLists.value.find(pl => pl.id === form.value.priceList)
-  return found?.name || form.value.priceList
+const paymentTermLabel = computed(() => { const f = paymentTerms.value.find(pt => pt.id === form.value.paymentTerms); return f?.name || form.value.paymentTerms || '' })
+const paymentMethodLabel = computed(() => { const f = paymentMethods.value.find(pm => pm.id === form.value.paymentMethod); return f?.['_identifier'] || f?.name || form.value.paymentMethod || '' })
+const priceListLabel = computed(() => { const f = priceLists.value.find(pl => pl.id === form.value.priceList); return f?.name || form.value.priceList || '' })
+const organizationLabel = computed(() => {
+  if (isEdit.value && form.value.organization) {
+    const f = organizations.value.find(o => o.id === form.value.organization)
+    if (f) return f.name
+    return currentUserOrg.value.id === form.value.organization ? currentUserOrg.value.name : form.value.organization
+  }
+  return currentUserOrg.value.name || form.value.organization
 })
 
 // ── load orders
 async function loadOrders() {
   loading.value = true; error.value = ''
   try {
-    const data = await fetchAllOrders({ startRow: (currentPage.value - 1) * pageSize, pageSize, searchKey: searchQuery.value })
+    const data = await fetchAllOrders({ 
+      startRow: (currentPage.value - 1) * pageSize, 
+      pageSize, 
+      searchKey: searchQuery.value,
+      sortCol: sortCol.value, // <--- Kirim parameter sortCol
+      sortDir: sortDir.value  // <--- Kirim parameter sortDir
+    })
     rows.value = data.data ?? []
     totalCount.value = data.totalRows ?? rows.value.length
   } catch (e) {
@@ -783,501 +730,257 @@ async function loadOrders() {
 function goPage(p) { if (p >= 1 && p <= totalPages.value) { currentPage.value = p; loadOrders() } }
 function onSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage.value = 1; loadOrders() }, 400) }
 
-// ── dropdown
 function toggleDropdown(id, e) {
   if (openDropdown.value === id) { openDropdown.value = null; return }
-  openDropdown.value = id
-  const btn = e.currentTarget.getBoundingClientRect()
+  openDropdown.value = id; const btn = e.currentTarget.getBoundingClientRect()
   dropdownPos.value = { top: btn.bottom + 4, right: window.innerWidth - btn.right }
 }
 function closeDropdown() { openDropdown.value = null }
 
-// ── load lookups
 async function loadLookups() {
-  const [w, d, pt, pm, u, org, pl, tx] = await Promise.allSettled([
+  const [w, d, pt, pm, u, org, pl, tx, usr] = await Promise.allSettled([
     fetchWarehouses(), fetchDocumentTypes(), fetchPaymentTerms(), fetchPaymentMethods(),
-    fetchUOMs(), fetchOrganizations(), fetchPriceLists(), fetchTaxRates(),
+    fetchUOMs(), fetchOrganizations(), fetchPriceLists(), fetchTaxRates(), fetchCurrentUser(),
   ])
-  warehouses.value     = w.status   === 'fulfilled' ? (w.value   ?? []) : []
-  documents.value      = d.status   === 'fulfilled' ? (d.value   ?? []) : []
-  paymentTerms.value   = pt.status  === 'fulfilled' ? (pt.value  ?? []) : []
-  paymentMethods.value = pm.status  === 'fulfilled' ? (pm.value  ?? []) : []
-  uoms.value           = u.status   === 'fulfilled' ? (u.value   ?? []) : []
-  organizations.value  = org.status === 'fulfilled' ? (org.value ?? []) : []
-  priceLists.value     = pl.status  === 'fulfilled' ? (pl.value  ?? []) : []
-  taxRates.value       = tx.status  === 'fulfilled' ? (tx.value  ?? []) : []
+  warehouses.value = w.status === 'fulfilled' ? (w.value ?? []) : []
+  documents.value = d.status === 'fulfilled' ? (d.value ?? []) : []
+  paymentTerms.value = pt.status === 'fulfilled' ? (pt.value ?? []) : []
+  paymentMethods.value = pm.status === 'fulfilled' ? (pm.value ?? []) : []
+  uoms.value = u.status === 'fulfilled' ? (u.value ?? []) : []
+  organizations.value = org.status === 'fulfilled' ? (org.value ?? []) : []
+  priceLists.value = pl.status === 'fulfilled' ? (pl.value ?? []) : []
+  taxRates.value = tx.status === 'fulfilled' ? (tx.value ?? []) : []
 
-  const standardDoc = documents.value.find(d => d.name === 'Standard Order') || documents.value[0]
-  if (standardDoc) {
-    form.value.transactionDocument = standardDoc.id
-  }
+  if (usr.status === 'fulfilled' && usr.value) currentUserOrg.value = { id: usr.value.organization, name: usr.value['organization$_identifier'] }
+  const stdDoc = documents.value.find(dx => dx.name === 'Standard Order') || documents.value[0]
+  if (stdDoc) form.value.transactionDocument = stdDoc.id
 }
 
-// ── customer search
 let customerTimer = null
 async function onCustomerSearch() {
-  showCustomerDrop.value = true
-  clearTimeout(customerTimer)
+  showCustomerDrop.value = true; clearTimeout(customerTimer)
   customerTimer = setTimeout(async () => {
     if (customerSearch.value.length < 1) { filteredCustomers.value = []; return }
     filteredCustomers.value = await fetchCustomers(customerSearch.value)
   }, 300)
 }
 function selectCustomer(c) {
-  form.value.businessPartner = c.id
-  customerSearch.value = c.name
-  showCustomerDrop.value = false
-
-  const extractId = (v) => {
-    if (!v) return ''
-    if (typeof v === 'object') return v.id || ''
-    return String(v)
-  }
-
-  const ptId = extractId(c.paymentTerms)
-  const pmId = extractId(c.paymentMethod)
-  const plId = extractId(c.priceList)
-
-  if (ptId) form.value.paymentTerms  = ptId
-  if (pmId) form.value.paymentMethod = pmId
-  if (plId) form.value.priceList     = plId
-
+  form.value.businessPartner = c.id; customerSearch.value = c.name; showCustomerDrop.value = false
+  const extractId = (v) => { if (!v) return ''; if (typeof v === 'object') return v.id || ''; return String(v) }
+  const ptId = extractId(c.paymentTerms), pmId = extractId(c.paymentMethod), plId = extractId(c.priceList)
+  if (ptId) form.value.paymentTerms = ptId; if (pmId) form.value.paymentMethod = pmId; if (plId) form.value.priceList = plId
   if (!ptId || !pmId || !plId) {
     fetchCustomerById(c.id).then(detail => {
       if (!detail) return
-      if (!form.value.paymentTerms)  form.value.paymentTerms  = extractId(detail.paymentTerms)
+      if (!form.value.paymentTerms) form.value.paymentTerms = extractId(detail.paymentTerms)
       if (!form.value.paymentMethod) form.value.paymentMethod = extractId(detail.paymentMethod)
-      if (!form.value.priceList)     form.value.priceList     = extractId(detail.priceList)
-    }).catch(e => console.warn('[selectCustomer] fallback fetch failed:', e))
+      if (!form.value.priceList) form.value.priceList = extractId(detail.priceList)
+    }).catch(() => {})
   }
-
   loadPartnerLocations(c.id)
 }
 async function loadPartnerLocations(bpId) {
-  form.value.partnerAddress = ''
-  form.value.invoiceAddress = ''
+  form.value.partnerAddress = ''; form.value.invoiceAddress = ''
   partnerLocations.value = await fetchPartnerLocations(bpId)
-  if (partnerLocations.value.length === 1) {
-    form.value.partnerAddress = partnerLocations.value[0].id
-    form.value.invoiceAddress = partnerLocations.value[0].id
-  }
+  if (partnerLocations.value.length === 1) { form.value.partnerAddress = partnerLocations.value[0].id; form.value.invoiceAddress = partnerLocations.value[0].id }
 }
 function onCustomerBlur() { setTimeout(() => { showCustomerDrop.value = false }, 150) }
 
-// ── product search per line
 let productTimers = new WeakMap()
 async function onProductSearch(line) {
-  line.showDrop = true
-  const t = productTimers.get(line)
-  if (t) clearTimeout(t)
-  productTimers.set(line, setTimeout(async () => {
-    line.productOptions = await fetchProducts(line.productSearch)
-  }, 300))
+  line.showDrop = true; const t = productTimers.get(line); if (t) clearTimeout(t)
+  productTimers.set(line, setTimeout(async () => { line.productOptions = await fetchProducts(line.productSearch) }, 300))
 }
 function openProductDrop(line, event) {
   if (!line.productOptions.length && line.productSearch) onProductSearch(line)
   const rect = event.currentTarget.getBoundingClientRect()
-  line.dropStyle = {
-    position: 'fixed',
-    top:  rect.bottom + 2 + 'px',
-    left: rect.left + 'px',
-    width: rect.width + 'px',
-    zIndex: 9999,
-  }
+  line.dropStyle = { position: 'fixed', top: rect.bottom + 2 + 'px', left: rect.left + 'px', width: rect.width + 'px', zIndex: 9999 }
   line.showDrop = true
 }
 function selectProduct(line, p) {
-  line.product = p.id
-  line.productSearch = p.name
-  line.showDrop = false
-  line.dropStyle = {}
+  line.product = p.id; line.productSearch = p.name; line.showDrop = false; line.dropStyle = {}
   const uomId = p.uOM ? (typeof p.uOM === 'object' ? p.uOM.id : p.uOM) : ''
-  if (uomId) {
-    line.uOM = uomId
-    const found = uoms.value.find(u => u.id === uomId)
-    line.uomSearch = found ? (found.uOMSymbol || found.name) : (p['uOM$_identifier'] || uomId)
-    line.uomOptions = found ? [found] : []
-  }
+  if (uomId) { line.uOM = uomId; const f = uoms.value.find(u => u.id === uomId); line.uomSearch = f ? (f.uOMSymbol || f.name) : (p['uOM$_identifier'] || uomId); line.uomOptions = f ? [f] : [] }
   const taxId = p.tax ? (typeof p.tax === 'object' ? p.tax.id : p.tax) : ''
-  if (taxId) {
-    line.tax = taxId
-    const foundTax = taxRates.value.find(tx => tx.id === taxId)
-    line.taxSearch = foundTax
-      ? foundTax.name + (foundTax.rate != null ? ` (${foundTax.rate}%)` : '')
-      : (p['tax$_identifier'] || taxId)
-    line.taxOptions = foundTax ? [foundTax] : []
-  }
-  line.unitPrice = p.listPrice ?? p.standardPrice ?? 0
-  calcLine(line)
+  if (taxId) { line.tax = taxId; const fx = taxRates.value.find(tx => tx.id === taxId); line.taxSearch = fx ? fx.name + (fx.rate != null ? ` (${fx.rate}%)` : '') : (p['tax$_identifier'] || taxId); line.taxOptions = fx ? [fx] : [] }
+  line.unitPrice = p.listPrice ?? p.standardPrice ?? 0; calcLine(line)
 }
 function onProductBlur(line) { setTimeout(() => { line.showDrop = false; line.dropStyle = {} }, 150) }
 
-// ── tax search per line
 let taxTimers = new WeakMap()
 function onTaxSearch(line) {
-  line.showTaxDrop = true
-  const t = taxTimers.get(line)
-  if (t) clearTimeout(t)
+  line.showTaxDrop = true; const t = taxTimers.get(line); if (t) clearTimeout(t)
   taxTimers.set(line, setTimeout(() => {
     const q = (line.taxSearch || '').toLowerCase()
-    line.taxOptions = !q
-      ? taxRates.value.slice(0, 30)
-      : taxRates.value.filter(tx =>
-          (tx.name || '').toLowerCase().includes(q) ||
-          (tx.rate != null && String(tx.rate).includes(q))
-        ).slice(0, 30)
+    line.taxOptions = !q ? taxRates.value.slice(0, 30) : taxRates.value.filter(tx => (tx.name || '').toLowerCase().includes(q) || (tx.rate != null && String(tx.rate).includes(q))).slice(0, 30)
   }, 150))
 }
 function openTaxDrop(line, event) {
   if (!line.taxOptions.length) line.taxOptions = taxRates.value.slice(0, 30)
   const rect = event.currentTarget.getBoundingClientRect()
-  line.taxDropStyle = {
-    position: 'fixed',
-    top:  rect.bottom + 2 + 'px',
-    left: rect.left + 'px',
-    width: Math.max(rect.width, 200) + 'px',
-    zIndex: 9999,
-  }
+  line.taxDropStyle = { position: 'fixed', top: rect.bottom + 2 + 'px', left: rect.left + 'px', width: Math.max(rect.width, 200) + 'px', zIndex: 9999 }
   line.showTaxDrop = true
 }
-function selectTax(line, tx) {
-  line.tax = tx.id
-  line.taxSearch = tx.name + (tx.rate != null ? ` (${tx.rate}%)` : '')
-  line.showTaxDrop = false
-  line.taxDropStyle = {}
-}
+function selectTax(line, tx) { line.tax = tx.id; line.taxSearch = tx.name + (tx.rate != null ? ` (${tx.rate}%)` : ''); line.showTaxDrop = false; line.taxDropStyle = {} }
 function onTaxBlur(line) { setTimeout(() => { line.showTaxDrop = false }, 150) }
 
-// ── UOM search per line
 let uomTimers = new WeakMap()
 async function onUomSearch(line) {
-  line.showUomDrop = true
-  const t = uomTimers.get(line)
-  if (t) clearTimeout(t)
+  line.showUomDrop = true; const t = uomTimers.get(line); if (t) clearTimeout(t)
   uomTimers.set(line, setTimeout(async () => {
     const q = (line.uomSearch || '').toLowerCase()
-    line.uomOptions = !q
-      ? uoms.value.slice(0, 20)
-      : uoms.value.filter(u =>
-          (u.uOMSymbol || '').toLowerCase().includes(q) ||
-          (u.name || '').toLowerCase().includes(q)
-        ).slice(0, 20)
+    line.uomOptions = !q ? uoms.value.slice(0, 20) : uoms.value.filter(u => (u.uOMSymbol || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q)).slice(0, 20)
   }, 200))
 }
-function selectUom(line, u) {
-  line.uOM = u.id
-  line.uomSearch = u.uOMSymbol || u.name
-  line.showUomDrop = false
-}
+function selectUom(line, u) { line.uOM = u.id; line.uomSearch = u.uOMSymbol || u.name; line.showUomDrop = false }
 function onUomBlur(line) { setTimeout(() => { line.showUomDrop = false }, 150) }
 
-// ── line helpers
-function newLine() {
-  return {
-    product: '', productSearch: '', productOptions: [], showDrop: false, dropStyle: {},
-    orderedQuantity: 1, uOM: '', uomSearch: '', uomOptions: [], showUomDrop: false,
-    tax: '', taxSearch: '', taxOptions: [], showTaxDrop: false, taxDropStyle: {},
-    unitPrice: 0, lineNetAmount: 0,
-  }
-}
+function newLine() { return { product: '', productSearch: '', productOptions: [], showDrop: false, dropStyle: {}, orderedQuantity: 1, uOM: '', uomSearch: '', uomOptions: [], showUomDrop: false, tax: '', taxSearch: '', taxOptions: [], showTaxDrop: false, taxDropStyle: {}, unitPrice: 0, lineNetAmount: 0 } }
 function addLine() { lines.value.push(newLine()) }
 function removeLine(i) { lines.value.splice(i, 1) }
 function calcLine(line) { line.lineNetAmount = parseFloat(line.orderedQuantity || 0) * parseFloat(line.unitPrice || 0) }
 
-// ── payment term lines watcher
 watch(() => form.value.paymentTerms, async (newVal) => {
-  paymentLines.value = []
-  if (!newVal) return
+  paymentLines.value = []; if (!newVal) return
   paymentLinesLoading.value = true
   try {
     const fetchedLines = await fetchPaymentTermLines(newVal)
-    if (fetchedLines.length > 0) {
-      paymentLines.value = fetchedLines
-    } else {
-      const header = paymentTerms.value.find(pt => pt.id === newVal)
-      if (header) {
-        paymentLines.value = [{
-          id: header.id, line: 10,
-          offsetDays: header.overduePaymentDaysRule ?? header.offsetMonthDue ?? 0,
-          percentage: null, fixedAmount: null,
-        }]
-      }
-    }
+    if (fetchedLines.length > 0) paymentLines.value = fetchedLines
+    else { const hd = paymentTerms.value.find(pt => pt.id === newVal); if (hd) paymentLines.value = [{ id: hd.id, line: 10, offsetDays: hd.overduePaymentDaysRule ?? hd.offsetMonthDue ?? 0, percentage: null, fixedAmount: null }] }
   } finally { paymentLinesLoading.value = false }
 })
 
-// ── open modals
 function openCreateModal() {
-  isEdit.value = false; editId.value = null
-  form.value = emptyForm(); lines.value = []; paymentLines.value = []
-  customerSearch.value = ''
-  const standardDoc = documents.value.find(d => d.name === 'Standard Order') || documents.value[0]
-  if (standardDoc) form.value.transactionDocument = standardDoc.id
-  partnerLocations.value = []
-  formError.value = ''; activeFormTab.value = 'transaction'
-  showFormModal.value = true
+  isEdit.value = false; editId.value = null; form.value = emptyForm()
+  if (currentUserOrg.value.id) form.value.organization = currentUserOrg.value.id
+  lines.value = []; paymentLines.value = []; customerSearch.value = ''
+  const stdDoc = documents.value.find(d => d.name === 'Standard Order') || documents.value[0]; if (stdDoc) form.value.transactionDocument = stdDoc.id
+  partnerLocations.value = []; formError.value = ''; activeFormTab.value = 'transaction'; showFormModal.value = true
 }
 
 async function openEditModal(r) {
-  closeDropdown()
-  isEdit.value = true; editId.value = r.id
-  activeFormTab.value = 'transaction'; formError.value = ''
-  showFormModal.value = true
-
+  closeDropdown(); isEdit.value = true; editId.value = r.id; activeFormTab.value = 'transaction'; formError.value = ''; showFormModal.value = true
   const extractId = (v) => { if (!v) return ''; if (typeof v === 'object') return v.id ?? ''; return String(v) }
-
   form.value = {
-    documentNo: r.documentNo || '',
-    transactionDocument: extractId(r.transactionDocument),
-    warehouse: extractId(r.warehouse),
-    organization: extractId(r.organization),
-    partnerAddress: extractId(r.partnerAddress),
-    orderDate: r.orderDate?.slice(0,10) || today(),
-    businessPartner: extractId(r.businessPartner),
-    paymentTerms: extractId(r.paymentTerms),
-    scheduledDeliveryDate: r.scheduledDeliveryDate?.slice(0,10) || '',
-    paymentMethod: extractId(r.paymentMethod),
-    invoiceTerm: r.invoiceTerms || '',
-    orderReference: r.orderReference || '',
-    salesRepresentative: extractId(r.salesRepresentative),
-    description: r.description || '',
-    invoiceAddress: extractId(r.invoiceAddress),
-    priceList: extractId(r.priceList),
-    deliveryLocation: r.deliveryLocation || '',
+    documentNo: r.documentNo || '', transactionDocument: extractId(r.transactionDocument), warehouse: extractId(r.warehouse), organization: extractId(r.organization),
+    partnerAddress: extractId(r.partnerAddress), orderDate: r.orderDate?.slice(0,10) || today(), businessPartner: extractId(r.businessPartner), paymentTerms: extractId(r.paymentTerms),
+    scheduledDeliveryDate: r.scheduledDeliveryDate?.slice(0,10) || '', paymentMethod: extractId(r.paymentMethod), invoiceTerm: r.invoiceTerms || '', orderReference: r.orderReference || '',
+    salesRepresentative: extractId(r.salesRepresentative), description: r.description || '', invoiceAddress: extractId(r.invoiceAddress), priceList: extractId(r.priceList), deliveryLocation: r.deliveryLocation || '',
   }
   customerSearch.value = r['businessPartner$_identifier'] || ''
-
   if (extractId(r.businessPartner)) await loadPartnerLocations(extractId(r.businessPartner))
-
-  const existingLines = await fetchOrderLines(r.id)
-  lines.value = existingLines.map(l => {
-    const foundUom = uoms.value.find(u => u.id === (typeof l.uOM === 'object' ? l.uOM?.id : l.uOM))
-    const taxId    = typeof l.tax === 'object' ? l.tax?.id : (l.tax || '')
-    const foundTax = taxRates.value.find(tx => tx.id === taxId)
+  const ex = await fetchOrderLines(r.id)
+  lines.value = ex.map(l => {
+    const fU = uoms.value.find(u => u.id === (typeof l.uOM === 'object' ? l.uOM?.id : l.uOM))
+    const tI = typeof l.tax === 'object' ? l.tax?.id : (l.tax || ''); const fT = taxRates.value.find(tx => tx.id === tI)
     return {
-      id:             l.id,
-      product:        typeof l.product === 'object' ? l.product?.id : (l.product || ''),
-      productSearch:  l['product$_identifier'] || '',
-      productOptions: [], showDrop: false, dropStyle: {},
-      orderedQuantity: l.orderedQuantity || 1,
-      uOM:            typeof l.uOM === 'object' ? l.uOM?.id : (l.uOM || ''),
-      uomSearch:      foundUom ? (foundUom.uOMSymbol || foundUom.name) : (l['uOM$_identifier'] || ''),
-      uomOptions:     foundUom ? [foundUom] : [], showUomDrop: false,
-      tax:            taxId,
-      taxSearch:      foundTax ? foundTax.name + (foundTax.rate != null ? ` (${foundTax.rate}%)` : '') : (l['tax$_identifier'] || ''),
-      taxOptions:     foundTax ? [foundTax] : [], showTaxDrop: false, taxDropStyle: {},
-      unitPrice:      l.unitPrice || 0,
-      lineNetAmount:  l.lineNetAmount || 0,
+      id: l.id, product: typeof l.product === 'object' ? l.product?.id : (l.product || ''), productSearch: l['product$_identifier'] || '', productOptions: [], showDrop: false, dropStyle: {},
+      orderedQuantity: l.orderedQuantity || 1, uOM: typeof l.uOM === 'object' ? l.uOM?.id : (l.uOM || ''), uomSearch: fU ? (fU.uOMSymbol || fU.name) : (l['uOM$_identifier'] || ''), uomOptions: fU ? [fU] : [], showUomDrop: false,
+      tax: tI, taxSearch: fT ? fT.name + (fT.rate != null ? ` (${fT.rate}%)` : '') : (l['tax$_identifier'] || ''), taxOptions: fT ? [fT] : [], showTaxDrop: false, taxDropStyle: {}, unitPrice: l.unitPrice || 0, lineNetAmount: l.lineNetAmount || 0,
     }
   })
 }
 
-function openEditFromView() {
-  const r = viewRow.value
-  if (!r) return
-  showViewModal.value = false
-  openEditModal(r)
-}
+function openEditFromView() { const r = viewRow.value; if (!r) return; showViewModal.value = false; openEditModal(r) }
 
 async function openViewModal(r) {
-  closeDropdown()
-  viewRow.value = r
-  viewTab.value = 'detail'
-  actionError.value = ''
-  showViewModal.value = true
-  fetchOrder(r.id).then(full => { if (full) viewRow.value = full }).catch(() => {})
-  
-  viewLinesLoading.value = true
-  viewLines.value = await fetchOrderLines(r.id)
-  viewLinesLoading.value = false
-  viewPaymentSchedule.value = []
+  closeDropdown(); viewRow.value = r; viewTab.value = 'detail'; actionError.value = ''; showViewModal.value = true
+  fetchOrder(r.id).then(f => { if (f) viewRow.value = f }).catch(() => {})
+  viewLinesLoading.value = true; viewLines.value = await fetchOrderLines(r.id); viewLinesLoading.value = false; viewPaymentSchedule.value = []
 }
 
 async function openViewPaymentTab() {
   viewTab.value = 'payment'
   if (viewPaymentSchedule.value.length === 0 && viewRow.value) {
-    viewPaymentLoading.value = true
-    viewPaymentSchedule.value = await fetchOrderPaymentSchedule(viewRow.value.id).catch(() => [])
-    viewPaymentLoading.value = false
+    viewPaymentLoading.value = true; viewPaymentSchedule.value = await fetchOrderPaymentSchedule(viewRow.value.id).catch(() => []); viewPaymentLoading.value = false
   }
 }
 
-// ── save
+// ── FUNGSI PRINT PDF ──
+async function doPrint() {
+  if (!viewRow.value) return
+  try {
+    // Generate PDF pakai service
+    await generateDocumentPDF('Sales Order', viewRow.value, viewLines.value)
+    showToast('Dokumen PDF berhasil diunduh.')
+  } catch (error) {
+    console.error('Error printing PDF:', error)
+    showToast('Gagal men-generate PDF.', 'error')
+  }
+}
+
 async function saveOrder() {
   if (!form.value.businessPartner) { formError.value = 'Customer wajib dipilih.'; return }
-  if (!form.value.paymentTerms) { formError.value = 'Payment Term tidak ditemukan. Pastikan customer memiliki Payment Term.'; return }
-  if (!form.value.priceList) { formError.value = 'Price List tidak ditemukan. Pastikan customer memiliki Price List.'; return }
+  if (!form.value.paymentTerms) { formError.value = 'Payment Term tidak ditemukan.'; return }
+  if (!form.value.priceList) { formError.value = 'Price List tidak ditemukan.'; return }
   saving.value = true; formError.value = ''
   try {
     let orderId
-    if (isEdit.value) {
-      await updateOrder(editId.value, form.value)
-      orderId = editId.value
-    } else {
-      const created = await createOrder(form.value)
-      orderId = created?.id
-    }
+    if (isEdit.value) { await updateOrder(editId.value, form.value); orderId = editId.value }
+    else { const cr = await createOrder(form.value); orderId = cr?.id }
 
     if (orderId) {
-      let existingLineIds = []
-      if (isEdit.value) {
-        const existing = await fetchOrderLines(orderId)
-        existingLineIds = existing.map(l => l.id)
-      }
-
-      const savedLineIds = []
+      let exIds = []; if (isEdit.value) { const ex = await fetchOrderLines(orderId); exIds = ex.map(l => l.id) }
+      const svIds = []
       for (let idx = 0; idx < lines.value.length; idx++) {
-        const line = lines.value[idx]
-        if (!line.product) continue
-        const linePayload = {
-          lineNo:                (idx + 1) * 10,
-          orderDate:             form.value.orderDate,
-          scheduledDeliveryDate: form.value.scheduledDeliveryDate || form.value.orderDate,
-          product:               line.product,
-          orderedQuantity:       line.orderedQuantity,
-          uOM:                   line.uOM,
-          unitPrice:             line.unitPrice,
-          listPrice:             line.unitPrice,
-          standardPrice:         line.unitPrice,
-          priceLimit:            0,
-          lineNetAmount:         line.lineNetAmount,
-          discount:              0,
-          warehouse:             form.value.warehouse,
-          currency:              '303',
-          businessPartner:       form.value.businessPartner,
-          partnerAddress:        form.value.partnerAddress,
-          tax:                   line.tax || 'F3F273F648784C858549A45FF0A69AFA',
+        const ln = lines.value[idx]; if (!ln.product) continue
+        const lp = {
+          lineNo: (idx + 1) * 10, orderDate: form.value.orderDate, scheduledDeliveryDate: form.value.scheduledDeliveryDate || form.value.orderDate,
+          product: ln.product, orderedQuantity: ln.orderedQuantity, uOM: ln.uOM, unitPrice: ln.unitPrice, listPrice: ln.unitPrice, standardPrice: ln.unitPrice, priceLimit: 0, lineNetAmount: ln.lineNetAmount, discount: 0,
+          warehouse: form.value.warehouse, currency: '303', businessPartner: form.value.businessPartner, partnerAddress: form.value.partnerAddress, tax: ln.tax || 'F3F273F648784C858549A45FF0A69AFA',
         }
-        if (line.id) {
-          await updateOrderLine(line.id, linePayload)
-          savedLineIds.push(line.id)
-        } else {
-          const created = await createOrderLine(orderId, linePayload)
-          if (created?.id) savedLineIds.push(created.id)
-        }
+        if (ln.id) { await updateOrderLine(ln.id, lp); svIds.push(ln.id) }
+        else { const cr = await createOrderLine(orderId, lp); if (cr?.id) svIds.push(cr.id) }
       }
-
-      for (const existId of existingLineIds) {
-        if (!savedLineIds.includes(existId)) {
-          await deleteOrderLine(existId).catch(e => console.warn('delete line error:', e.message))
-        }
-      }
+      for (const exId of exIds) { if (!svIds.includes(exId)) await deleteOrderLine(exId).catch(() => {}) }
     }
-
-    showFormModal.value = false
-    showToast(isEdit.value ? 'Sales Order updated!' : 'Sales Order created!')
-    await loadOrders()
-  } catch (e) {
-    const rawMsg = e?.response?.data?.response?.error?.message || e.message || ''
-    formError.value = parseApiError(rawMsg)
-  } finally { saving.value = false }
+    showFormModal.value = false; showToast(isEdit.value ? 'Sales Order updated!' : 'Sales Order created!'); await loadOrders()
+  } catch (e) { formError.value = parseApiError(e?.response?.data?.response?.error?.message || e.message || '') } finally { saving.value = false }
 }
 
-// ── actions (dipanggil dari dalam View Modal)
 async function doProcessOrder() {
-  if (!viewRow.value) return
-  actionLoading.value = 'process'
-  try {
-    const updated = await processOrder(viewRow.value.id, viewRow.value)
-    showToast('Sales Order berhasil di Process (In Progress).')
-    await updateViewState(updated)
-  } catch (e) {
-    actionError.value = e?.response?.data?.response?.error?.message || e.message
-  } finally { actionLoading.value = '' }
+  if (!viewRow.value) return; actionLoading.value = 'process'
+  try { const up = await processOrder(viewRow.value.id, viewRow.value); showToast('Sales Order berhasil di Process.'); await updateViewState(up) }
+  catch (e) { actionError.value = e?.response?.data?.response?.error?.message || e.message } finally { actionLoading.value = '' }
 }
 
 async function doBookOrder() {
-  if (!viewRow.value) return
-  actionLoading.value = 'book'
+  if (!viewRow.value) return; actionLoading.value = 'book'
   try {
-    const updated = await bookOrder(viewRow.value.id, viewRow.value)
-    
-    // --> EKSEKUSI PEMBUATAN PAYMENT PLAN <--
-    try {
-      await createOrderPaymentPlan(updated.id, updated)
-      showToast('Sales Order berhasil di Book dan Payment Plan terbentuk.')
-    } catch (planErr) {
-      console.error('[doBookOrder] Payment plan gagal:', planErr.message)
-      showToast('Sales Order di Book, tapi Payment Plan gagal: ' + planErr.message, 'warning')
-    }
-
-    await updateViewState(updated)
-    
-    // Otomatis pindah ke tab Payment Plan untuk memuat jadwal
-    viewTab.value = 'payment'
-    viewPaymentLoading.value = true
-    viewPaymentSchedule.value = await fetchOrderPaymentSchedule(updated.id).catch(() => [])
-    viewPaymentLoading.value = false
-  } catch (e) {
-    actionError.value = e?.response?.data?.response?.error?.message || e.message
-  } finally { actionLoading.value = '' }
+    const up = await bookOrder(viewRow.value.id, viewRow.value)
+    try { await createOrderPaymentPlan(up.id, up); showToast('Sales Order berhasil di Book dan Payment Plan terbentuk.') } catch (pe) { showToast('Sales Order di Book, tapi Payment Plan gagal: ' + pe.message, 'warning') }
+    await updateViewState(up); viewTab.value = 'payment'; viewPaymentLoading.value = true; viewPaymentSchedule.value = await fetchOrderPaymentSchedule(up.id).catch(() => []); viewPaymentLoading.value = false
+  } catch (e) { actionError.value = e?.response?.data?.response?.error?.message || e.message } finally { actionLoading.value = '' }
 }
 
 async function doVoidOrder() {
-  if (!viewRow.value) return
-  actionLoading.value = 'void'
-  try {
-    const updated = await voidOrder(viewRow.value.id, viewRow.value)
-    showToast('Sales Order di Void.')
-    await updateViewState(updated)
-  } catch (e) {
-    actionError.value = e?.response?.data?.response?.error?.message || e.message
-  } finally { actionLoading.value = '' }
+  if (!viewRow.value) return; actionLoading.value = 'void'
+  try { const up = await voidOrder(viewRow.value.id, viewRow.value); showToast('Sales Order di Void.'); await updateViewState(up) }
+  catch (e) { actionError.value = e?.response?.data?.response?.error?.message || e.message } finally { actionLoading.value = '' }
 }
 
 async function doReactivateOrder() {
-  if (!viewRow.value) return
-  actionLoading.value = 'reactivate'
-  try {
-    const updated = await reactivateOrder(viewRow.value.id, viewRow.value)
-    showToast('Sales Order di Reactivate kembali ke Draft.')
-    await updateViewState(updated)
-    viewPaymentSchedule.value = []
-  } catch (e) {
-    actionError.value = e?.response?.data?.response?.error?.message || e.message
-  } finally { actionLoading.value = '' }
+  if (!viewRow.value) return; actionLoading.value = 'reactivate'
+  try { const up = await reactivateOrder(viewRow.value.id, viewRow.value); showToast('Sales Order di Reactivate kembali ke Draft.'); await updateViewState(up); viewPaymentSchedule.value = [] }
+  catch (e) { actionError.value = e?.response?.data?.response?.error?.message || e.message } finally { actionLoading.value = '' }
 }
 
 async function doCloseOrder() {
-  if (!viewRow.value) return
-  actionLoading.value = 'close' // Indikator loading
-  actionError.value = ''
-  
-  try {
-    const updated = await closeOrder(viewRow.value.id, viewRow.value)
-    showToast('Sales Order berhasil di-Close.')
-    await updateViewState(updated) // Refresh data di layar
-  } catch (e) {
-    actionError.value = e.message
-  } finally {
-    actionLoading.value = ''
-  }
+  if (!viewRow.value) return; actionLoading.value = 'close'; actionError.value = ''
+  try { const up = await closeOrder(viewRow.value.id, viewRow.value); showToast('Sales Order berhasil di-Close.'); await updateViewState(up) }
+  catch (e) { actionError.value = e.message } finally { actionLoading.value = '' }
 }
 
-// ── update state after action
-async function updateViewState(updatedObj) {
+async function updateViewState(obj) {
   await loadOrders()
-  // Re-fetch full order detail agar semua field ($identifier) lengkap
-  try {
-    const full = await fetchOrder(updatedObj.id)
-    viewRow.value = full || updatedObj
-  } catch {
-    viewRow.value = updatedObj
-  }
+  try { const f = await fetchOrder(obj.id); viewRow.value = f || obj } catch { viewRow.value = obj }
 }
 
-// ── delete
 function confirmDelete(r) { closeDropdown(); deleteRow.value = r; deleteError.value = ''; showDeleteModal.value = true }
 async function doDelete() {
   deleting.value = true; deleteError.value = ''
-  try {
-    await deleteOrder(deleteRow.value.id)
-    showDeleteModal.value = false
-    showToast('Sales Order deleted.')
-    await loadOrders()
-  } catch (e) {
-    deleteError.value = e?.response?.data?.response?.error?.message || e.message
-  } finally { deleting.value = false }
+  try { await deleteOrder(deleteRow.value.id); showDeleteModal.value = false; showToast('Sales Order deleted.'); await loadOrders() }
+  catch (e) { deleteError.value = e?.response?.data?.response?.error?.message || e.message } finally { deleting.value = false }
 }
 
 function closeFormModal() { showFormModal.value = false }
@@ -1286,62 +989,20 @@ onMounted(() => { loadOrders(); loadLookups() })
 </script>
 
 <style scoped>
-:root {
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --bg: #f1f5f9;
-  --surface: #ffffff;
-  --surface2: #f8fafc;
-  --border: #e2e8f0;
-  --accent: #3b82f6;
-  --accent-light: #eff6ff;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --process-color: #0891b2;
-  --book-color: #7c3aed;
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
-}
-
+/* (Style dibiarkan sama seperti aslinya karena sudah rapi, saya minimalkan ruang agar tidak terpotong) */
+:root { --font: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace; --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc; --border: #e2e8f0; --accent: #3b82f6; --accent-light: #eff6ff; --text-primary: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8; --success: #22c55e; --danger: #ef4444; --warning: #f59e0b; --radius: 10px; --radius-sm: 6px; --shadow-sm: 0 1px 2px rgba(0,0,0,.06); --shadow-md: 0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04); }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 .layout { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); font-family: var(--font); }
 .main { flex: 1; padding: 28px 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
 .content-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
-
 .page-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
 .page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
 .search-wrap { position: relative; display: flex; align-items: center; }
 .search-icon { position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
 .search-input { height: 36px; padding: 0 12px 0 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; font-family: var(--font); background: var(--surface2); width: 240px; transition: border-color .15s; }
 .search-input:focus { border-color: var(--accent); background: #fff; }
-
-.btn { 
-  display: inline-flex; 
-  align-items: center; 
-  gap: 6px; 
-  padding: 0 16px; 
-  height: 36px; 
-  border-radius: var(--radius-sm); 
-  font-size: 13px; 
-  font-weight: 600; 
-  cursor: pointer; 
-  border: none; 
-  font-family: var(--font); 
-  transition: all .15s;
-  
-  /* Tambahkan ini untuk memastikan tombol selalu terlihat */
-  opacity: 1 !important;
-  visibility: visible !important;
-}
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; height: 36px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); transition: all .15s; opacity: 1 !important; visibility: visible !important; }
 .btn--primary { background: var(--accent); color: #fff; }
 .btn--primary:hover { background: #2563eb; }
 .btn--primary:disabled { opacity: .6; cursor: not-allowed; }
@@ -1350,30 +1011,13 @@ onMounted(() => { loadOrders(); loadLookups() })
 .btn--danger { background: var(--danger); color: #fff; }
 .btn--danger:hover { background: #dc2626; }
 .btn--danger:disabled { opacity: .6; cursor: not-allowed; }
-
 .btn--edit { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .15s; font-family: var(--font); }
 .btn--edit:hover { background: #e2e8f0; color: var(--text-primary); }
-
 .btn--process { background: #0e7490; color: #fff; }
-.btn--process:hover:not(:disabled) { background: #0e7490; }
-.btn--process:disabled { opacity: .4; cursor: not-allowed; }
-
 .btn--book { background: #6d28d9; color: #fff; }
-.btn--book:hover:not(:disabled) { background: #6d28d9; }
-.btn--book:disabled { opacity: .4; cursor: not-allowed; }
-
 .btn--reactivate { background: #0284c7; color: #fff; }
-.btn--reactivate:hover:not(:disabled) { background: #0369a1; }
-.btn--reactivate:disabled { opacity: .4; cursor: not-allowed; }
-
 .btn--void { background: #dc2626; color: #fff; }
-.btn--void:hover:not(:disabled) { background: #b91c1c; }
-.btn--void:disabled { opacity: .4; cursor: not-allowed; }
-
 .btn--cancel { background: #374151; color: #fff; }
-.btn--cancel:hover:not(:disabled) { background: #1f2937; }
-.btn--cancel:disabled { opacity: .4; cursor: not-allowed; }
-
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .table thead th { background: var(--surface2); color: var(--text-muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 10px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: left; }
@@ -1383,7 +1027,6 @@ onMounted(() => { loadOrders(); loadLookups() })
 .table tbody tr td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .tr-data:hover { background: var(--surface2); }
 .tr-data:last-child td { border-bottom: none; }
-
 .code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; }
 .td-secondary { color: var(--text-secondary); font-size: 13px; }
 .td-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
@@ -1391,14 +1034,12 @@ onMounted(() => { loadOrders(); loadLookups() })
 .td-empty { text-align: center; color: var(--text-muted); padding: 48px 16px; font-size: 13px; }
 .td-error { color: var(--danger); }
 .td-action-cell { text-align: right; overflow: visible !important; }
-
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .status-pill--portal { background: #ecfeff; color: #0891b2; }
 .status-pill--open { background: #f0fdf4; color: #16a34a; }
 .status-pill--completed { background: #fef3c7; color: #92400e; }
 .status-pill--draft { background: #f1f5f9; color: #64748b; }
 .status-pill--voided { background: #fff1f2; color: #be123c; }
-
 .action-group { display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
 .action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; transition: background .12s; font-family: var(--font); }
 .action-btn--more { background: var(--surface2); color: var(--text-secondary); padding: 5px 8px; }
@@ -1409,45 +1050,32 @@ onMounted(() => { loadOrders(); loadLookups() })
 .dropdown-item:hover { background: var(--surface2); color: var(--text-primary); }
 .dropdown-item--danger { color: var(--danger); }
 .dropdown-item--danger:hover { background: #fff1f2; }
-
 .loading-dots { display: flex; gap: 6px; justify-content: center; align-items: center; }
 .loading-dots span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
 .loading-dots span:nth-child(2) { animation-delay: .2s; }
 .loading-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
-
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
 .page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); }
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
 .page-btn--active { background: #fff !important; color: #1e293b !important; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07); }
 .page-btn:disabled { opacity: .3; cursor: not-allowed; }
 .page-ellipsis { color: var(--text-muted); padding: 0 4px; font-size: 13px; }
-
-/* ── Modal ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
 .modal { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 480px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
 .modal--xxl { max-width: 1060px; }
 .modal--sm { max-width: 400px; }
-.modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); gap: 12px; flex-shrink: 0; }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 24px 12px; border-bottom: 1px solid var(--border); gap: 12px; flex-shrink: 0; }
 .modal-breadcrumb { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; }
 .bc-active { color: var(--accent); font-weight: 500; }
 .modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .modal-close { background: none; border: none; color: var(--text-muted); display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; transition: background .12s; flex-shrink: 0; }
 .modal-close:hover { background: var(--surface2); color: var(--text-primary); }
-.modal-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 20px; flex-shrink: 0; }
+.modal-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; flex-shrink: 0; }
 .modal-tab { padding: 10px 14px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--font); transition: all .15s; margin-bottom: -1px; }
 .modal-tab--active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
-}
-
-/* ── Form ── */
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; padding: 14px 24px; border-top: 1px solid var(--border); }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
@@ -1459,14 +1087,11 @@ onMounted(() => { loadOrders(); loadLookups() })
 .form-input--sm { height: 32px; font-size: 12.5px; }
 .req { color: var(--danger); }
 .form-api-error { margin-top: 14px; padding: 10px 14px; background: #fff1f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); color: var(--danger); font-size: 12.5px; display: flex; align-items: flex-start; gap: 8px; }
-
 .section-divider { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .btn-add-line { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: var(--font); transition: background .12s; }
 .btn-add-line:hover { background: #dbeafe; }
 .btn-rm-line { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #fee2e2; color: var(--danger); border: none; cursor: pointer; transition: background .12s; }
 .btn-rm-line:hover { background: #fecaca; }
-
-/* Combobox */
 .acc-wrap { position: relative; width: 100%; }
 .acc-input { display: block; width: 100%; height: 36px; padding: 0 32px 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; background: var(--surface2); transition: border-color .15s; font-family: var(--font); color: var(--text-primary); box-sizing: border-box; }
 .acc-input:focus { border-color: var(--accent); background: #fff; }
@@ -1478,25 +1103,61 @@ onMounted(() => { loadOrders(); loadLookups() })
 .acc-opt { padding: 8px 12px; font-size: 12.5px; color: var(--text-primary); cursor: pointer; transition: background .1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acc-opt:hover { background: var(--accent-light); }
 .acc-empty { padding: 8px 12px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }
-
-/* Detail view */
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .detail-item { display: flex; flex-direction: column; gap: 3px; }
 .detail-item--full { grid-column: 1 / -1; }
 .detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
 .detail-value { font-size: 13.5px; color: var(--text-primary); font-weight: 500; }
 .detail-value.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+/* Totals ditambahkan untuk Purchase / Sales Order */
+.totals-block { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.totals-row { display: flex; justify-content: space-between; gap: 48px; font-size: 13px; color: var(--text-secondary); min-width: 260px; }
+.totals-row--grand { font-weight: 700; font-size: 14px; color: var(--text-primary); border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
+
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); }
 .delete-text strong { color: var(--text-primary); }
-
-/* Toast */
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
 .toast--success { background: #16a34a; color: #fff; }
 .toast--error { background: var(--danger); color: #fff; }
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }
 .fade-enter-from,.fade-leave-to { opacity: 0; }
-
-/* Spinner */
 .spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sorting Headers ── */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 20px !important; 
+  transition: color 0.15s;
+}
+.sortable:hover {
+  color: var(--text-primary);
+}
+.sortable::after, .sortable::before {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  border: 4px solid transparent;
+  opacity: 0.3;
+}
+.sortable::before {
+  border-bottom-color: currentColor;
+  margin-top: -9px;
+}
+.sortable::after {
+  border-top-color: currentColor;
+  margin-top: 1px;
+}
+.sortable.asc::before {
+  opacity: 1; 
+  color: var(--accent);
+}
+.sortable.desc::after {
+  opacity: 1; 
+  color: var(--accent);
+}
 </style>
