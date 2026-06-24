@@ -78,6 +78,11 @@ export async function fetchCoaList() {
     "Owner's Equity": 'equity',
   }
 
+  console.log('[balanceSheet] fetchCoaList: total raw elements:', allElements.length)
+  if (allElements.length > 0) {
+    console.log('[balanceSheet] sample COA element:', JSON.stringify(allElements[0], null, 2))
+  }
+
   coaListCache = allElements
     .map(el => {
       const accountType      = (el.accountType || '').trim()
@@ -102,6 +107,8 @@ export async function fetchCoaList() {
     })
     .filter(Boolean)
 
+  console.log('[balanceSheet] fetchCoaList: after filter:', coaListCache.length, 'accounts')
+  console.log('[balanceSheet] sample COA:', JSON.stringify(coaListCache.slice(0, 3), null, 2))
   return coaListCache
 }
 
@@ -164,15 +171,33 @@ export async function fetchBalanceMap(asOfDate, {
     startRow += PAGE
   }
 
+  // Debug: log sample fact record untuk inspeksi field name
+  if (allFacts.length > 0) {
+    console.log('[balanceSheet] sample AccountingFact keys:', Object.keys(allFacts[0]))
+    console.log('[balanceSheet] sample AccountingFact:', JSON.stringify(allFacts[0], null, 2))
+  } else {
+    console.warn('[balanceSheet] fetchBalanceMap: allFacts kosong')
+  }
+
   // Agregasi per searchKey akun
+  // Openbravo bisa mengembalikan searchKey di berbagai field — coba semua kemungkinan
   const map = new Map()
   for (const f of allFacts) {
-    // Identifier dari Openbravo biasanya: "11010101 - Nama Akun"
-    const rawIdentifier = f['account$_identifier'] || ''
-    const searchKey =
-      rawIdentifier.split(' - ')[0].trim() ||
-      (typeof f.account === 'object' ? f.account?.value : '') ||
-      ''
+    let searchKey = ''
+
+    // 1. account$_identifier: "11010101 - Nama Akun" → ambil bagian sebelum " - "
+    const rawId = f['account$_identifier'] || f['accountingAccount$_identifier'] || ''
+    if (rawId) searchKey = rawId.split(' - ')[0].trim()
+
+    // 2. account sebagai object { value, searchKey, id }
+    if (!searchKey && typeof f.account === 'object' && f.account !== null) {
+      searchKey = (f.account.value || f.account.searchKey || '').trim()
+    }
+
+    // 3. field dot-notation langsung
+    if (!searchKey && f['account.value']) {
+      searchKey = String(f['account.value']).trim()
+    }
 
     if (!searchKey) continue
 
@@ -182,6 +207,8 @@ export async function fetchBalanceMap(asOfDate, {
       credit: prev.credit + (Number(f.credit) || 0),
     })
   }
+
+  console.log('[balanceSheet] balanceMap size:', map.size, '| sample keys:', [...map.keys()].slice(0, 5))
   return map
 }
 

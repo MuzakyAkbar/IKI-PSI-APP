@@ -4,18 +4,18 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Vendor Invoice</h2>
+          <h2 class="page-title">Faktur Vendor</h2>
         </div>
 
         <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search invoice no or vendor..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari nomor faktur atau vendor..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Vendor Invoice
+            Buat Faktur Vendor
           </button>
         </div>
 
@@ -23,17 +23,17 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">Invoice No.</th>
-              <th class="sortable" :class="{ asc: sortCol === 'invoiceDate', desc: sortCol === 'invoiceDate' && sortDir === 'desc' }" @click="toggleSort('invoiceDate')">Invoice Date</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">No. Faktur</th>
+              <th class="sortable" :class="{ asc: sortCol === 'invoiceDate', desc: sortCol === 'invoiceDate' && sortDir === 'desc' }" @click="toggleSort('invoiceDate')">Tanggal Faktur</th>
               <th class="sortable" :class="{ asc: sortCol === 'businessPartner.name', desc: sortCol === 'businessPartner.name' && sortDir === 'desc' }" @click="toggleSort('businessPartner.name')">Vendor</th>
-              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Grand Total</th>
+              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Total Grand</th>
               <th class="sortable" :class="{ asc: sortCol === 'documentStatus', desc: sortCol === 'documentStatus' && sortDir === 'desc' }" @click="toggleSort('documentStatus')">Status</th>
-              <th class="th-action">Action</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="6" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="6" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="6" class="td-empty">No vendor invoices found.</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="6" class="td-empty">Tidak ada faktur vendor ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -97,11 +97,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List Invoice</span>
+                <span>Daftar Faktur Vendor</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} Vendor Invoice</span>
+                <span class="bc-active">{{ isEdit ? 'Sunting' : 'Buat' }} Vendor Invoice</span>
               </div>
-              <div class="modal-title">{{ isEdit ? 'Edit' : 'Create' }} Vendor Invoice</div>
+              <div class="modal-title">{{ isEdit ? 'Sunting' : 'Buat' }} Vendor Invoice</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -122,20 +122,20 @@
               <div class="form-grid-4">
 
                 <div class="form-group">
-                  <label>Invoice No.</label>
+                  <label>No. Faktur</label>
                   <input v-model="form.documentNo" class="form-input" placeholder="Auto-generated" disabled />
                 </div>
                 <div class="form-group">
-                  <label>Invoice Date</label>
+                  <label>Tanggal Faktur</label>
                   <input v-model="form.invoiceDate" type="date" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Accounting Date</label>
+                  <label>Tanggal Akuntansi</label>
                   <input v-model="form.accountingDate" type="date" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Order Reference</label>
-                  <input v-model="form.orderReference" class="form-input" placeholder="Order Reference" />
+                  <label>Referensi Order</label>
+                  <input v-model="form.orderReference" class="form-input" placeholder="Referensi Order" />
                 </div>
 
                 <div class="form-group form-group--full">
@@ -147,33 +147,33 @@
                       <li v-for="v in filteredVendors" :key="v.id" class="acc-opt" @mousedown.prevent="selectVendor(v)">{{ v.name }}</li>
                     </ul>
                     <ul v-else-if="showVendorDrop && vendorSearch.length > 1" class="acc-dropdown">
-                      <li class="acc-empty">No vendors found</li>
+                      <li class="acc-empty">Tidak ada vendor yang ditemukan</li>
                     </ul>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Partner Address</label>
+                  <label>Alamat Vendor</label>
                   <select v-model="form.partnerAddress" class="form-input" :disabled="!form.businessPartner">
-                    <option value="">Select</option>
+                    <option value="">Pilih Alamat</option>
                     <option v-for="l in partnerLocations" :key="l.id" :value="l.id">{{ l['locationAddress$_identifier'] || l.id }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Payment Term <span class="req">*</span></label>
+                  <label>Term Pembayaran <span class="req">*</span></label>
                   <input :value="paymentTermLabel" class="form-input" disabled placeholder="Auto dari vendor" />
                 </div>
                 <div class="form-group">
-                  <label>Payment Method</label>
+                  <label>Metode Pembayaran</label>
                   <input :value="paymentMethodLabel" class="form-input" disabled placeholder="Auto dari vendor" />
                 </div>
                 <div class="form-group">
-                  <label>Price List</label>
+                  <label>Daftar Harga</label>
                   <input :value="priceListLabel" class="form-input" disabled placeholder="Auto dari vendor" />
                 </div>
 
                 <div class="form-group form-group--full">
-                  <label>Description</label>
+                  <label>Deskripsi</label>
                   <input v-model="form.description" class="form-input" placeholder="Description" />
                 </div>
 
@@ -181,25 +181,25 @@
 
               <!-- Invoice Lines -->
               <div class="section-divider">
-                Invoice Lines
+                Detail Faktur
                 <button class="btn-add-line" @click="addLine">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                  Add Line
+                  Tambah Detail Faktur
                 </button>
               </div>
               <div class="table-wrap" style="margin-bottom:0">
                 <table class="table table--lines">
                   <thead><tr>
                     <th style="width:40px">#</th>
-                    <th>Product</th>
+                    <th>Produk</th>
                     <th style="width:110px;text-align:center">Qty</th>
                     <th style="width:150px;text-align:center">UOM</th>
-                    <th style="width:160px;text-align:right">Unit Price</th>
-                    <th style="width:170px;text-align:right">Net Amount</th>
+                    <th style="width:160px;text-align:right">Harga Satuan</th>
+                    <th style="width:170px;text-align:right">Jumlah Net</th>
                     <th style="width:40px"></th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="lines.length === 0"><td colspan="7" class="td-empty" style="padding:20px">No lines yet. Click "Add Line".</td></tr>
+                    <tr v-if="lines.length === 0"><td colspan="7" class="td-empty" style="padding:20px">Tidak ada detail faktur</td></tr>
                     <tr v-for="(line, idx) in lines" :key="idx">
                       <td class="td-secondary" style="text-align:center">{{ idx + 1 }}</td>
                       <td>
@@ -238,20 +238,20 @@
             <!-- ── Payment Term Tab ── -->
             <div v-if="activeFormTab === 'payment'">
               <div v-if="!form.paymentTerms" class="td-empty" style="padding:32px">
-                Please select a Vendor in the Transaction tab first.
+                Silakan pilih Vendor di tab Transaksi terlebih dahulu.
               </div>
               <div v-else>
                 <div v-if="paymentLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
                 <div v-else class="table-wrap" style="margin-bottom:0">
                   <table class="table">
                     <thead><tr>
-                      <th>Line</th>
-                      <th>Due Date Offset</th>
-                      <th>Percentage</th>
-                      <th>Fixed Amount</th>
+                      <th>Nomor</th>
+                      <th>Tanggal Jatuh Tempo</th>
+                      <th>Persentase</th>
+                      <th>Jumlah Tetap</th>
                     </tr></thead>
                     <tbody>
-                      <tr v-if="paymentLines.length === 0"><td colspan="4" class="td-empty" style="padding:20px">No lines found for this Payment Term.</td></tr>
+                      <tr v-if="paymentLines.length === 0"><td colspan="4" class="td-empty" style="padding:20px">Tidak ada baris yang ditemukan untuk Term Pembayaran ini.</td></tr>
                       <tr v-for="pl in paymentLines" :key="pl.id">
                         <td class="td-secondary">{{ pl.line ?? pl.lineNo ?? '—' }}</td>
                         <td class="td-secondary">{{ pl.offsetDays ?? pl.netDays ?? pl.dueDateOffset ?? pl.dayOffset ?? '—' }}</td>
@@ -276,7 +276,7 @@
             <button class="btn btn--ghost" @click="closeFormModal">Cancel</button>
             <button class="btn btn--primary" :disabled="saving" @click="saveInvoice">
               <span v-if="saving" class="spinner"></span>
-              {{ saving ? 'Saving...' : 'Save' }}
+              {{ saving ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </div>
         </div>
@@ -294,11 +294,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List Invoice</span>
+                <span>Daftar Faktur</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">View Invoice</span>
+                <span class="bc-active">Lihat Faktur</span>
               </div>
-              <div class="modal-title">Invoice — {{ viewRow?.documentNo }}</div>
+              <div class="modal-title">Faktur — {{ viewRow?.documentNo }}</div>
             </div>
             <button class="modal-close" @click="showViewModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -308,6 +308,7 @@
           <!-- View Tabs -->
           <div class="modal-tabs">
             <button :class="['modal-tab', viewTab === 'basic' ? 'modal-tab--active' : '']" @click="viewTab = 'basic'">Basic</button>
+            <button :class="['modal-tab', viewTab === 'paymentPlan' ? 'modal-tab--active' : '']" @click="switchToPaymentPlan">Payment Plan</button>
             <button :class="['modal-tab', viewTab === 'accounting' ? 'modal-tab--active' : '']" @click="switchToAccounting">Accounting</button>
           </div>
 
@@ -316,19 +317,19 @@
             <!-- ── Basic Tab ── -->
             <div v-if="viewTab === 'basic'">
               <div class="detail-grid">
-                <div class="detail-item"><span class="detail-label">Invoice No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
-                <div class="detail-item"><span class="detail-label">Invoice Date</span><span class="detail-value">{{ formatDate(viewRow.invoiceDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">No. Faktur</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
+                <div class="detail-item"><span class="detail-label">Tanggal Faktur</span><span class="detail-value">{{ formatDate(viewRow.invoiceDate) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', statusClass(viewRow.documentStatus)]">{{ statusLabel(viewRow.documentStatus) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Accounting Date</span><span class="detail-value">{{ formatDate(viewRow.accountingDate) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Vendor Name</span><span class="detail-value">{{ viewRow['businessPartner$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Partner Address</span><span class="detail-value">{{ viewRow['partnerAddress$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Terms</span><span class="detail-value">{{ viewRow['paymentTerms$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Grand Total</span><span class="detail-value">{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Organization</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Order Reference</span><span class="detail-value">{{ viewRow.orderReference || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Price List</span><span class="detail-value">{{ viewRow['priceList$_identifier'] || '—' }}</span></div>
-                <div class="detail-item detail-item--full"><span class="detail-label">Description</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Tanggal Akuntansi</span><span class="detail-value">{{ formatDate(viewRow.accountingDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Nama Vendor</span><span class="detail-value">{{ viewRow['businessPartner$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Alamat Mitra</span><span class="detail-value">{{ viewRow['partnerAddress$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Terms Pembayaran</span><span class="detail-value">{{ viewRow['paymentTerms$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Metode Pembayaran</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">GrandTotal</span><span class="detail-value">{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Organisasi</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Referensi Pesanan</span><span class="detail-value">{{ viewRow.orderReference || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Daftar Harga</span><span class="detail-value">{{ viewRow['priceList$_identifier'] || '—' }}</span></div>
+                <div class="detail-item detail-item--full"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
               </div>
 
               <!-- Item Detail -->
@@ -336,7 +337,7 @@
               <div v-if="viewLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table table--lines">
-                  <thead><tr><th>#</th><th>Product</th><th>Qty</th><th>UOM</th><th>Unit Price</th><th>Tax</th><th>Net Amount</th></tr></thead>
+                  <thead><tr><th>#</th><th>Produk</th><th>Qty</th><th>UOM</th><th>Harga Satuan</th><th>Pajak</th><th>Jumlah</th></tr></thead>
                   <tbody>
                     <tr v-if="viewLines.length === 0"><td colspan="7" class="td-empty">No items.</td></tr>
                     <tr v-for="(l, i) in viewLines" :key="l.id">
@@ -355,6 +356,59 @@
                 <div class="totals-row"><span>Subtotal</span><span>{{ formatCurrency(viewRow.summedLineAmount) }}</span></div>
                 <div class="totals-row"><span>Total Pajak</span><span>{{ formatCurrency((viewRow.grandTotalAmount ?? 0) - (viewRow.summedLineAmount ?? 0)) }}</span></div>
                 <div class="totals-row totals-row--grand"><span>Total Invoice</span><span>{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
+              </div>
+            </div>
+
+            <!-- ── Payment Plan Tab ── -->
+            <div v-if="viewTab === 'paymentPlan'">
+              <div class="section-divider" style="margin-top:0">
+                Rencana Pembayaran
+                <span v-if="paymentSchedules.length" class="pp-badge">{{ paymentSchedules.length }} cicilan{{ paymentSchedules.length > 1 ? 's' : '' }}</span>
+              </div>
+              <div v-if="paymentSchedulesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+              <div v-else-if="paymentSchedules.length === 0" class="pp-empty">Rencana pembayaran tidak ditemukan.</div>
+              <div v-else class="table-wrap" style="margin-bottom:0">
+                <table class="table">
+                  <thead><tr>
+                    <th>#</th>
+                    <th>Tanggal Jatuh Tempo</th>
+                    <th>Tanggal Diharapkan</th>
+                    <th>Metode Pembayaran</th>
+                    <th style="text-align:right">Jumlah Diharapkan</th>
+                    <th style="text-align:right">Dibayar</th>
+                    <th style="text-align:right">Belum Dibayar</th>
+                    <th>Status</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr v-for="(ps, idx) in paymentSchedules" :key="ps.id" class="tr-data">
+                      <td class="td-secondary" style="text-align:center">{{ idx + 1 }}</td>
+                      <td>{{ formatDate(ps.dueDate) }}</td>
+                      <td class="td-secondary">{{ formatDate(ps.expectedDate) }}</td>
+                      <td class="td-secondary">{{ ps['finPaymentmethod$_identifier'] || '—' }}</td>
+                      <td style="text-align:right;font-variant-numeric:tabular-nums">{{ formatCurrency(ps.amount) }}</td>
+                      <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span :class="ps.paidAmount > 0 ? 'pp-paid' : 'td-muted'">{{ ps.paidAmount > 0 ? formatCurrency(ps.paidAmount) : '—' }}</span>
+                      </td>
+                      <td style="text-align:right;font-variant-numeric:tabular-nums">
+                        <span :class="ps.outstandingAmount > 0 ? 'pp-outstanding' : 'pp-paid'">{{ formatCurrency(ps.outstandingAmount) }}</span>
+                      </td>
+                      <td>
+                        <span :class="['pp-status', ps.outstandingAmount <= 0 ? 'pp-status--paid' : (ps.paidAmount > 0 ? 'pp-status--partial' : 'pp-status--unpaid')]">
+                          {{ ps.outstandingAmount <= 0 ? 'Paid' : (ps.paidAmount > 0 ? 'Partial' : 'Unpaid') }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot v-if="paymentSchedules.length > 1">
+                    <tr class="acc-totals-row">
+                      <td colspan="4" style="text-align:right;font-size:12px;font-weight:600;color:var(--text-muted);padding:10px 16px">TOTAL</td>
+                      <td style="text-align:right;padding:10px 16px;font-weight:700;color:var(--text-primary)">{{ formatCurrency(paymentSchedules.reduce((s, p) => s + (p.amount || 0), 0)) }}</td>
+                      <td style="text-align:right;padding:10px 16px;font-weight:700;color:#16a34a">{{ formatCurrency(paymentSchedules.reduce((s, p) => s + (p.paidAmount || 0), 0)) }}</td>
+                      <td style="text-align:right;padding:10px 16px;font-weight:700;color:#dc2626">{{ formatCurrency(paymentSchedules.reduce((s, p) => s + (p.outstandingAmount || 0), 0)) }}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
 
@@ -391,7 +445,7 @@
                   <div class="table-wrap" style="margin-bottom:0">
                     <table class="table">
                       <thead><tr>
-                        <th>COA</th><th>Name</th><th>Description</th><th>Period</th>
+                        <th>COA</th><th>Nama</th><th>Deskripsi</th><th>Periode</th>
                         <th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th>Type</th>
                       </tr></thead>
                       <tbody>
@@ -443,7 +497,7 @@
             <template v-if="viewRow?.documentStatus === 'DR'">
               <button class="btn btn--edit" @click="openEditFromView">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit
+                Sunting
               </button>
               <button class="btn btn--complete" :disabled="completing" @click="doCompleteInvoice">
                 <span v-if="completing" class="spinner"></span>
@@ -487,20 +541,20 @@
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <div class="modal-title">Delete Invoice</div>
+            <div class="modal-title">Hapus Faktur</div>
             <button class="modal-close" @click="showDeleteModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Are you sure you want to delete invoice <strong>{{ deleteRow?.documentNo }}</strong>? This action cannot be undone.</p>
+            <p class="delete-text">Apakah Anda yakin ingin menghapus faktur <strong>{{ deleteRow?.documentNo }}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
             <div v-if="deleteError" class="form-api-error" style="margin-top:10px">{{ deleteError }}</div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showDeleteModal = false">Cancel</button>
+            <button class="btn btn--ghost" @click="showDeleteModal = false">Batal</button>
             <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
               <span v-if="deleting" class="spinner"></span>
-              {{ deleting ? 'Deleting...' : 'Delete' }}
+              {{ deleting ? 'Menghapus...' : 'Hapus' }}
             </button>
           </div>
         </div>
@@ -526,7 +580,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import {
   fetchAllInvoices, fetchInvoice, createInvoice, updateInvoice, deleteInvoice, postInvoice,
   fetchInvoiceLines, createInvoiceLine, updateInvoiceLine, deleteInvoiceLine,
-  fetchAccountingFacts,
+  fetchAccountingFacts, fetchPaymentSchedules,
   fetchVendors, fetchVendorById, fetchPartnerLocations,
   fetchPaymentTerms, fetchPaymentTermLines, fetchPaymentMethods,
   fetchPriceLists, fetchProducts, fetchUOMs,
@@ -535,7 +589,7 @@ import {
   DEFAULT_TAX_ID,
   DEFAULT_ORGANIZATION,
 } from '@/services/vendorInvoice.js'
-import { generateDocumentPDF } from '@/services/pdfGenerator.js'
+import { generateVendorInvoicePDF } from '@/services/pdfGeneratorVendorInvoice.js'
 
 // ── directive
 const vClickOutside = {
@@ -623,6 +677,10 @@ const viewRow = ref(null)
 const viewTab = ref('basic')
 const viewLines = ref([])
 const viewLinesLoading = ref(false)
+
+// ── payment schedules (view modal)
+const paymentSchedules = ref([])
+const paymentSchedulesLoading = ref(false)
 
 // ── accounting
 const accountingFacts = ref([])
@@ -909,14 +967,32 @@ async function openEditModal(r) {
 
 async function openViewModal(r) {
   closeDropdown()
-  viewRow.value = r
   viewTab.value = 'basic'
   accountingFacts.value = []
   accountingError.value = ''
-  showViewModal.value = true
+  paymentSchedules.value = []
+  viewLines.value = []
   viewLinesLoading.value = true
-  viewLines.value = await fetchInvoiceLines(r.id)
-  viewLinesLoading.value = false
+  paymentSchedulesLoading.value = true
+
+  // Set data awal dari list row dulu agar modal bisa segera terbuka
+  viewRow.value = r
+  showViewModal.value = true
+
+  // Fetch full invoice data (berisi semua $_identifier fields) lalu update viewRow
+  fetchInvoice(r.id)
+    .then(full => { if (full) viewRow.value = full })
+    .catch(() => {})
+
+  fetchInvoiceLines(r.id)
+    .then(fetched => { viewLines.value = fetched })
+    .catch(() => { viewLines.value = [] })
+    .finally(() => { viewLinesLoading.value = false })
+
+  fetchPaymentSchedules(r.id)
+    .then(schedules => { paymentSchedules.value = schedules })
+    .catch(() => { paymentSchedules.value = [] })
+    .finally(() => { paymentSchedulesLoading.value = false })
 }
 
 function openEditFromView() {
@@ -924,6 +1000,17 @@ function openEditFromView() {
   if (!r) return
   showViewModal.value = false
   openEditModal(r)
+}
+
+async function switchToPaymentPlan() {
+  viewTab.value = 'paymentPlan'
+  if (paymentSchedules.value.length > 0 || paymentSchedulesLoading.value) return
+  paymentSchedulesLoading.value = true
+  try {
+    paymentSchedules.value = await fetchPaymentSchedules(viewRow.value.id)
+  } catch (e) {
+    console.warn('[switchToPaymentPlan] Failed:', e.message)
+  } finally { paymentSchedulesLoading.value = false }
 }
 
 async function switchToAccounting() {
@@ -1172,8 +1259,16 @@ watch(() => form.value.paymentTerms, async (newVal) => {
 async function doPrint() {
   if (!viewRow.value) return
   try {
-    // Generate PDF pakai service
-    await generateDocumentPDF('Vendor Invoice', viewRow.value, viewLines.value)
+    // Fetch fresh full invoice agar semua $_identifier fields tersedia
+    const [fullInvoice, invoiceLines] = await Promise.all([
+      fetchInvoice(viewRow.value.id).catch(() => viewRow.value),
+      viewLines.value.length > 0
+        ? Promise.resolve(viewLines.value)
+        : fetchInvoiceLines(viewRow.value.id),
+    ])
+    // Update viewRow juga supaya tampilan modal ikut fresh
+    if (fullInvoice) viewRow.value = fullInvoice
+    await generateVendorInvoicePDF(fullInvoice || viewRow.value, invoiceLines)
     showToast('Dokumen PDF berhasil diunduh.')
   } catch (error) {
     console.error('Error printing PDF:', error)
@@ -1395,6 +1490,16 @@ onMounted(() => { loadInvoices(); loadLookups() })
 .acc-type--other  { background: var(--surface2); color: var(--text-muted); }
 .acc-totals-row { background: var(--surface2); border-top: 2px solid var(--border); }
 .acc-totals-row td { border-bottom: none !important; }
+
+/* Payment Plan */
+.pp-badge { display: inline-flex; align-items: center; background: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; text-transform: none; letter-spacing: 0; }
+.pp-empty { padding: 16px 0; font-size: 13px; color: var(--text-muted); font-style: italic; }
+.pp-paid { color: #16a34a; font-weight: 600; }
+.pp-outstanding { color: #dc2626; font-weight: 600; }
+.pp-status { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pp-status--paid    { background: #dcfce7; color: #16a34a; }
+.pp-status--partial { background: #fef9c3; color: #b45309; }
+.pp-status--unpaid  { background: #fee2e2; color: #dc2626; }
 
 /* Delete modal */
 .delete-text { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); }

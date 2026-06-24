@@ -7,7 +7,7 @@
         <div class="page-header">
           <div class="page-header-inner">
             <div>
-              <h2 class="page-title">Financial Account</h2>
+              <h2 class="page-title">Akun Keuangan</h2>
             </div>
           </div>
         </div>
@@ -16,7 +16,7 @@
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search account name..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari nama akun..." @input="onSearch" />
           </div>
         </div>
 
@@ -24,18 +24,18 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Currency</th>
-              <th>Organization</th>
-              <th style="text-align:right">Current Balance</th>
-              <th style="text-align:right">Initial Balance</th>
-              <th class="th-action">Action</th>
+              <th>Nama</th>
+              <th>Tipe</th>
+              <th>Mata Uang</th>
+              <th>Organisasi</th>
+              <th style="text-align:right">Saldo Saat Ini</th>
+              <th style="text-align:right">Saldo Awal</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="filteredAccounts.length === 0"><td colspan="7" class="td-empty">No financial accounts found.</td></tr>
+              <tr v-else-if="filteredAccounts.length === 0"><td colspan="7" class="td-empty">Tidak ada akun keuangan yang ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="acc in filteredAccounts" :key="acc.id" class="tr-data" :class="{ 'tr-selected': selectedAccount?.id === acc.id }" @click="selectAccount(acc)">
                   <td>
@@ -85,7 +85,7 @@
               </button>
               <div>
                 <div class="panel-breadcrumb">
-                  <span class="bc-link" @click="clearSelection">Financial Account</span>
+                  <span class="bc-link" @click="clearSelection">Akun Keuangan</span>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                   <span class="bc-active">{{ selectedAccount.name }}</span>
                 </div>
@@ -96,12 +96,12 @@
             <!-- Balance Summary Bar -->
             <div class="balance-bar">
               <div class="balance-bar-item">
-                <span class="balance-bar-label">Current Balance</span>
+                <span class="balance-bar-label">Saldo Saat Ini</span>
                 <span class="balance-bar-val balance-pos">{{ formatCurrency(selectedAccount.currentBalance, selectedAccount['currency$_identifier']) }}</span>
               </div>
               <div class="balance-bar-sep"></div>
               <div class="balance-bar-item">
-                <span class="balance-bar-label">Currency</span>
+                <span class="balance-bar-label">Mata Uang</span>
                 <span class="balance-bar-val">{{ selectedAccount['currency$_identifier'] || '—' }}</span>
               </div>
               <div class="balance-bar-sep"></div>
@@ -120,10 +120,10 @@
                 <input v-model="txnSearch" class="search-input" placeholder="Search payment, partner..." @input="onTxnSearch" />
               </div>
               <select v-model="txnStatusFilter" class="filter-select" @change="loadTransactions">
-                <option value="">All Status</option>
-                <option value="RDNC">Deposited Not Cleared</option>
-                <option value="RPAP">Awaiting Payment</option>
-                <option value="RPVD">Payment Voided</option>
+                <option value="">Semua Status</option>
+                <option value="RDNC">Disetorkan Belum Dicairkan</option>
+                <option value="RPAP">Menunggu Pembayaran</option>
+                <option value="RPVD">Pembayaran Dibatalkan</option>
               </select>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
@@ -139,14 +139,14 @@
           <div class="table-wrap">
             <table class="table">
               <thead><tr>
-                <th>Transaction Type</th>
-                <th>Payment</th>
-                <th>Transaction Date</th>
-                <th>Business Partner</th>
-                <th>Payment No.</th>
+                <th>Tipe Transaksi</th>
+                <th>Pembayaran</th>
+                <th>Tanggal Transaksi</th>
+                <th>Partner Bisnis</th>
+                <th>No. Pembayaran</th>
                 <th>Description</th>
                 <th style="text-align:right">Deposit</th>
-                <th style="text-align:right">Payment Amount</th>
+                <th style="text-align:right">Jumlah Pembayaran</th>
                 <th>Status</th>
                 <th class="th-action">Action</th>
               </tr></thead>
@@ -233,7 +233,7 @@
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
-                <span>Financial Account</span>
+                <span>Akun Keuangan</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span>{{ selectedAccount?.name }}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -269,32 +269,32 @@
             <div class="detail-section-title">Transaction Info</div>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">Transaction Type</span>
+                <span class="detail-label">Tipe Transaksi</span>
                 <span class="detail-value"><span :class="['txn-type-badge', txnTypeClass(detailTxn.transactionType)]">{{ txnTypeLabel(detailTxn.transactionType) }}</span></span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Transaction Date</span>
+                <span class="detail-label">Tanggal Transaksi</span>
                 <span class="detail-value">{{ formatDate(detailTxn.transactionDate) }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Accounting Date</span>
+                <span class="detail-label">Tanggal Akuntansi</span>
                 <span class="detail-value">{{ formatDate(detailTxn.dateAcct) }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Line No.</span>
+                <span class="detail-label">No. Baris</span>
                 <span class="detail-value mono">{{ detailTxn.lineNo || '—' }}</span>
               </div>
 
               <div class="detail-item detail-item--full">
-                <span class="detail-label">Payment</span>
+                <span class="detail-label">Pembayaran</span>
                 <span class="detail-value mono">{{ detailTxn['finPayment$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Business Partner</span>
+                <span class="detail-label">Partner Bisnis</span>
                 <span class="detail-value">{{ detailTxn['businessPartner$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Organization</span>
+                <span class="detail-label">Organisasi</span>
                 <span class="detail-value">{{ detailTxn['organization$_identifier'] || '—' }}</span>
               </div>
             </div>
@@ -302,23 +302,23 @@
             <div class="detail-section-title" style="margin-top:20px">Amount</div>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">Deposit Amount</span>
+                <span class="detail-label">Jumlah Deposit</span>
                 <span class="detail-value" style="font-size:16px;font-weight:700" :class="Number(detailTxn.depositAmount) > 0 ? 'amount-in' : ''">
                   {{ formatCurrency(detailTxn.depositAmount) }}
                 </span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Payment Amount</span>
+                <span class="detail-label">Jumlah Pembayaran</span>
                 <span class="detail-value" style="font-size:16px;font-weight:700" :class="Number(detailTxn.paymentAmount) > 0 ? 'amount-out' : ''">
                   {{ formatCurrency(detailTxn.paymentAmount) }}
                 </span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Currency</span>
+                <span class="detail-label">Mata Uang</span>
                 <span class="detail-value">{{ detailTxn['currency$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Financial Account</span>
+                <span class="detail-label">Akun Keuangan</span>
                 <span class="detail-value">{{ detailTxn['account$_identifier'] || '—' }}</span>
               </div>
             </div>
@@ -326,23 +326,23 @@
             <div class="detail-section-title" style="margin-top:20px">Additional Info</div>
             <div class="detail-grid">
               <div class="detail-item detail-item--full">
-                <span class="detail-label">Description</span>
+                <span class="detail-label">Deskripsi</span>
                 <span class="detail-value">{{ detailTxn.description || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Created By</span>
+                <span class="detail-label">Dibuat Oleh</span>
                 <span class="detail-value">{{ detailTxn['createdBy$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Created Date</span>
+                <span class="detail-label">Tanggal Dibuat</span>
                 <span class="detail-value">{{ formatDateTime(detailTxn.creationDate) }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Updated By</span>
+                <span class="detail-label">Diupdate Oleh</span>
                 <span class="detail-value">{{ detailTxn['updatedBy$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Last Updated</span>
+                <span class="detail-label">Tanggal Diupdate</span>
                 <span class="detail-value">{{ formatDateTime(detailTxn.updated) }}</span>
               </div>
               <div class="detail-item">
@@ -359,7 +359,7 @@
             <template v-if="detailTxn.posted === 'Y' && detailTxn.processed">
               <div class="detail-section-title" style="margin-top:24px;display:flex;align-items:center;gap:8px">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                Accounting History
+                Riwayat Akuntansi
               </div>
 
               <!-- Loading -->
@@ -378,11 +378,11 @@
                 <table class="acct-table">
                   <thead>
                     <tr>
-                      <th>General Ledger</th>
-                      <th>Accounting Date</th>
-                      <th>Account Element</th>
+                      <th>Buku Besar</th>
+                      <th>Tanggal</th>
+                      <th>Elemen Akun</th>
                       <th style="text-align:right">Debit</th>
-                      <th style="text-align:right">Credit</th>
+                      <th style="text-align:right">Kredit</th>
                     </tr>
                   </thead>
                   <tbody>

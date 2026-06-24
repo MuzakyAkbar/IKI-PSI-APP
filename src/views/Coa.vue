@@ -10,11 +10,11 @@
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search COA..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari COA..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Product
+            Buat COA
           </button>
         </div>
 
@@ -31,21 +31,21 @@
               <col style="width:140px">
             </colgroup>
             <thead><tr>
-              <th>No. COA</th>
-              <th>COA Name</th>
-              <th>Account Sign</th>
-              <th>Element Level</th>
-              <th>Account Type</th>
+              <th class="sortable" :class="sortClass('searchKey')" @click="toggleSort('searchKey')">No. COA</th>
+              <th class="sortable" :class="sortClass('name')" @click="toggleSort('name')">Nama COA</th>
+              <th>Tanda Akun</th>
+              <th>Tingkat Elemen</th>
+              <th>Tipe Akun</th>
               <th>Status</th>
-              <th>Description</th>
-              <th class="th-action">Action</th>
+              <th>Deskripsi</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="8" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="8" class="td-empty">No COA records found.</td></tr>
+              <tr v-else-if="filteredRows.length===0"><td colspan="8" class="td-empty">Tidak ada rekam COA yang ditemukan.</td></tr>
               <template v-else>
-                <tr v-for="r in rows" :key="r.id" class="tr-data">
+                <tr v-for="r in pagedRows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.searchKey }}</span></td>
                   <td class="td-name">
                     <span class="td-name-text">{{ r.name }}</span>
@@ -54,7 +54,7 @@
                   <td class="td-secondary">{{ accountSignLabel(r.accountSign) }}</td>
                   <td class="td-secondary">{{ elementLevelLabel(r.elementLevel) }}</td>
                   <td><span class="type-badge">{{ accountTypeLabel(r.accountType) }}</span></td>
-                  <td><span :class="['status-pill', r.active?'status-pill--active':'status-pill--inactive']">{{ r.active?'Active':'Inactive' }}</span></td>
+                  <td><span :class="['status-pill', r.active?'status-pill--active':'status-pill--inactive']">{{ r.active?'Aktif':'Tidak Aktif' }}</span></td>
                   <td class="td-secondary td-clip">{{ r.description || '—' }}</td>
                   <td class="td-action-cell">
                     <div class="action-group">
@@ -64,16 +64,16 @@
                         </button>
                         <div v-if="openDropdown===r.id" class="dropdown-menu" :style="{top: dropdownPos.top+'px', right: dropdownPos.right+'px'}">
                           <button class="dropdown-item" @click="openViewModal(r)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Melihat
                           </button>
                           <button class="dropdown-item" @click="openEditModal(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sunting
                           </button>
                           <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Menghapus
                           </button>
                           <button v-else class="dropdown-item dropdown-item--success" @click="confirmSetActive(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Tetapkan Sebagai Aktif
                           </button>
                         </div>
                       </div>
@@ -85,14 +85,43 @@
           </table>
         </div>
 
-        <div v-if="totalPages > 1" class="pagination">
-          <button class="page-btn" :disabled="currentPage===1" @click="goPage(currentPage-1)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button v-for="p in paginationPages" :key="p" :class="['page-btn', p===currentPage?'page-btn--active':'']" @click="goPage(p)">{{ p }}</button>
-          <button class="page-btn" :disabled="currentPage===totalPages" @click="goPage(currentPage+1)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+        <!-- Pagination -->
+        <div class="pagination-bar">
+          <div class="pagination-left">
+            <span class="pagination-info">
+              <template v-if="filteredRows.length > 0">
+                Menampilkan {{ paginationFrom }}–{{ paginationTo }} dari {{ filteredRows.length }} data
+              </template>
+              <template v-else>Tidak ada data</template>
+            </span>
+            <div class="rows-per-page">
+              <label class="rows-label">Baris per halaman:</label>
+              <select class="rows-select" v-model="pageSize" @change="onPageSizeChange">
+                <option :value="10">10</option>
+                <option :value="20">20</option>
+                <option :value="50">50</option>
+                <option :value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div class="pagination" v-if="totalPages > 1">
+            <button class="page-btn" :disabled="currentPage===1" @click="goPage(1)" title="Halaman pertama">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+            </button>
+            <button class="page-btn" :disabled="currentPage===1" @click="goPage(currentPage-1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <template v-for="p in paginationPages" :key="p">
+              <span v-if="p==='...'" class="page-ellipsis">…</span>
+              <button v-else :class="['page-btn', p===currentPage?'page-btn--active':'']" @click="goPage(p)">{{ p }}</button>
+            </template>
+            <button class="page-btn" :disabled="currentPage===totalPages" @click="goPage(currentPage+1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="page-btn" :disabled="currentPage===totalPages" @click="goPage(totalPages)" title="Halaman terakhir">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -107,7 +136,7 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List COA</span>
+                <span>Daftar COA</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">View COA</span>
               </div>
@@ -124,11 +153,11 @@
                 <div class="detail-value mono">{{ viewModal.data.searchKey }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">COA Name</div>
+                <div class="detail-label">Nama COA</div>
                 <div class="detail-value">{{ viewModal.data.name }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Account Sign</div>
+                <div class="detail-label">Tanda Akun</div>
                 <div class="detail-value">{{ accountSignLabel(viewModal.data.accountSign) }}</div>
               </div>
               <div class="detail-item">
@@ -136,7 +165,7 @@
                 <div class="detail-value">{{ elementLevelLabel(viewModal.data.elementLevel) }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Account Type</div>
+                <div class="detail-label">Tipe Akun</div>
                 <div class="detail-value">{{ accountTypeLabel(viewModal.data.accountType) }}</div>
               </div>
               <div class="detail-item">
@@ -148,11 +177,11 @@
                 </div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Accounting Element</div>
+                <div class="detail-label">Element Akuntansi</div>
                 <div class="detail-value">{{ viewModal.data['accountingElement$_identifier'] || '—' }}</div>
               </div>
               <div class="detail-item" style="grid-column:1/-1">
-                <div class="detail-label">Description</div>
+                <div class="detail-label">Deskripsi</div>
                 <div class="detail-value" style="white-space:pre-wrap">{{ viewModal.data.description || '—' }}</div>
               </div>
             </div>
@@ -173,7 +202,7 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List COA</span>
+                <span>Daftar COA</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">{{ formModal.mode==='create'?'Create COA':'Edit COA' }}</span>
               </div>
@@ -191,7 +220,7 @@
                 <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
               </div>
               <div class="form-group">
-                <label>Element Level <span class="req">*</span></label>
+                <label>Level Elemen <span class="req">*</span></label>
                 <select v-model="form.elementLevel" :class="{'input-error':formErrors.elementLevel}">
                   <option value="S">Subaccount</option>
                   <option value="C">Account</option>
@@ -201,14 +230,14 @@
                 <span class="field-error" v-if="formErrors.elementLevel">{{ formErrors.elementLevel }}</span>
               </div>
               <div class="form-group">
-                <label>COA Name <span class="req">*</span></label>
+                <label>Nama COA <span class="req">*</span></label>
                 <input v-model="form.name" placeholder="COA Name" :class="{'input-error':formErrors.name}" />
                 <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
               </div>
               <div class="form-group">
-                <label>Account Type <span class="req">*</span></label>
+                <label>Tipe Akun <span class="req">*</span></label>
                 <select v-model="form.accountType" :class="{'input-error':formErrors.accountType}">
-                  <option value="">— Select —</option>
+                  <option value="">— Pilih —</option>
                   <option value="A">Asset</option>
                   <option value="E">Expense</option>
                   <option value="L">Liability</option>
@@ -219,7 +248,7 @@
                 <span class="field-error" v-if="formErrors.accountType">{{ formErrors.accountType }}</span>
               </div>
               <div class="form-group">
-                <label>Account Sign <span class="req">*</span></label>
+                <label>Tanda Akun <span class="req">*</span></label>
                 <select v-model="form.accountSign">
                   <option value="D">Debit</option>
                   <option value="C">Credit</option>
@@ -227,9 +256,9 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Accounting Element <span class="req">*</span></label>
+                <label>Elemen Akuntansi <span class="req">*</span></label>
                 <select v-model="form.accountingElement" :class="{'input-error':formErrors.accountingElement}">
-                  <option value="">— Select —</option>
+                  <option value="">— Pilih —</option>
                   <option v-for="ae in accountingElements" :key="ae.id" :value="ae.id">
                     {{ ae._identifier || ae.name }}
                   </option>
@@ -244,8 +273,6 @@
             <div class="form-checks">
               <label class="check-label"><input type="checkbox" v-model="form.active" />Active</label>
             </div>
-
-            <!-- Debug: tampilkan raw error response -->
             <div v-if="formError" class="form-api-error">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <div>
@@ -255,9 +282,9 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--secondary" @click="formModal.open=false">Cancel</button>
+            <button class="btn btn--secondary" @click="formModal.open=false">Batal</button>
             <button class="btn btn--primary" @click="submitForm" :disabled="formSaving">
-              <span v-if="formSaving">Saving…</span><span v-else>Save</span>
+              <span v-if="formSaving">Saving…</span><span v-else>Simpan</span>
             </button>
           </div>
         </div>
@@ -279,7 +306,7 @@
               Set COA <strong>{{ deleteModal.row?.name }}</strong> as active?
             </p>
             <p class="delete-text" v-else>
-              Are you sure you want to deactivate COA <strong>{{ deleteModal.row?.name }}</strong>?
+              Apa anda yakin ingin menghapus COA <strong>{{ deleteModal.row?.name }}</strong>?
             </p>
           </div>
           <div class="modal-footer">
@@ -306,52 +333,120 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { fetchAllCOAs, fetchAccountingElements, createCOA, updateCOA, deleteCOA, setActiveCOA } from '@/services/coa.js'
 
+// ── Sort Icon Component ────────────────────────────────
 // ── State ──────────────────────────────────────────────
-const rows              = ref([])
-const loading           = ref(false)
-const error             = ref('')
-const searchQuery       = ref('')
-const currentPage       = ref(1)
-const totalRows         = ref(0)
+const allRows            = ref([])   // semua data dari API (sekali fetch)
+const loading            = ref(false)
+const error              = ref('')
+const searchQuery        = ref('')
+const currentPage        = ref(1)
+const pageSize           = ref(20)
 const accountingElements = ref([])
-const PAGE_SIZE         = 20
 
-let searchTimer = null
-const onSearch = () => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { currentPage.value = 1; loadData() }, 350)
+// Sort state
+const sortCol = ref('searchKey')
+const sortDir = ref('asc')
+
+function sortClass(col) {
+  if (sortCol.value !== col) return ''
+  return sortDir.value === 'asc' ? 'asc' : 'desc'
 }
 
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / PAGE_SIZE)))
+function toggleSort(col) {
+  if (sortCol.value === col) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  else { sortCol.value = col; sortDir.value = 'asc' }
+}
 
+// ── Filter & Sort (client-side) ────────────────────────
+const filteredRows = computed(() => {
+  let data = [...allRows.value]
+
+  // Filter search
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) {
+    data = data.filter(r =>
+      (r.name?.toLowerCase().includes(q)) ||
+      (r.searchKey?.toLowerCase().includes(q))
+    )
+  }
+
+  // Sort
+  data.sort((a, b) => {
+    const aVal = (a[sortCol.value] ?? '').toString().toLowerCase()
+    const bVal = (b[sortCol.value] ?? '').toString().toLowerCase()
+    if (aVal < bVal) return sortDir.value === 'asc' ? -1 : 1
+    if (aVal > bVal) return sortDir.value === 'asc' ? 1 : -1
+    return 0
+  })
+
+  return data
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize.value)))
+
+const paginationFrom = computed(() =>
+  filteredRows.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
+)
+const paginationTo = computed(() =>
+  Math.min(currentPage.value * pageSize.value, filteredRows.value.length)
+)
+
+// Slice untuk halaman aktif
+const pagedRows = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredRows.value.slice(start, start + pageSize.value)
+})
+
+// Reset ke page 1 kalau filter/sort berubah
+watch([searchQuery, sortCol, sortDir], () => { currentPage.value = 1 })
+
+// Pagination dengan ellipsis
 const paginationPages = computed(() => {
   const total = totalPages.value
   const cur   = currentPage.value
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages = new Set([1, total, cur, cur - 1, cur + 1].filter(p => p >= 1 && p <= total))
-  return [...pages].sort((a, b) => a - b)
+  const pages = []
+  pages.push(1)
+  if (cur > 3) pages.push('...')
+  for (let p = Math.max(2, cur - 1); p <= Math.min(total - 1, cur + 1); p++) pages.push(p)
+  if (cur < total - 2) pages.push('...')
+  pages.push(total)
+  return pages
 })
 
 const goPage = (p) => {
-  if (p < 1 || p > totalPages.value) return
+  if (p < 1 || p > totalPages.value || p === currentPage.value) return
   currentPage.value = p
-  loadData()
 }
 
+const onPageSizeChange = () => {
+  currentPage.value = 1
+}
+
+// ── Search debounce ────────────────────────────────────
+let searchTimer = null
+const onSearch = () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { currentPage.value = 1 }, 200)
+}
+
+// ── Load Data (sekali fetch semua) ────────────────────
 async function loadData() {
   loading.value = true
   error.value   = ''
   try {
+    // Fetch semua data sekaligus (pageSize besar)
     const res = await fetchAllCOAs({
-      startRow:  (currentPage.value - 1) * PAGE_SIZE,
-      pageSize:  PAGE_SIZE,
-      searchKey: searchQuery.value,
+      startRow: 0,
+      pageSize: 9999,
+      sortBy:   'searchKey',
+      sortDir:  'asc',
     })
-    rows.value      = res.data ?? []
-    totalRows.value = res.totalRows ?? res.data?.length ?? 0
+    allRows.value     = res.data ?? []
+    currentPage.value = 1
   } catch (e) {
     error.value = e?.message || 'Failed to load data'
   } finally {
@@ -394,12 +489,12 @@ const viewModal = ref({ open: false, data: null })
 const openViewModal = (r) => { viewModal.value = { open: true, data: r }; closeDropdown() }
 
 // ── Form Modal ─────────────────────────────────────────
-const formModal   = ref({ open: false, mode: 'create', id: null })
-const form        = ref({})
-const formErrors  = ref({})
-const formError   = ref('')
-const formErrorRaw = ref('')   // ← raw JSON untuk debug
-const formSaving  = ref(false)
+const formModal    = ref({ open: false, mode: 'create', id: null })
+const form         = ref({})
+const formErrors   = ref({})
+const formError    = ref('')
+const formErrorRaw = ref('')
+const formSaving   = ref(false)
 
 const defaultForm = () => ({
   searchKey: '', name: '', description: '',
@@ -408,23 +503,23 @@ const defaultForm = () => ({
 })
 
 const openCreateModal = () => {
-  form.value      = defaultForm()
-  formErrors.value = {}
-  formError.value  = ''
+  form.value         = defaultForm()
+  formErrors.value   = {}
+  formError.value    = ''
   formErrorRaw.value = ''
-  formModal.value  = { open: true, mode: 'create', id: null }
+  formModal.value    = { open: true, mode: 'create', id: null }
 }
 
 const openEditModal = (r) => {
   form.value = {
-    searchKey:          r.searchKey          || '',
-    name:               r.name               || '',
-    description:        r.description        || '',
-    accountType:        r.accountType        || '',
-    accountSign:        r.accountSign        || 'D',
-    elementLevel:       r.elementLevel       || '',
-    accountingElement:  r.accountingElement  || '',
-    active:             r.active ?? true,
+    searchKey:         r.searchKey         || '',
+    name:              r.name              || '',
+    description:       r.description       || '',
+    accountType:       r.accountType       || '',
+    accountSign:       r.accountSign       || 'D',
+    elementLevel:      r.elementLevel      || '',
+    accountingElement: r.accountingElement || '',
+    active:            r.active ?? true,
   }
   formErrors.value   = {}
   formError.value    = ''
@@ -434,11 +529,11 @@ const openEditModal = (r) => {
 
 const validateForm = () => {
   const errs = {}
-  if (!form.value.searchKey?.trim())       errs.searchKey       = 'No. COA is required'
-  if (!form.value.name?.trim())            errs.name            = 'COA Name is required'
-  if (!form.value.elementLevel)            errs.elementLevel       = 'Element Level is required'
-  if (!form.value.accountType)             errs.accountType        = 'Account Type is required'
-  if (!form.value.accountingElement)       errs.accountingElement = 'Accounting Element is required'
+  if (!form.value.searchKey?.trim())     errs.searchKey         = 'No. COA is required'
+  if (!form.value.name?.trim())          errs.name              = 'COA Name is required'
+  if (!form.value.elementLevel)          errs.elementLevel      = 'Element Level is required'
+  if (!form.value.accountType)           errs.accountType       = 'Account Type is required'
+  if (!form.value.accountingElement)     errs.accountingElement = 'Accounting Element is required'
   formErrors.value = errs
   return Object.keys(errs).length === 0
 }
@@ -460,10 +555,7 @@ const submitForm = async () => {
     await loadData()
   } catch (e) {
     formError.value = e?.message || 'An error occurred'
-    // Tampilkan raw obResponse untuk debug
-    if (e?.obResponse) {
-      formErrorRaw.value = JSON.stringify(e.obResponse, null, 2)
-    }
+    if (e?.obResponse) formErrorRaw.value = JSON.stringify(e.obResponse, null, 2)
   } finally {
     formSaving.value = false
   }
@@ -551,6 +643,13 @@ const vClickOutside = {
 .tr-data:hover td { background: #f8fafc; }
 .tr-data:last-child td { border-bottom: none; }
 .th-action { text-align: right !important; }
+.sortable { cursor: pointer; user-select: none; position: relative; padding-right: 20px !important; transition: color 0.15s; }
+.sortable:hover { color: var(--text-primary); }
+.sortable::after, .sortable::before { content: ''; position: absolute; right: 6px; top: 50%; border: 4px solid transparent; opacity: 0.3; }
+.sortable::before { border-bottom-color: currentColor; margin-top: -9px; }
+.sortable::after  { border-top-color:    currentColor; margin-top: 1px; }
+.sortable.asc::before  { opacity: 1; color: var(--accent); }
+.sortable.desc::after  { opacity: 1; color: var(--accent); }
 .code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; display: inline-block; }
 .td-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .td-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
@@ -583,11 +682,19 @@ const vClickOutside = {
 .loading-dots span:nth-child(2) { animation-delay: .2s; }
 .loading-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
-.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
+.pagination-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--bg); border-top: 1px solid var(--border); gap: 12px; flex-wrap: wrap; }
+.pagination-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pagination-info { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.rows-per-page { display: flex; align-items: center; gap: 6px; }
+.rows-label { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.rows-select { height: 30px; padding: 0 24px 0 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px; background: var(--surface); color: var(--text-secondary); font-family: var(--font); cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; }
+.rows-select:focus { border-color: var(--accent); }
+.pagination { display: flex; align-items: center; gap: 2px; }
 .page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); outline: none; appearance: none; -webkit-appearance: none; box-shadow: none; }
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
 .page-btn--active { background: #fff !important; color: #1e293b !important; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07); }
 .page-btn:disabled { opacity: .3; cursor: not-allowed; }
+.page-ellipsis { min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-muted); }
 .toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-md); }
 .toast--success { background: #16a34a; color: #fff; }
 .toast--error { background: var(--danger); color: #fff; }

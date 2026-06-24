@@ -4,37 +4,37 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Goods Shipment</h2>
+          <h2 class="page-title">Pengiriman Barang</h2>
         </div>
 
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search shipment no or customer..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari no pengiriman atau pelanggan..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Goods Shipment
+            Buat Pengiriman Barang
           </button>
         </div>
 
-        <div class="list-label">List Goods Shipment</div>
+        <div class="list-label">Daftar Pengiriman Barang</div>
 
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>GS. No</th>
-              <th>Create Date</th>
-              <th>Organization</th>
+              <th>No. PB</th>
+              <th>Tgl. Buat</th>
+              <th>Organisasi</th>
               <th>Status</th>
-              <th>PO. No</th>
-              <th>Customer</th>
-              <th class="th-action">Action</th>
+              <th>No. PJ</th>
+              <th>Pelanggan</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">No goods shipments found.</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">Tidak ada pengiriman barang ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>

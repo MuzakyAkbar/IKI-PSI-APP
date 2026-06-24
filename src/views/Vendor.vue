@@ -29,11 +29,11 @@
           <div class="toolbar">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="searchQuery" class="search-input" placeholder="Search..." @input="onSearch" />
+              <input v-model="searchQuery" class="search-input" placeholder="Cari..." @input="onSearch" />
             </div>
             <button class="btn btn--primary" @click="openCreatePage">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Vendor
+              Buat Vendor
             </button>
           </div>
 
@@ -47,11 +47,11 @@
                 <col style="width:140px">
               </colgroup>
               <thead><tr>
-                <th class="sortable" :class="{ asc: sortCol==='searchKey' && sortDir==='asc', desc: sortCol==='searchKey' && sortDir==='desc' }" @click="toggleSort('searchKey')">Code</th>
-                <th class="sortable" :class="{ asc: sortCol==='name' && sortDir==='asc', desc: sortCol==='name' && sortDir==='desc' }" @click="toggleSort('name')">Vendor Name</th>
-                <th>City</th>
-                <th>Phone</th>
-                <th class="th-action">Action</th>
+                <th class="sortable" :class="{ asc: sortCol==='searchKey' && sortDir==='asc', desc: sortCol==='searchKey' && sortDir==='desc' }" @click="toggleSort('searchKey')">Kode</th>
+                <th class="sortable" :class="{ asc: sortCol==='name' && sortDir==='asc', desc: sortCol==='name' && sortDir==='desc' }" @click="toggleSort('name')">Nama Vendor</th>
+                <th>Kota</th>
+                <th>Telepon</th>
+                <th class="th-action">Tindakan</th>
               </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
@@ -74,16 +74,16 @@
                           </button>
                           <div v-if="openDropdown===v.id" class="dropdown-menu" :style="{top:dropdownPos.top+'px',right:dropdownPos.right+'px'}">
                             <button class="dropdown-item" @click="openViewModal(v)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Lihat
                             </button>
                             <button class="dropdown-item" @click="openEditPage(v); closeDropdown()">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sunting
                             </button>
                             <button v-if="v.active" class="dropdown-item dropdown-item--danger" @click="confirmToggle(v)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Hapus
                             </button>
                             <button v-else class="dropdown-item dropdown-item--success" @click="confirmToggle(v)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set Aktifkan
                             </button>
                           </div>
                         </div>
@@ -115,7 +115,7 @@
             </div>
             <button class="btn btn--primary" @click="openGLCreatePage">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create
+              Buat
             </button>
           </div>
 
@@ -128,10 +128,10 @@
                 <col style="width:120px">
               </colgroup>
               <thead><tr>
-                <th>Business Partner Category</th>
-                <th>Vendor Liability</th>
-                <th>Vendor Prepayment</th>
-                <th class="th-action">Action</th>
+                <th>Kategori Partner Bisnis</th>
+                <th>Liabilitas Vendor</th>
+                <th>Prepayment Vendor</th>
+                <th class="th-action">Tindakan</th>
               </tr></thead>
               <tbody>
                 <tr v-if="glLoading"><td colspan="4" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
@@ -181,7 +181,7 @@
         <div class="breadcrumb-row">
           <button class="breadcrumb-back" @click="closePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            List Vendor
+            Daftar Vendor
           </button>
           <span class="breadcrumb-sep">/</span>
           <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Vendor' : 'Edit Vendor' }}</span>
@@ -193,21 +193,21 @@
         <div class="form-card">
           <div class="form-card-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Vendor Info
+            Informasi Vendor
           </div>
           <div class="form-grid-3">
             <div class="form-group">
-              <label>Vendor Code/SKU <span class="req">*</span></label>
+              <label>Kode Vendor<span class="req">*</span></label>
               <input v-model="form.searchKey" placeholder="00000" :class="{'input-error':formErrors.searchKey}" :disabled="page.mode==='edit'" />
               <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
             </div>
             <div class="form-group">
-              <label>Vendor Name <span class="req">*</span></label>
-              <input v-model="form.name" placeholder="Vendor Name" :class="{'input-error':formErrors.name}" />
+              <label>Nama Vendor<span class="req">*</span></label>
+              <input v-model="form.name" placeholder="Nama Vendor" :class="{'input-error':formErrors.name}" />
               <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
             </div>
             <div class="form-group">
-              <label>Business Partner Category</label>
+              <label>Kategori Partner Bisnis</label>
               <select v-model="form.linkGL">
                 <option value="">Select</option>
                 <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -218,28 +218,28 @@
           <div class="form-section-divider">
             <span class="form-section-label">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Address / Location
+              Alamat / lokasi
             </span>
           </div>
           <div class="form-grid-3" style="margin-top:12px">
             <div class="form-group">
-              <label>Province</label>
+              <label>Provinsi</label>
               <input v-model="form.province" placeholder="Province" />
             </div>
             <div class="form-group">
-              <label>City</label>
+              <label>Kota</label>
               <input v-model="form.city" placeholder="City" />
             </div>
             <div class="form-group">
-              <label>Postal Code</label>
+              <label>Kode Pos</label>
               <input v-model="form.postalCode" placeholder="Postal Code" />
             </div>
             <div class="form-group">
-              <label>Street Address</label>
+              <label>Detail Alamat</label>
               <input v-model="form.streetAddress" placeholder="Street Address" />
             </div>
             <div class="form-group">
-              <label>Other Details</label>
+              <label>Detail Alamat Lainnya</label>
               <input v-model="form.otherDetails" placeholder="e.g. Room / Unit / Landmark" />
             </div>
           </div>
@@ -253,11 +253,11 @@
         <div class="form-card">
           <div class="form-card-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Payment Info
+            Informasi Pembayaran
           </div>
           <div class="form-grid-3">
             <div class="form-group">
-              <label>Price List <span class="req">*</span></label>
+              <label>Daftar Harga <span class="req">*</span></label>
               <select v-model="form.priceList" :class="{'input-error': formErrors.priceList}">
                 <option value="">Select Price List</option>
                 <option v-for="pl in lookups.priceLists" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
@@ -265,7 +265,7 @@
               <span class="field-error" v-if="formErrors.priceList">{{ formErrors.priceList }}</span>
             </div>
             <div class="form-group">
-              <label>Payment Method <span class="req">*</span></label>
+              <label>Metode Pembayaran <span class="req">*</span></label>
               <select v-model="form.paymentMethod" :class="{'input-error': formErrors.paymentMethod}">
                 <option value="">Select Payment Method</option>
                 <option v-for="pm in lookups.paymentMethods" :key="pm.id" :value="pm.id">{{ pm['_identifier'] || pm.name }}</option>
@@ -273,7 +273,7 @@
               <span class="field-error" v-if="formErrors.paymentMethod">{{ formErrors.paymentMethod }}</span>
             </div>
             <div class="form-group">
-              <label>Payment Terms <span class="req">*</span></label>
+              <label>Term Pembayaran <span class="req">*</span></label>
               <select v-model="form.paymentTerms" :class="{'input-error': formErrors.paymentTerms}">
                 <option value="">Select Payment Terms</option>
                 <option v-for="pt in lookups.paymentTerms" :key="pt.id" :value="pt.id">{{ pt.name }}</option>
@@ -288,7 +288,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Credit Limit</label>
+              <label>Batas Kredit</label>
               <input v-model.number="form.creditLimit" type="number" min="0" placeholder="0" />
             </div>
           </div>
@@ -298,15 +298,15 @@
         <div class="form-card">
           <div class="form-card-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            Contact
+            Kontak
           </div>
           <div class="form-grid-2">
             <div class="form-group">
-              <label>First Name</label>
+              <label>Nama Depan</label>
               <input v-model="form.contactFirstName" placeholder="First name" />
             </div>
             <div class="form-group">
-              <label>Last Name</label>
+              <label>Nama Belakang</label>
               <input v-model="form.contactLastName" placeholder="Last name" />
             </div>
             <div class="form-group">
@@ -314,11 +314,11 @@
               <input v-model="form.contactEmail" placeholder="Email" type="email" />
             </div>
             <div class="form-group">
-              <label>Phone</label>
+              <label>Telepon</label>
               <input v-model="form.contactPhone" placeholder="Phone" />
             </div>
             <div class="form-group">
-              <label>Position</label>
+              <label>Posisi</label>
               <input v-model="form.contactPosition" placeholder="Position" />
             </div>
           </div>
@@ -348,7 +348,7 @@
         <div class="breadcrumb-row">
           <button class="breadcrumb-back" @click="closePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            Business Partner Category
+            Kategori Partner Bisnis
           </button>
           <span class="breadcrumb-sep">/</span>
           <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create' : 'Edit' }}</span>
@@ -359,13 +359,13 @@
         <div class="form-card">
           <div class="form-card-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Category Info
+            Informasi Kategori 
           </div>
           <div class="form-grid-3">
             <div class="form-group">
-              <label>Business Partner Category <span class="req">*</span></label>
+              <label> Kategori Partner Bisnis <span class="req">*</span></label>
               <select v-model="glForm.businessPartnerCategory" :class="{'input-error':glFormErrors.businessPartnerCategory}">
-                <option value="">Select Category</option>
+                <option value="">Pilih Kategori</option>
                 <option v-for="cat in bpCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
               <span class="field-error" v-if="glFormErrors.businessPartnerCategory">{{ glFormErrors.businessPartnerCategory }}</span>
@@ -373,7 +373,7 @@
             <div class="form-group">
               <label>Accounting Schema <span class="req">*</span></label>
               <select v-model="glForm.accountingSchema" :class="{'input-error':glFormErrors.accountingSchema}">
-                <option value="">Select Schema</option>
+                <option value="">Pilih Skema</option>
                 <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name || s.id }}</option>
               </select>
               <span class="field-error" v-if="glFormErrors.accountingSchema">{{ glFormErrors.accountingSchema }}</span>
@@ -390,42 +390,42 @@
             <div class="form-group">
               <label>Vendor Liability</label>
               <select v-model="glForm.vendorLiability">
-                <option value="">Select Account</option>
+                <option value="">Pilih Akun</option>
                 <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} – {{ a.name }}</option>
               </select>
             </div>
             <div class="form-group">
               <label>Vendor Prepayment</label>
               <select v-model="glForm.vendorPrepayment">
-                <option value="">Select Account</option>
+                <option value="">Pilih Akun</option>
                 <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} – {{ a.name }}</option>
               </select>
             </div>
             <div class="form-group">
               <label>Customer Receivables No</label>
               <select v-model="glForm.customerReceivablesNo">
-                <option value="">Select Account</option>
+                <option value="">Pilih Akun</option>
                 <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} – {{ a.name }}</option>
               </select>
             </div>
             <div class="form-group">
               <label>Customer Prepayment</label>
               <select v-model="glForm.customerPrepayment">
-                <option value="">Select Account</option>
+                <option value="">Pilih Akun</option>
                 <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} – {{ a.name }}</option>
               </select>
             </div>
             <div class="form-group">
               <label>Write-off</label>
               <select v-model="glForm.writeoff">
-                <option value="">Select Account</option>
+                <option value="">Pilih Akun</option>
                 <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} – {{ a.name }}</option>
               </select>
             </div>
             <div class="form-group">
               <label>Non-Invoiced Receipts</label>
               <select v-model="glForm.nonInvoicedReceipts">
-                <option value="">Select Account</option>
+                <option value="">Pilih Akun</option>
                 <option v-for="a in glAccounts" :key="a.id" :value="a.id">{{ a.value }} – {{ a.name }}</option>
               </select>
             </div>
@@ -466,20 +466,20 @@
               <!-- Section: Vendor Info -->
               <div class="detail-section-label">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Vendor Info
+                Informasi Vendor
               </div>
               <div class="detail-cols">
                 <div class="detail-col">
                   <div class="detail-item">
-                    <span class="detail-label">Vendor Code/SKU</span>
+                    <span class="detail-label">Kode Vendor</span>
                     <span class="detail-value mono">{{ viewModal.data?.searchKey || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Vendor Name</span>
+                    <span class="detail-label">Nama Vendor</span>
                     <span class="detail-value">{{ viewModal.data?.name || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Business Partner Category</span>
+                    <span class="detail-label">Kategori Partner Bisnis</span>
                     <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
@@ -493,29 +493,29 @@
                     <span class="detail-value">{{ viewModal.data?.taxExempt ? 'Yes' : 'No' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Credit Limit</span>
+                    <span class="detail-label">Batas Kredit</span>
                     <span class="detail-value">{{ viewModal.data?.creditLimit != null ? Number(viewModal.data.creditLimit).toLocaleString('id-ID') : '—' }}</span>
                   </div>
                 </div>
                 <div class="detail-col">
                   <div class="detail-item">
-                    <span class="detail-label">Address</span>
+                    <span class="detail-label">Alamat</span>
                     <span class="detail-value">{{ primaryAddress || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Street Address</span>
+                    <span class="detail-label">Detail Alamat</span>
                     <span class="detail-value">{{ viewModal.data?.streetAddress || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Other Details</span>
+                    <span class="detail-label">Detail Alamat Lainnya</span>
                     <span class="detail-value">{{ viewModal.data?.otherDetails || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">City</span>
+                    <span class="detail-label">Kota</span>
                     <span class="detail-value">{{ (viewModal.data?.cityName && viewModal.data.cityName !== '—') ? viewModal.data.cityName : '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Postal Code</span>
+                    <span class="detail-label">Kode Pos</span>
                     <span class="detail-value">{{ viewModal.data?.postalCode || '—' }}</span>
                   </div>
                 </div>
@@ -524,26 +524,26 @@
               <!-- Section: Payment Info -->
               <div class="detail-section-label" style="margin-top:18px">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Payment Info
+                Informasi Pembayaran
               </div>
               <div class="detail-cols">
                 <div class="detail-col">
                   <div class="detail-item">
-                    <span class="detail-label">Price List</span>
+                    <span class="detail-label">Daftar Harga</span>
                     <span class="detail-value">{{ viewModal.data?.['priceList$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Payment Method</span>
+                    <span class="detail-label">Metode Pembayaran</span>
                     <span class="detail-value">{{ viewModal.data?.['paymentMethod$_identifier'] || '—' }}</span>
                   </div>
                 </div>
                 <div class="detail-col">
                   <div class="detail-item">
-                    <span class="detail-label">Payment Terms</span>
+                    <span class="detail-label">Term Pembayaran</span>
                     <span class="detail-value">{{ viewModal.data?.['paymentTerms$_identifier'] || '—' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Financial Account</span>
+                    <span class="detail-label">Akun Keuangan</span>
                     <span class="detail-value">{{ viewModal.data?.['account$_identifier'] || '—' }}</span>
                   </div>
                 </div>
@@ -553,12 +553,12 @@
               <div v-if="viewContact" style="margin-top:18px">
                 <div class="detail-section-label">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.4 2 2 0 0 1 3.6 2.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.95-.95a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                  Contact
+                  Kontak
                 </div>
                 <div class="detail-cols">
                   <div class="detail-col">
                     <div class="detail-item">
-                      <span class="detail-label">Name</span>
+                      <span class="detail-label">Nama</span>
                       <span class="detail-value">{{ [viewContact.firstName, viewContact.lastName].filter(Boolean).join(' ') || '—' }}</span>
                     </div>
                     <div class="detail-item">
@@ -568,11 +568,11 @@
                   </div>
                   <div class="detail-col">
                     <div class="detail-item">
-                      <span class="detail-label">Phone</span>
+                      <span class="detail-label">Telepon</span>
                       <span class="detail-value">{{ viewContact.phone || '—' }}</span>
                     </div>
                     <div class="detail-item">
-                      <span class="detail-label">Position</span>
+                      <span class="detail-label">Jabatan</span>
                       <span class="detail-value">{{ viewContact.position || '—' }}</span>
                     </div>
                   </div>
@@ -595,26 +595,26 @@
       <div v-if="viewModal.show && viewModal.type==='linkgl'" class="modal-overlay" @click.self="viewModal.show=false">
         <div class="modal modal--detail">
           <div class="modal-header">
-            <h3 class="modal-title">Business Partner Category Detail</h3>
+            <h3 class="modal-title">Detail Kategori Partner Bisnis</h3>
             <button class="modal-close" @click="viewModal.show=false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
             <div class="detail-section-label">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              Category Info
+              Informasi Kategori
             </div>
             <div class="detail-cols">
               <div class="detail-col">
                 <div class="detail-item">
-                  <span class="detail-label">Business Partner Category</span>
+                  <span class="detail-label">Kategori Partner Bisnis</span>
                   <span class="detail-value">{{ viewModal.data?.['businessPartnerCategory$_identifier'] || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Accounting Schema</span>
+                  <span class="detail-label">Skema Akuntansi</span>
                   <span class="detail-value">{{ viewModal.data?.['accountingSchema$_identifier'] || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Vendor Liability</span>
+                  <span class="detail-label">Liabilitas Vendor</span>
                   <span class="detail-value">{{ viewModal.data?.['vendorLiability$_identifier'] || '—' }}</span>
                 </div>
                 <div class="detail-item">
@@ -1027,11 +1027,21 @@ const form = reactive(defaultForm())
 function openCreatePage() {
   Object.assign(form, defaultForm()); Object.keys(formErrors).forEach(k => delete formErrors[k])
   formError.value = null; page.type='vendor'; page.mode='create'; page.data=null; page.show=true
+
+  // OTOMATIS PILIH KATEGORI (ALOKASI) DEFAULT
+  const defaultCategory = bpCategories.value.find(cat => cat.default === true)
+  if (defaultCategory) {
+    form.linkGL = defaultCategory.id
+  }
 }
 
 function openEditPage(v) {
   closeDropdown()
   const extractId = (val) => (val && typeof val === 'object' ? val.id : val) || ''
+  
+  // CARI KATEGORI DEFAULT
+  const defaultCategory = bpCategories.value.find(cat => cat.default === true)
+
   Object.assign(form, {
     searchKey:        v.searchKey ?? '',
     name:             v.name ?? '',
@@ -1041,7 +1051,10 @@ function openEditPage(v) {
     streetAddress:    v.streetAddress ?? '',
     otherDetails:     v.otherDetails ?? '',
     postalCode:       v.postalCode ?? '',
-    linkGL:           extractId(v.businessPartnerCategory),
+    
+    // PRIORITASKAN DATA TERSIMPAN. JIKA KOSONG, GUNAKAN KATEGORI DEFAULT
+    linkGL:           extractId(v.businessPartnerCategory) || (defaultCategory ? defaultCategory.id : ''),
+    
     contactFirstName: '', contactLastName: '', contactEmail: '', contactPhone: '', contactPosition: '',
     contactId:        null,
     taxExempt:        v.taxExempt ?? false,
@@ -1396,7 +1409,6 @@ onMounted(() => { load(); loadLookups() })
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ── Detail View ──────────────────────────────────────── */
-.detail-panel { }
 .detail-section-label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .detail-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .detail-col { display: flex; flex-direction: column; gap: 14px; }

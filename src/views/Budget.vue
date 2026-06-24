@@ -4,45 +4,45 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Budget</h2>
+          <h2 class="page-title">Anggaran</h2>
         </div>
 
         <div class="page-tabs">
-          <button :class="['page-tab', activeTab === 'budget' ? 'page-tab--active' : '']" @click="switchTab('budget')">Budget</button>
-          <button :class="['page-tab', activeTab === 'masterBudget' ? 'page-tab--active' : '']" @click="switchTab('masterBudget')">Master Budget</button>
+          <button :class="['page-tab', activeTab === 'budget' ? 'page-tab--active' : '']" @click="switchTab('budget')">Anggaran</button>
+          <button :class="['page-tab', activeTab === 'masterBudget' ? 'page-tab--active' : '']" @click="switchTab('masterBudget')">Anggaran Induk</button>
         </div>
 
         <template v-if="activeTab === 'budget'">
           <div class="toolbar">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="searchQuery" class="search-input" placeholder="Search budget name..." @input="onSearch" />
+              <input v-model="searchQuery" class="search-input" placeholder="Cari nama anggaran..." @input="onSearch" />
             </div>
             <button class="btn btn--primary" @click="openCreateModal">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Budget
+              Buat Anggaran
             </button>
           </div>
 
           <div class="table-wrap">
             <table class="table">
               <thead><tr>
-                <th class="sortable" :class="{ asc: sortCol === 'name' && sortDir === 'asc', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Name</th>
-                <th class="sortable" :class="{ asc: sortCol === 'year$_identifier' && sortDir === 'asc', desc: sortCol === 'year$_identifier' && sortDir === 'desc' }" @click="toggleSort('year$_identifier')">Year</th>
-                <th class="sortable" :class="{ asc: sortCol === 'cbudTipebudget$_identifier' && sortDir === 'asc', desc: sortCol === 'cbudTipebudget$_identifier' && sortDir === 'desc' }" @click="toggleSort('cbudTipebudget$_identifier')">Tipe Budget</th>
-                <th>Export Actual</th>
-                <th class="th-action">Action</th>
+                <th class="sortable" :class="{ asc: sortCol === 'name' && sortDir === 'asc', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Nama</th>
+                <th class="sortable" :class="{ asc: sortCol === 'year$_identifier' && sortDir === 'asc', desc: sortCol === 'year$_identifier' && sortDir === 'desc' }" @click="toggleSort('year$_identifier')">Tahun</th>
+                <th class="sortable" :class="{ asc: sortCol === 'cbudTipebudget$_identifier' && sortDir === 'asc', desc: sortCol === 'cbudTipebudget$_identifier' && sortDir === 'desc' }" @click="toggleSort('cbudTipebudget$_identifier')">Tipe Anggaran</th>
+                <th>Ekspor Aktual</th>
+                <th class="th-action">Tindakan</th>
               </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
                 <tr v-else-if="error"><td colspan="5" class="td-empty td-error">{{ error }}</td></tr>
-                <tr v-else-if="rows.length === 0"><td colspan="5" class="td-empty">No budgets found.</td></tr>
+                <tr v-else-if="rows.length === 0"><td colspan="5" class="td-empty">Tidak ada anggaran ditemukan.</td></tr>
                 <template v-else>
                   <tr v-for="r in rows" :key="r.id" class="tr-data">
                     <td class="td-name">{{ r.name || '—' }}</td>
                     <td class="td-secondary">{{ r['year$_identifier'] || '—' }}</td>
                     <td class="td-secondary">{{ r['cbudTipebudget$_identifier'] || '—' }}</td>
-                    <td><span :class="['bool-pill', r.exportActualData ? 'bool-pill--yes' : 'bool-pill--no']">{{ r.exportActualData ? 'Yes' : 'No' }}</span></td>
+                    <td><span :class="['bool-pill', r.exportActualData ? 'bool-pill--yes' : 'bool-pill--no']">{{ r.exportActualData ? 'Ya' : 'Tidak' }}</span></td>
                     <td class="td-action-cell">
                       <div class="action-group">
                         <div class="dropdown-wrap" v-click-outside="closeDropdown">
@@ -51,13 +51,13 @@
                           </button>
                           <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }">
                             <button class="dropdown-item" @click="openViewModal(r)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Lihat
                             </button>
                             <button class="dropdown-item" @click="openEditModal(r)">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                             </button>
                             <button class="dropdown-item dropdown-item--danger" @click="confirmDelete(r)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Hapus
                             </button>
                           </div>
                         </div>
@@ -87,25 +87,25 @@
           <div class="toolbar">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="mbSearchQuery" class="search-input" placeholder="Search code or name..." @input="onMbSearch" />
+              <input v-model="mbSearchQuery" class="search-input" placeholder="Cari kode atau nama..." @input="onMbSearch" />
             </div>
             <button class="btn btn--primary" @click="openMbCreateModal">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Master Budget
+              Buat Anggaran Induk
             </button>
           </div>
 
           <div class="table-wrap">
             <table class="table">
               <thead><tr>
-                <th class="sortable" :class="{ asc: mbSortCol === 'value' && mbSortDir === 'asc', desc: mbSortCol === 'value' && mbSortDir === 'desc' }" @click="toggleMbSort('value')">Kode Budget</th>
-                <th class="sortable" :class="{ asc: mbSortCol === 'name' && mbSortDir === 'asc', desc: mbSortCol === 'name' && mbSortDir === 'desc' }" @click="toggleMbSort('name')">Nama Budget</th>
-                <th class="th-action">Action</th>
+                <th class="sortable" :class="{ asc: mbSortCol === 'value' && mbSortDir === 'asc', desc: mbSortCol === 'value' && mbSortDir === 'desc' }" @click="toggleMbSort('value')">Kode Anggaran</th>
+                <th class="sortable" :class="{ asc: mbSortCol === 'name' && mbSortDir === 'asc', desc: mbSortCol === 'name' && mbSortDir === 'desc' }" @click="toggleMbSort('name')">Nama Anggaran</th>
+                <th class="th-action">Tindakan</th>
               </tr></thead>
               <tbody>
                 <tr v-if="mbLoading"><td colspan="3" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
                 <tr v-else-if="mbError"><td colspan="3" class="td-empty td-error">{{ mbError }}</td></tr>
-                <tr v-else-if="mbRows.length === 0"><td colspan="3" class="td-empty">No master budgets found.</td></tr>
+                <tr v-else-if="mbRows.length === 0"><td colspan="3" class="td-empty">Tidak ada anggaran induk ditemukan.</td></tr>
                 <template v-else>
                   <tr v-for="r in mbRows" :key="r.id" class="tr-data">
                     <td><span class="code-badge">{{ r.value || '—' }}</span></td>
@@ -121,7 +121,7 @@
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
                             </button>
                             <button class="dropdown-item dropdown-item--danger" @click="confirmMbDelete(r)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Hapus
                             </button>
                           </div>
                         </div>
@@ -154,28 +154,28 @@
       <div v-if="showFormModal" class="modal-overlay" @mousedown.self="closeFormModal">
         <div class="modal modal--fullwidth">
           <div class="modal-header">
-            <h3 class="modal-title">{{ isEdit ? 'Edit Budget' : 'Create Budget' }}</h3>
+            <h3 class="modal-title">{{ isEdit ? 'Edit Anggaran' : 'Buat Anggaran' }}</h3>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
 
           <div class="modal-body">
-            <div class="section-label">BUDGET HEADER</div>
+            <div class="section-label">Header Anggaran</div>
             <div class="form-grid">
               <div class="form-group">
-                <label>Organization</label>
+                <label>Organisasi</label>
                 <select v-model="form.organization" class="form-input">
                   <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Name <span class="req">*</span></label>
-                <input v-model="form.name" class="form-input" placeholder="Budget name" />
+                <label>Nama <span class="req">*</span></label>
+                <input v-model="form.name" class="form-input" placeholder="Nama anggaran" />
               </div>
 
               <div class="form-group">
-                <label>Year <span class="req">*</span></label>
+                <label>Tahun <span class="req">*</span></label>
                 <div class="acc-wrap">
                   <input
                     class="form-input"
@@ -183,7 +183,7 @@
                     @input="onYearSearch($event.target.value)"
                     @focus="openYearDropdown"
                     @blur="closeYearDropdownDelayed"
-                    placeholder="Type or select year..."
+                    placeholder="Ketik atau pilih tahun..."
                     autocomplete="off"
                   />
                   <svg class="acc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -195,7 +195,7 @@
               </div>
 
               <div class="form-group">
-                <label>Tipe Budget</label>
+                <label>Tipe Anggaran</label>
                 <div class="acc-wrap">
                   <input
                     class="form-input"
@@ -203,7 +203,7 @@
                     @input="onTipeSearch($event.target.value)"
                     @focus="openTipeDropdown"
                     @blur="closeTipeDropdownDelayed"
-                    placeholder="Type or select type..."
+                    placeholder="Ketik atau pilih tipe..."
                     autocomplete="off"
                   />
                   <svg class="acc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -215,28 +215,32 @@
               </div>
 
               <div class="form-group form-group--full">
-                <label>Description</label>
-                <textarea v-model="form.description" class="form-input form-textarea" rows="2" placeholder="Optional description"></textarea>
+                <label>Deskripsi</label>
+                <textarea v-model="form.description" class="form-input form-textarea" rows="2" placeholder="Deskripsi (opsional)"></textarea>
               </div>
               <div class="form-group form-group--checkbox">
                 <label class="checkbox-label">
                   <input type="checkbox" v-model="form.exportActualData" class="checkbox-input" />
-                  <span>Export Actual Data</span>
+                  <span>Ekspor Data Aktual</span>
                 </label>
               </div>
             </div>
 
             <div class="lines-section">
               <div class="section-divider">
-                <span>Budget Lines</span>
+                <span>Detail Anggaran</span>
                 <div style="display:flex;gap:8px;">
                   <button class="btn-add-line" @click="addLine">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                    Add Line
+                    Tambah Detail
+                  </button>
+                  <button class="btn-download-template" @click="downloadExcelTemplate">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Unduh Template
                   </button>
                   <label class="btn-import-excel">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Import Excel
+                    Impor Excel
                     <input type="file" accept=".xlsx,.xls" @change="handleExcelImport" style="display:none" ref="excelInput" />
                   </label>
                 </div>
@@ -259,19 +263,19 @@
                 <table class="table table--lines">
                   <thead><tr>
                     <th style="width:48px">No.</th>
-                    <th class="sortable-line" :class="{ asc: lineSortCol === 'accountElement' && lineSortDir === 'asc', desc: lineSortCol === 'accountElement' && lineSortDir === 'desc' }" style="width:220px" @click="toggleLineSort('accountElement')">Account Element <span class="req">*</span></th>
-                    <th class="sortable-line" :class="{ asc: lineSortCol === 'cbudMasterbudget' && lineSortDir === 'asc', desc: lineSortCol === 'cbudMasterbudget' && lineSortDir === 'desc' }" style="width:180px" @click="toggleLineSort('cbudMasterbudget')">Kode Budget</th>
-                    <th style="width:150px">Tipe Budget</th>
-                    <th style="width:110px">Currency</th>
-                    <th class="sortable-line" :class="{ asc: lineSortCol === 'amount' && lineSortDir === 'asc', desc: lineSortCol === 'amount' && lineSortDir === 'desc' }" style="width:120px" @click="toggleLineSort('amount')">Amount</th>
-                    <th style="width:90px">Qty</th>
-                    <th style="width:120px">Period</th>
-                    <th style="width:200px">Description</th>
-                    <th style="width:36px"></th>
+                    <th class="sortable-line" :class="{ asc: lineSortCol === 'accountElement' && lineSortDir === 'asc', desc: lineSortCol === 'accountElement' && lineSortDir === 'desc' }" style="width:220px" @click="toggleLineSort('accountElement')">Elemen Akun <span class="req">*</span></th>
+                    <th class="sortable-line" :class="{ asc: lineSortCol === 'cbudMasterbudget' && lineSortDir === 'asc', desc: lineSortCol === 'cbudMasterbudget' && lineSortDir === 'desc' }" style="width:180px" @click="toggleLineSort('cbudMasterbudget')">Kode Anggaran</th>
+                    <th style="width:150px">Tipe Anggaran</th>
+                    <th style="width:110px">Mata Uang</th>
+                    <th class="sortable-line" :class="{ asc: lineSortCol === 'amount' && lineSortDir === 'asc', desc: lineSortCol === 'amount' && lineSortDir === 'desc' }" style="width:120px" @click="toggleLineSort('amount')">Jumlah</th>
+                    <th style="width:90px">Kuantitas</th>
+                    <th style="width:120px">Periode</th>
+                    <th style="width:200px">Deskripsi</th>
+                    <th style="width:60px;text-align:center">Tindakan</th>
                   </tr></thead>
                   <tbody>
                     <tr v-if="sortedLines.length === 0">
-                      <td colspan="10" class="td-empty">No lines yet. Add a line or import from Excel.</td>
+                      <td colspan="10" class="td-empty">Tidak ada detail tersedia. Tambahkan detail atau impor dari Excel.</td>
                     </tr>
                     <tr v-for="(ln, idx) in sortedLines" :key="idx" class="tr-data">
                       <td class="td-secondary text-center">{{ idx + 1 }}</td>
@@ -282,7 +286,7 @@
                             :value="ln['accountElement$_identifier'] || ''"
                             @input="onAccSearch(lines.indexOf(ln), $event.target.value)"
                             @focus="openAccDropdown(lines.indexOf(ln))"
-                            placeholder="Search account..."
+                            placeholder="Cari akun..."
                           />
                           <svg class="acc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                           <ul v-if="accDropdownOpen === lines.indexOf(ln) && accOptions.length" class="acc-dropdown">
@@ -298,7 +302,7 @@
                             :value="ln['cbudMasterbudget$_identifier'] || ''"
                             @input="onMasterBudgetSearch(lines.indexOf(ln), $event.target.value)"
                             @focus="openMasterBudgetDropdown(lines.indexOf(ln))"
-                            placeholder="Search kode..."
+                            placeholder="Cari kode..."
                           />
                           <svg class="acc-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                           <ul v-if="mbDropdownOpen === lines.indexOf(ln) && mbOptions.length" class="acc-dropdown">
@@ -325,9 +329,9 @@
                           <option v-for="p in periods" :key="p.id" :value="p.id">{{ p.name }}</option>
                         </select>
                       </td>
-                      <td><input v-model="ln.description" class="form-input form-input--sm" placeholder="Description" /></td>
-                      <td>
-                        <button class="btn-rm-line" @click="removeLine(lines.indexOf(ln))" title="Remove line">
+                      <td><input v-model="ln.description" class="form-input form-input--sm" placeholder="Deskripsi" /></td>
+                      <td style="text-align:center">
+                        <button class="btn-rm-line" @click="removeLine(lines.indexOf(ln))" title="Hapus baris">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
                         </button>
                       </td>
@@ -344,10 +348,10 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="closeFormModal">Cancel</button>
+            <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
             <button class="btn btn--primary" :disabled="formSaving" @click="saveForm">
               <span v-if="formSaving" class="spinner"></span>
-              {{ isEdit ? 'Save Changes' : 'Create Budget' }}
+              {{ isEdit ? 'Simpan Perubahan' : 'Buat Anggaran' }}
             </button>
           </div>
         </div>
@@ -358,7 +362,7 @@
       <div v-if="showViewModal" class="modal-overlay" @mousedown.self="closeViewModal">
         <div class="modal modal--fullwidth">
           <div class="modal-header">
-            <h3 class="modal-title">Budget — {{ viewData?.name }}</h3>
+            <h3 class="modal-title">Anggaran — {{ viewData?.name }}</h3>
             <button class="modal-close" @click="closeViewModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
@@ -366,32 +370,32 @@
           <div class="modal-body">
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="detail-label">Name</span>
+                <span class="detail-label">Nama</span>
                 <span class="detail-value">{{ viewData?.name || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Year</span>
+                <span class="detail-label">Tahun</span>
                 <span class="detail-value">{{ viewData?.['year$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Tipe Budget</span>
+                <span class="detail-label">Tipe Anggaran</span>
                 <span class="detail-value">{{ viewData?.['cbudTipebudget$_identifier'] || '—' }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">Export Actual Data</span>
-                <span class="detail-value">{{ viewData?.exportActualData ? 'Yes' : 'No' }}</span>
+                <span class="detail-label">Ekspor Data Aktual</span>
+                <span class="detail-value">{{ viewData?.exportActualData ? 'Ya' : 'Tidak' }}</span>
               </div>
               <div class="detail-item detail-item--full">
-                <span class="detail-label">Description</span>
+                <span class="detail-label">Deskripsi</span>
                 <span class="detail-value">{{ viewData?.description || '—' }}</span>
               </div>
             </div>
 
             <div class="section-divider" style="margin-top:20px">
-              <span>Budget Lines</span>
+              <span>Detail Anggaran</span>
               <button class="btn-add-line" @click="openEditFromView">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Add Line
+                Tambah Detail
               </button>
             </div>
 
@@ -400,18 +404,18 @@
               <table class="table table--lines table--view">
                 <thead><tr>
                   <th style="width:48px">No.</th>
-                  <th class="sortable-line" :class="{ asc: viewLineSortCol === 'accountElement' && viewLineSortDir === 'asc', desc: viewLineSortCol === 'accountElement' && viewLineSortDir === 'desc' }" style="min-width:200px" @click="toggleViewLineSort('accountElement')">Account Element</th>
-                  <th class="sortable-line" :class="{ asc: viewLineSortCol === 'cbudMasterbudget' && viewLineSortDir === 'asc', desc: viewLineSortCol === 'cbudMasterbudget' && viewLineSortDir === 'desc' }" style="min-width:160px" @click="toggleViewLineSort('cbudMasterbudget')">Kode Budget</th>
-                  <th style="min-width:120px">Tipe Budget</th>
-                  <th style="width:80px">Currency</th>
-                  <th class="sortable-line" :class="{ asc: viewLineSortCol === 'amount' && viewLineSortDir === 'asc', desc: viewLineSortCol === 'amount' && viewLineSortDir === 'desc' }" style="width:110px" @click="toggleViewLineSort('amount')">Amount</th>
-                  <th style="width:110px">Actual Amt</th>
-                  <th style="width:70px">Qty</th>
-                  <th style="min-width:120px">Period</th>
-                  <th style="min-width:160px">Description</th>
+                  <th class="sortable-line" :class="{ asc: viewLineSortCol === 'accountElement' && viewLineSortDir === 'asc', desc: viewLineSortCol === 'accountElement' && viewLineSortDir === 'desc' }" style="min-width:200px" @click="toggleViewLineSort('accountElement')">Elemen Akun</th>
+                  <th class="sortable-line" :class="{ asc: viewLineSortCol === 'cbudMasterbudget' && viewLineSortDir === 'asc', desc: viewLineSortCol === 'cbudMasterbudget' && viewLineSortDir === 'desc' }" style="min-width:160px" @click="toggleViewLineSort('cbudMasterbudget')">Kode Anggaran</th>
+                  <th style="min-width:120px">Tipe Anggaran</th>
+                  <th style="width:80px">Mata Uang</th>
+                  <th class="sortable-line" :class="{ asc: viewLineSortCol === 'amount' && viewLineSortDir === 'asc', desc: viewLineSortCol === 'amount' && viewLineSortDir === 'desc' }" style="width:110px" @click="toggleViewLineSort('amount')">Jumlah</th>
+                  <th style="width:110px">Jml. Aktual</th>
+                  <th style="width:70px">Kuantitas</th>
+                  <th style="min-width:120px">Periode</th>
+                  <th style="min-width:160px">Deskripsi</th>
                 </tr></thead>
                 <tbody>
-                  <tr v-if="sortedViewLines.length === 0"><td colspan="10" class="td-empty">No lines.</td></tr>
+                  <tr v-if="sortedViewLines.length === 0"><td colspan="10" class="td-empty">Tidak ada detail tersedia.</td></tr>
                   <tr v-for="(ln, idx) in sortedViewLines" :key="ln.id" class="tr-data">
                     <td class="td-secondary text-center">{{ idx + 1 }}</td>
                     <td class="td-clip">{{ ln['accountElement$_identifier'] || '—' }}</td>
@@ -429,10 +433,10 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="closeViewModal">Close</button>
+            <button class="btn btn--ghost" @click="closeViewModal">Tutup</button>
             <button class="btn btn--primary" @click="openEditFromView">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit Budget
+              Edit Anggaran
             </button>
           </div>
         </div>
@@ -443,7 +447,7 @@
       <div v-if="showMbFormModal" class="modal-overlay" @mousedown.self="closeMbFormModal">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3 class="modal-title">{{ isMbEdit ? 'Edit Master Budget' : 'Create Master Budget' }}</h3>
+            <h3 class="modal-title">{{ isMbEdit ? 'Edit Master Anggaran' : 'Buat  Master Anggaran' }}</h3>
             <button class="modal-close" @click="closeMbFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
@@ -451,12 +455,12 @@
           <div class="modal-body">
             <div class="form-grid" style="grid-template-columns:1fr;">
               <div class="form-group">
-                <label>Kode Budget <span class="req">*</span></label>
-                <input v-model="mbForm.value" class="form-input" placeholder="Kode budget" />
+                <label>Kode Anggaran <span class="req">*</span></label>
+                <input v-model="mbForm.value" class="form-input" placeholder="Kode Anggaran" />
               </div>
               <div class="form-group">
-                <label>Nama Budget <span class="req">*</span></label>
-                <input v-model="mbForm.name" class="form-input" placeholder="Nama budget" />
+                <label>Nama Anggaran <span class="req">*</span></label>
+                <input v-model="mbForm.name" class="form-input" placeholder="Nama Anggaran" />
               </div>
             </div>
             <div v-if="mbFormError" class="form-api-error" style="margin-top:12px">
@@ -465,10 +469,10 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="closeMbFormModal">Cancel</button>
+            <button class="btn btn--ghost" @click="closeMbFormModal">Batal</button>
             <button class="btn btn--primary" :disabled="mbFormSaving" @click="saveMbForm">
               <span v-if="mbFormSaving" class="spinner"></span>
-              {{ isMbEdit ? 'Save Changes' : 'Create' }}
+              {{ isMbEdit ? 'Simpan Perubahan' : 'Buat Master Anggaran' }}
             </button>
           </div>
         </div>
@@ -479,19 +483,19 @@
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3 class="modal-title modal-title--danger">Delete Budget</h3>
+            <h3 class="modal-title modal-title--danger">Hapus Anggaran</h3>
             <button class="modal-close" @click="showDeleteModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Are you sure you want to delete budget <strong>{{ deleteTarget?.name }}</strong>? This action cannot be undone.</p>
+            <p class="delete-text">Apakah anda yakin ingin menghapus <strong>{{ deleteTarget?.name }}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showDeleteModal = false">Cancel</button>
+            <button class="btn btn--ghost" @click="showDeleteModal = false">Batal</button>
             <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
               <span v-if="deleting" class="spinner"></span>
-              Delete
+              Hapus
             </button>
           </div>
         </div>
@@ -502,19 +506,19 @@
       <div v-if="showMbDeleteModal" class="modal-overlay" @mousedown.self="showMbDeleteModal = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3 class="modal-title modal-title--danger">Delete Master Budget</h3>
+            <h3 class="modal-title modal-title--danger">Hapus Master Anggaran</h3>
             <button class="modal-close" @click="showMbDeleteModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Are you sure you want to delete <strong>{{ mbDeleteTarget?.value }} - {{ mbDeleteTarget?.name }}</strong>? This action cannot be undone.</p>
+            <p class="delete-text">Apakah anda yakin ingin menghapus <strong>{{ mbDeleteTarget?.value }} - {{ mbDeleteTarget?.name }}</strong>? This action cannot be undone.</p>
           </div>
           <div class="modal-footer">
             <button class="btn btn--ghost" @click="showMbDeleteModal = false">Cancel</button>
             <button class="btn btn--danger" :disabled="mbDeleting" @click="doMbDelete">
               <span v-if="mbDeleting" class="spinner"></span>
-              Delete
+              Hapus
             </button>
           </div>
         </div>
@@ -755,7 +759,7 @@ export default {
         this.rows = result?.data ?? []
         this.totalCount = result?.totalRows ?? this.rows.length
       } catch (e) {
-        this.error = e.message || 'Failed to load budgets.'
+        this.error = e.message || 'Gagal memuat data anggaran.'
       } finally {
         this.loading = false
       }
@@ -804,7 +808,7 @@ export default {
         this.mbRows = result?.data ?? []
         this.mbTotalCount = result?.totalRows ?? this.mbRows.length
       } catch (e) {
-        this.mbError = e.message || 'Failed to load master budgets.'
+        this.mbError = e.message || 'Gagal memuat data anggaran induk.'
       } finally {
         this.mbLoading = false
       }
@@ -847,8 +851,8 @@ export default {
     closeMbFormModal() { this.showMbFormModal = false },
 
     async saveMbForm() {
-      if (!this.mbForm.value.trim()) { this.mbFormError = 'Kode Budget is required.'; return }
-      if (!this.mbForm.name.trim()) { this.mbFormError = 'Nama Budget is required.'; return }
+      if (!this.mbForm.value.trim()) { this.mbFormError = 'Kode Anggaran wajib diisi.'; return }
+      if (!this.mbForm.name.trim()) { this.mbFormError = 'Nama Anggaran wajib diisi.'; return }
       this.mbFormSaving = true; this.mbFormError = null
       try {
         if (this.isMbEdit) {
@@ -856,7 +860,7 @@ export default {
         } else {
           await createMasterBudget(this.mbForm)
         }
-        this.showToast('success', `Master Budget ${this.isMbEdit ? 'updated' : 'created'} successfully.`)
+        this.showToast('success', `Anggaran Induk berhasil ${this.isMbEdit ? 'diperbarui' : 'dibuat'}.`)
         this.closeMbFormModal()
         await this.loadMbList()
       } catch (e) {
@@ -877,7 +881,7 @@ export default {
       try {
         await deleteMasterBudget(this.mbDeleteTarget.id)
         this.showMbDeleteModal = false
-        this.showToast('success', 'Master Budget deleted.')
+        this.showToast('success', 'Anggaran Induk berhasil dihapus.')
         await this.loadMbList()
       } catch (e) {
         this.showMbDeleteModal = false
@@ -1006,8 +1010,8 @@ export default {
     },
 
     async saveForm() {
-      if (!this.form.name.trim()) { this.formError = 'Name is required.'; return }
-      if (!this.form.year) { this.formError = 'Year is required. Pilih tahun dari dropdown.'; return }
+      if (!this.form.name.trim()) { this.formError = 'Nama wajib diisi.'; return }
+      if (!this.form.year) { this.formError = 'Tahun wajib diisi. Pilih tahun dari dropdown.'; return }
       this.formSaving = true; this.formError = null
       try {
         let budgetId
@@ -1034,7 +1038,7 @@ export default {
           }
         }
         
-        this.showToast('success', `Budget ${this.isEdit ? 'updated' : 'created'} successfully.`)
+        this.showToast('success', `Anggaran berhasil ${this.isEdit ? 'diperbarui' : 'dibuat'}.`)
         this.closeFormModal()
         await this.loadList()
       } catch (e) {
@@ -1042,6 +1046,38 @@ export default {
       } finally {
         this.formSaving = false
       }
+    },
+
+    // ══ EXCEL TEMPLATE DOWNLOAD ══
+    downloadExcelTemplate() {
+      // Header kolom sesuai dengan yang dibaca handleExcelImport
+      const headers = [['Account', 'Master Budget', 'Tipe Budget', 'Currency', 'Amount', 'Qty', 'Description']]
+      // Baris contoh
+      const example = [['11010205', '2026/00001', 'Operasional', 'IDR', 10000000, 1, 'Biaya operasional bulanan']]
+
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.aoa_to_sheet([...headers, ...example])
+
+      // Lebar kolom
+      ws['!cols'] = [
+        { wch: 18 }, // Account
+        { wch: 22 }, // Master Budget
+        { wch: 20 }, // Tipe Budget
+        { wch: 10 }, // Currency
+        { wch: 16 }, // Amount
+        { wch: 8  }, // Qty
+        { wch: 35 }, // Description
+      ]
+
+      // Style header (bold) — hanya didukung di xlsx-pro, tapi definisikan agar kompatibel
+      const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: 'DBEAFE' } } }
+      headers[0].forEach((_, ci) => {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c: ci })
+        if (ws[cellRef]) ws[cellRef].s = headerStyle
+      })
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Template Detail Anggaran')
+      XLSX.writeFile(wb, 'Template_Detail_Anggaran.xlsx')
     },
 
     // ══ EXCEL IMPORT ══
@@ -1104,7 +1140,7 @@ export default {
             description: String(row['Description'] || '').trim(),
           })
         }
-        this.showToast('success', `${rows.length} line(s) imported from Excel.`)
+        this.showToast('success', `${rows.length} baris berhasil diimpor dari Excel.`)
       } catch (err) {
         this.importError = this.extractErrorMessage(err, 'Gagal membaca file Excel')
       } finally {
@@ -1213,7 +1249,7 @@ export default {
       try {
         await deleteBudget(this.deleteTarget.id)
         this.showDeleteModal = false
-        this.showToast('success', 'Budget deleted.')
+        this.showToast('success', 'Anggaran berhasil dihapus.')
         await this.loadList()
       } catch (e) {
         this.showDeleteModal = false
@@ -1427,6 +1463,8 @@ export default {
 /* ── Line Table Buttons ── */
 .btn-add-line { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: var(--font); transition: background .12s; }
 .btn-add-line:hover { background: #dbeafe; }
+.btn-download-template { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #7c3aed; background: #ede9fe; border: 1px solid #c4b5fd; border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: var(--font); transition: background .12s; }
+.btn-download-template:hover { background: #ddd6fe; }
 .btn-import-excel { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #16a34a; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-family: var(--font); transition: background .12s; }
 .btn-import-excel:hover { background: #bbf7d0; }
 .btn-rm-line { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #fee2e2; color: var(--danger); border: none; cursor: pointer; }

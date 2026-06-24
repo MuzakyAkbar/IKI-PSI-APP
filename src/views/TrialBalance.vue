@@ -4,34 +4,34 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Trial Balance</h2>
+          <h2 class="page-title">Neraca Percobaan</h2>
         </div>
 
         <!-- ══ FILTER PANEL ══ -->
         <div class="filter-panel">
 
           <div class="filter-section">
-            <div class="filter-section-title">Primary Filters</div>
+            <div class="filter-section-title">Saring Utama</div>
             <div class="filter-grid">
               <div class="filter-group">
-                <label>From</label>
+                <label>Dari</label>
                 <input :value="displayDate(filters.dateFrom)" class="form-input" placeholder="dd/mm/yyyy" maxlength="10" @input="onDateInput('dateFrom', $event)" @blur="onDateBlur('dateFrom', $event)" />
               </div>
               <div class="filter-group">
-                <label>To</label>
+                <label>Ke</label>
                 <input :value="displayDate(filters.dateTo)" class="form-input" placeholder="dd/mm/yyyy" maxlength="10" @input="onDateInput('dateTo', $event)" @blur="onDateBlur('dateTo', $event)" />
               </div>
               <div class="filter-group">
-                <label>Organization</label>
+                <label>Organisasi</label>
                 <select v-model="filters.organization" class="form-input">
-                  <option value="">* (All)</option>
+                  <option value="">* (Semua)</option>
                   <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
                 </select>
               </div>
               <div class="filter-group">
-                <label>General Ledger</label>
+                <label>Buku Besar</label>
                 <select v-model="filters.accountingSchema" class="form-input">
-                  <option value="">All</option>
+                  <option value="">Semua</option>
                   <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
               </div>
@@ -41,12 +41,12 @@
           <!-- Advanced Filters -->
           <div class="filter-section">
             <div class="filter-section-title adv-toggle" @click="showAdvanced=!showAdvanced">
-              Advanced Filters
+              Saring Lanjutan
               <svg :class="['adv-chevron', showAdvanced && 'adv-chevron--open']" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div v-if="showAdvanced" class="filter-grid" style="margin-top:12px">
               <div class="filter-group">
-                <label>Include Zero Figures</label>
+                <label>Sertakan Angka Nol</label>
                 <div class="check-row">
                   <input type="checkbox" v-model="filters.includeZero" class="checkbox" id="includeZero" />
                   <label for="includeZero" class="check-label">Show accounts with zero balance</label>

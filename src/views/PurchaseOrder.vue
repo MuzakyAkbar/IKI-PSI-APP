@@ -4,35 +4,35 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Purchase Order</h2>
+          <h2 class="page-title">Pesanan Pembelian</h2>
         </div>
 
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search order no or vendor..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari nomor pesanan atau vendor..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Purchase Order
+            Buat Pesanan Pembelian
           </button>
         </div>
 
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">PO No.</th>
-              <th class="sortable" :class="{ asc: sortCol === 'orderDate', desc: sortCol === 'orderDate' && sortDir === 'desc' }" @click="toggleSort('orderDate')">Order Date</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">No. PP</th>
+              <th class="sortable" :class="{ asc: sortCol === 'orderDate', desc: sortCol === 'orderDate' && sortDir === 'desc' }" @click="toggleSort('orderDate')">Tanggal Pesanan</th>
               <th class="sortable" :class="{ asc: sortCol === 'businessPartner.name', desc: sortCol === 'businessPartner.name' && sortDir === 'desc' }" @click="toggleSort('businessPartner.name')">Vendor</th>
               <th class="sortable" :class="{ asc: sortCol === 'documentStatus', desc: sortCol === 'documentStatus' && sortDir === 'desc' }" @click="toggleSort('documentStatus')">Status</th>
-              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Grand Total</th>
-              <th class="sortable" :class="{ asc: sortCol === 'scheduledDeliveryDate', desc: sortCol === 'scheduledDeliveryDate' && sortDir === 'desc' }" @click="toggleSort('scheduledDeliveryDate')">Est. Arrival</th>
-              <th class="th-action">Action</th>
+              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Total Grand</th>
+              <th class="sortable" :class="{ asc: sortCol === 'scheduledDeliveryDate', desc: sortCol === 'scheduledDeliveryDate' && sortDir === 'desc' }" @click="toggleSort('scheduledDeliveryDate')">Est. Kedatangan</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">No purchase orders found.</td></tr>
+              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">Tidak ada pesanan pembelian ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -91,11 +91,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List Purchase Order</span>
+                <span>Daftar Pesanan Pembelian</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} Purchase Order</span>
+                <span class="bc-active">{{ isEdit ? 'Sunting' : 'Buat' }} Pesanan Pembelian</span>
               </div>
-              <div class="modal-title">{{ isEdit ? 'Edit' : 'Create' }} Purchase Order</div>
+              <div class="modal-title">{{ isEdit ? 'Sunting' : 'Buat' }} Pesanan Pembelian</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -103,27 +103,27 @@
           </div>
 
           <div class="modal-tabs">
-            <button :class="['modal-tab', activeFormTab==='transaction'?'modal-tab--active':'']" @click="activeFormTab='transaction'">Transaction</button>
-            <button v-if="isEdit" :class="['modal-tab', activeFormTab==='payment'?'modal-tab--active':'']" @click="activeFormTab='payment'">Payment Term</button>
+            <button :class="['modal-tab', activeFormTab==='transaction'?'modal-tab--active':'']" @click="activeFormTab='transaction'">Transaksi</button>
+            <button v-if="isEdit" :class="['modal-tab', activeFormTab==='payment'?'modal-tab--active':'']" @click="activeFormTab='payment'">Term Pembayaran</button>
           </div>
 
           <div class="modal-body">
             <div v-if="activeFormTab==='transaction'">
               <div class="form-grid-4">
                 <div class="form-group">
-                  <label>Organization</label>
+                  <label>Organisasi</label>
                   <input :value="orgDisplayLabel" class="form-input" disabled style="background: var(--surface2); color: var(--text-secondary)" />
                 </div>
                 <div class="form-group">
-                  <label>Transaction Document <span class="req">*</span></label>
+                  <label>Document Transaksi <span class="req">*</span></label>
                   <input value="Purchase Order" class="form-input" disabled style="background: var(--surface2); color: var(--text-secondary)" />
                 </div>
                 <div class="form-group">
-                  <label>Document No.</label>
+                  <label>No. Document</label>
                   <input v-model="form.documentNo" class="form-input" placeholder="Auto-generated" disabled />
                 </div>
                 <div class="form-group">
-                  <label>Order Date</label>
+                  <label>Tanggal Pesanan</label>
                   <input v-model="form.orderDate" type="date" class="form-input" />
                 </div>
 
@@ -142,40 +142,40 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Partner Address</label>
+                  <label>Alamat Vendor</label>
                   <select v-model="form.partnerAddress" class="form-input" :disabled="!form.businessPartner">
-                    <option value="">Select</option>
+                    <option value="">Pilih Alamat</option>
                     <option v-for="l in partnerLocations" :key="l.id" :value="l.id">{{ l['locationAddress$_identifier'] || l.id }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Price List <span class="req">*</span></label>
+                  <label>Daftar Harga <span class="req">*</span></label>
                   <input :value="priceListLabel" class="form-input" disabled placeholder="Auto dari vendor" />
                 </div>
                 <div class="form-group">
-                  <label>Warehouse <span class="req">*</span></label>
+                  <label>Gudang <span class="req">*</span></label>
                   <select v-model="form.warehouse" class="form-input">
-                    <option value="">Select</option>
+                    <option value="">Pilih Gudang</option>
                     <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Scheduled Delivery Date</label>
+                  <label>Tanggal Pengiriman Terjadwal</label>
                   <input v-model="form.scheduledDeliveryDate" type="date" class="form-input" />
                 </div>
 
                 <div class="form-group">
-                  <label>Payment Method</label>
+                  <label>Metode Pembayaran</label>
                   <input :value="paymentMethodLabel" class="form-input" disabled placeholder="Auto dari vendor" />
                 </div>
                 <div class="form-group">
-                  <label>Payment Terms <span class="req">*</span></label>
+                  <label>Term Pembayaran <span class="req">*</span></label>
                   <input :value="paymentTermLabel" class="form-input" disabled placeholder="Auto dari vendor" />
                 </div>
                 <div class="form-group">
-                  <label>Invoice Terms</label>
+                  <label>Term Faktur</label>
                   <select v-model="form.invoiceTerm" class="form-input">
-                    <option value="">Select</option>
+                    <option value="">Pilih Term</option>
                     <option value="I">Immediate</option>
                     <option value="D">After Delivery</option>
                     <option value="O">After Order Delivered</option>
@@ -197,7 +197,7 @@
                 <div class="form-group">
                   <label>Invoice Address</label>
                   <select v-model="form.invoiceAddress" class="form-input" :disabled="!form.businessPartner">
-                    <option value="">Select</option>
+                    <option value="">Pilih Alamat</option>
                     <option v-for="l in partnerLocations" :key="l.id" :value="l.id">{{ l['locationAddress$_identifier'] || l.id }}</option>
                   </select>
                 </div>
@@ -208,22 +208,22 @@
               </div>
 
               <div class="section-divider">
-                Order Lines
+                Detail Pesanan
                 <button class="btn-add-line" @click="addLine">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                  Add Line
+                  Tambah Detail Pesanan
                 </button>
               </div>
               <div class="table-wrap" style="margin-bottom:0">
                 <table class="table table--lines">
                   <thead><tr>
                     <th style="width:36px">#</th>
-                    <th>Product</th>
+                    <th>Produk</th>
                     <th style="width:80px;text-align:center">Qty</th>
                     <th style="width:110px;text-align:center">UOM</th>
-                    <th style="width:160px">Tax</th>
-                    <th style="width:150px;text-align:right">Unit Price</th>
-                    <th style="width:150px;text-align:right">Net Amount</th>
+                    <th style="width:160px">Tarif Pajak</th>
+                    <th style="width:150px;text-align:right">Harga Satuan</th>
+                    <th style="width:150px;text-align:right">Jumlah Netto</th>
                     <th style="width:36px"></th>
                   </tr></thead>
                   <tbody>
@@ -243,17 +243,17 @@
                       </td>
                       <td style="text-align:center">
                         <div class="acc-wrap">
-                          <input v-model="line.uomSearch" class="acc-input acc-input--sm" placeholder="UOM..." style="text-align:center;padding-right:24px" @input="onUomSearch(line)" @focus="line.showUomDrop=true" @blur="() => onUomBlur(line)" />
+                          <input v-model="line.uomSearch" class="acc-input acc-input--sm" placeholder="Pilih UOM..." style="text-align:center;padding-right:24px" @input="onUomSearch(line)" @focus="line.showUomDrop=true" @blur="() => onUomBlur(line)" />
                           <ul v-if="line.showUomDrop && line.uomOptions.length" class="acc-dropdown">
                             <li v-for="u in line.uomOptions" :key="u.id" class="acc-opt" @mousedown.prevent="selectUom(line, u)">{{ u.uOMSymbol || u.name }}</li>
                           </ul>
                           <ul v-else-if="line.showUomDrop && line.uomSearch.length > 0 && !line.uomOptions.length" class="acc-dropdown">
-                            <li class="acc-empty">No UOM found</li>
+                            <li class="acc-empty">Tidak ada UOM ditemukan</li>
                           </ul>
                         </div>
                       </td>
                       <td>
-                        <input v-model="line.taxSearch" class="acc-input acc-input--sm" placeholder="Select tax..." @input="onTaxSearch(line)" @focus="openTaxDrop(line, $event)" @blur="onTaxBlur(line)" />
+                        <input v-model="line.taxSearch" class="acc-input acc-input--sm" placeholder="Pilih tarif pajak..." @input="onTaxSearch(line)" @focus="openTaxDrop(line, $event)" @blur="onTaxBlur(line)" />
                         <teleport to="body">
                           <ul v-if="line.showTaxDrop && line.taxOptions.length" class="acc-dropdown acc-dropdown--teleport" :style="line.taxDropStyle">
                             <li v-for="tx in line.taxOptions" :key="tx.id" class="acc-opt" @mousedown.prevent="selectTax(line, tx)">
@@ -261,7 +261,7 @@
                             </li>
                           </ul>
                           <ul v-else-if="line.showTaxDrop && line.taxSearch?.length > 0 && !line.taxOptions.length" class="acc-dropdown acc-dropdown--teleport" :style="line.taxDropStyle">
-                            <li class="acc-empty">No tax found</li>
+                            <li class="acc-empty">Tidak ada tarif pajak ditemukan</li>
                           </ul>
                         </teleport>
                       </td>
@@ -282,24 +282,24 @@
 
             <div v-if="activeFormTab==='payment'">
               <div v-if="!form.paymentTerms" class="td-empty" style="padding:32px">
-                Please select a Vendor with a Payment Term in the Transaction tab first.
+                Silakan pilih Vendor dengan Term Pembayaran di tab Transaksi terlebih dahulu.
               </div>
               <div v-else>
                 <div class="detail-grid" style="margin-bottom:16px">
-                  <div class="detail-item"><span class="detail-label">Payment Terms</span><span class="detail-value">{{ paymentTermLabel }}</span></div>
-                  <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ paymentMethodLabel }}</span></div>
+                  <div class="detail-item"><span class="detail-label">Term Pembayaran</span><span class="detail-value">{{ paymentTermLabel }}</span></div>
+                  <div class="detail-item"><span class="detail-label">Metode Pembayaran</span><span class="detail-value">{{ paymentMethodLabel }}</span></div>
                 </div>
                 <div v-if="paymentLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
                 <div v-else class="table-wrap" style="margin-bottom:0">
                   <table class="table">
                     <thead><tr>
-                      <th>Line</th>
-                      <th>Due Date Offset (days)</th>
-                      <th>Percentage</th>
-                      <th>Fixed Amount</th>
+                      <th>No.</th>
+                      <th>Tanggal Jatuh Tempo</th>
+                      <th>Persentase</th>
+                      <th>Jumlah Tetap</th>
                     </tr></thead>
                     <tbody>
-                      <tr v-if="paymentLines.length===0"><td colspan="4" class="td-empty" style="padding:20px">No lines found for this Payment Term.</td></tr>
+                      <tr v-if="paymentLines.length===0"><td colspan="4" class="td-empty" style="padding:20px">Tidak ada detail ditemukan untuk Term Pembayaran ini.</td></tr>
                       <tr v-for="pl in paymentLines" :key="pl.id">
                         <td class="td-secondary">{{ pl.line ?? pl.lineNo ?? '—' }}</td>
                         <td class="td-secondary">{{ pl.offsetDays ?? pl.netDays ?? pl.dueDateOffset ?? pl.dayOffset ?? '—' }}</td>
@@ -319,10 +319,10 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="closeFormModal">Cancel</button>
+            <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
             <button class="btn btn--primary" :disabled="saving" @click="saveOrder">
               <span v-if="saving" class="spinner"></span>
-              {{ saving ? 'Saving...' : 'Save' }}
+              {{ saving ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </div>
         </div>
@@ -337,12 +337,12 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>List Purchase Order</span>
+                <span>Daftar Pesanan Pembelian</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">View Purchase Order</span>
+                <span class="bc-active">Lihat Pesanan Pembelian</span>
               </div>
               <div class="modal-title" style="display:flex; align-items:center; gap:10px">
-                Purchase Order — {{ viewRow?.documentNo }}
+                Pesanan Pembelian - {{ viewRow?.documentNo }}
               </div>
             </div>
             <button class="modal-close" @click="showViewModal=false">
@@ -363,19 +363,19 @@
 
             <div v-if="viewTab==='detail'">
               <div class="detail-grid">
-                <div class="detail-item"><span class="detail-label">SO No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
-                <div class="detail-item"><span class="detail-label">Order Date</span><span class="detail-value">{{ formatDate(viewRow.orderDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">No. Pesanan</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
+                <div class="detail-item"><span class="detail-label">Tanggal Pesanan</span><span class="detail-value">{{ formatDate(viewRow.orderDate) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', statusClass(viewRow.documentStatus)]">{{ statusLabel(viewRow.documentStatus) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Scheduled Delivery</span><span class="detail-value">{{ formatDate(viewRow.scheduledDeliveryDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Pengiriman Terjadwal</span><span class="detail-value">{{ formatDate(viewRow.scheduledDeliveryDate) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Vendor</span><span class="detail-value">{{ viewRow['businessPartner$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Partner Address</span><span class="detail-value">{{ viewRow['partnerAddress$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Warehouse</span><span class="detail-value">{{ viewRow['warehouse$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Price List</span><span class="detail-value">{{ viewRow['priceList$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Terms</span><span class="detail-value">{{ viewRow['paymentTerms$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Organization</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Grand Total</span><span class="detail-value" style="font-weight:700; color:var(--text-primary)">{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
-                <div class="detail-item detail-item--full"><span class="detail-label">Description</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Alamat Mitra</span><span class="detail-value">{{ viewRow['partnerAddress$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Gudang</span><span class="detail-value">{{ viewRow['warehouse$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Daftar Harga</span><span class="detail-value">{{ viewRow['priceList$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Syarat Pembayaran</span><span class="detail-value">{{ viewRow['paymentTerms$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Metode Pembayaran</span><span class="detail-value">{{ viewRow['paymentMethod$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Organisasi</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Total Keseluruhan</span><span class="detail-value" style="font-weight:700; color:var(--text-primary)">{{ formatCurrency(viewRow.grandTotalAmount) }}</span></div>
+                <div class="detail-item detail-item--full"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
               </div>
 
               <div class="section-divider" style="margin-top:20px">Item Detail</div>
@@ -383,7 +383,7 @@
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table table--lines">
                   <thead><tr>
-                    <th>#</th><th>Product</th><th>Qty</th><th>UOM</th><th>Unit Price</th><th>Net Amount</th><th>Tax</th>
+                    <th>#</th><th>Produk</th><th>Qty</th><th>UOM</th><th>Harga Satuan</th><th>Jumlah Tetap</th><th>Pajak</th>
                   </tr></thead>
                   <tbody>
                     <tr v-if="viewLines.length===0"><td colspan="7" class="td-empty">No lines.</td></tr>
@@ -417,10 +417,10 @@
                 <div v-else class="table-wrap" style="margin-bottom:0">
                   <table class="table">
                     <thead><tr>
-                      <th>Due Date</th>
-                      <th>Expected Amount</th>
-                      <th>Outstanding Amount</th>
-                      <th>Paid Amount</th>
+                      <th>Tanggal Jatuh Tempo</th>
+                      <th>Jumlah yang Diharapkan</th>
+                      <th>Jumlah yang Belum Dibayar</th>
+                      <th>Jumlah yang Sudah Dibayar</th>
                     </tr></thead>
                     <tbody>
                       <tr v-for="ps in viewPaymentSchedule" :key="ps.id">
@@ -437,7 +437,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showViewModal=false">Close</button>
+            <button class="btn btn--ghost" @click="showViewModal=false">Tutup</button>
 
             <button class="btn btn--ghost" @click="doPrint">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -450,7 +450,7 @@
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
-                Edit
+                Sunting
               </button>
 
               <button class="btn btn--process" :disabled="!!actionLoading" @click="doProcessOrder">
@@ -458,7 +458,7 @@
                 <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                Process
+                Proses
               </button>
 
               <button class="btn btn--book" :disabled="!!actionLoading" @click="doBookOrder">
@@ -519,7 +519,7 @@
             <button class="btn btn--ghost" @click="showDeleteModal=false">Cancel</button>
             <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
               <span v-if="deleting" class="spinner"></span>
-              {{ deleting ? 'Deleting...' : 'Delete' }}
+              {{ deleting ? 'Menghapus...' : 'Hapus' }}
             </button>
           </div>
         </div>
@@ -552,7 +552,7 @@ import {
   bookOrder, processOrder, voidOrder, reactivateOrder, closeOrder, createOrderPaymentPlan,
 } from '@/services/purchaseOrder.js'
 
-import { generateDocumentPDF } from '@/services/pdfGenerator.js' // IMPORT PDF GENERATOR
+import { generatePOPDF } from '@/services/pdfGeneratorPO.js'
 
 // ── directive
 const vClickOutside = {
@@ -890,8 +890,7 @@ async function openViewPaymentTab() {
 async function doPrint() {
   if (!viewRow.value) return
   try {
-    // Generate PDF pakai service
-    await generateDocumentPDF('Purchase Order', viewRow.value, viewLines.value)
+    await generatePOPDF(viewRow.value, viewLines.value)
     showToast('Dokumen PDF berhasil diunduh.')
   } catch (error) {
     console.error('Error printing PDF:', error)

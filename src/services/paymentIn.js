@@ -148,16 +148,21 @@ export async function fetchOutstandingInvoices(businessPartnerId) {
   const invoiceIds = invRows.map(r => r.id)
   const scheduleMap = await resolveScheduleIdsDirectly(invoiceIds)
 
-  // Filter: hanya invoice yang punya outstanding > 0 di schedule
+  // Filter: hanya invoice yang punya outstanding > 0
   return invRows
     .map(r => {
       const sched = scheduleMap[r.id]
-      // Fallback ke grandTotal - totalPaid jika schedule tidak ditemukan
       const grand = Number(r.grandTotalAmount) || 0
       const paid  = Number(r.totalPaid) || 0
-      const outstandingAmount = sched
-        ? sched.outstandingAmount
-        : Math.max(0, grand - paid)
+      const schedOutstanding = sched ? sched.outstandingAmount : null
+      // Fallback bertingkat:
+      // 1. Dari FIN_Payment_Schedule (jika > 0)
+      // 2. Dari field outstandingAmount di Invoice langsung (jika > 0)
+      // 3. Dari grandTotal - totalPaid
+      const outstandingAmount =
+        (schedOutstanding !== null && schedOutstanding > 0) ? schedOutstanding :
+        (Number(r.outstandingAmount) > 0)                  ? Number(r.outstandingAmount) :
+        Math.max(0, grand - paid)
       if (outstandingAmount <= 0) return null
       return {
         ...r,
@@ -552,12 +557,12 @@ export async function addPaymentScheduleDetail(
     organization:       organizationId || DEFAULT_ORGANIZATION,
     businessPartner:    businessPartnerId,
     amount:             amount,
-    expectedAmount:     amount,
+    expectedAmount:     0,       // 0 setelah dibayar (outstanding terlunasi)
     invoiceAmount:      amount,
     writeOffAmt:        0,
     doubtfulDebtAmount: 0,
     canceled:           false,
-    invoicePaid:        false,
+    invoicePaid:        true,    // tandai invoice line ini sudah dibayar
     ...(itemType === 'order'
       ? { orderPaymentSchedule: schedId }
       : { invoicePaymentSchedule: schedId }
@@ -660,12 +665,17 @@ const PAY_SCHED_BASE_PAYIN = '/org.openbravo.service.json.jsonrest/FIN_Payment_S
 export async function updatePaymentSchedulePaid(scheduleId, paidNow, currentPaid = 0, expectedAmt = 0) {
   const newPaid        = Number(currentPaid) + Number(paidNow)
   const newOutstanding = Math.max(0, Number(expectedAmt) - newPaid)
+  const isPaidFull     = newOutstanding <= 0
+
   const res = await api.put(`${PAY_SCHED_BASE_PAYIN}/${scheduleId}`, {
     data: {
       id:                scheduleId,
       _entityName:       'FIN_Payment_Schedule',
-      paidAmount:        newPaid,
-      outstanding:       newOutstanding,  // FIX: field yang benar adalah `outstanding`, bukan `outstandingAmount`
+      paidAmount:        newPaid,          // total yang sudah dibayar
+      outstandingAmount: newOutstanding,   // field di C_Invoice (payment monitor)
+      outstanding:       newOutstanding,   // field alias di beberapa versi OB
+      receivedAmount:    newPaid,          // received amount (sisi penerimaan)
+      expectedAmount:    isPaidFull ? 0 : Number(expectedAmt), // 0 jika lunas
     },
   })
   const raw = res.data?.response?.data
@@ -677,12 +687,18 @@ export async function updatePaymentSchedulePaid(scheduleId, paidNow, currentPaid
 // ════════════════════════════════════════════════════
 const INV_BASE_PAYIN = '/org.openbravo.service.json.jsonrest/Invoice'
 
-export async function updateInvoicePaymentComplete(invoiceId, paymentComplete) {
+export async function updateInvoicePaymentComplete(invoiceId, paymentComplete, totalPaid = null, grandTotal = null) {
+  const outstandingAmount = (totalPaid !== null && grandTotal !== null)
+    ? Math.max(0, Number(grandTotal) - Number(totalPaid))
+    : undefined
+
   const res = await api.put(`${INV_BASE_PAYIN}/${invoiceId}`, {
     data: {
       id:              invoiceId,
       _entityName:     'Invoice',
       paymentComplete: paymentComplete,
+      ...(totalPaid !== null        && { totalPaid:         Number(totalPaid) }),
+      ...(outstandingAmount !== undefined && { outstandingAmount }),
     },
   })
   const raw = res.data?.response?.data

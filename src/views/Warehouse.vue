@@ -4,17 +4,17 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Warehouse</h2>
+          <h2 class="page-title">Gudang</h2>
         </div>
 
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search warehouse..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari gudang..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Warehouse
+            Buat Gudang
           </button>
         </div>
 
@@ -28,16 +28,16 @@
               <col style="width:140px">
             </colgroup>
             <thead><tr>
-              <th>Warehouse Code</th>
-              <th>Warehouse Name</th>
-              <th>Location/Address</th>
+              <th>Kode Gudang</th>
+              <th>Nama Gudang</th>
+              <th>Lokasi/Alamat</th>
               <th>Status</th>
-              <th class="th-action">Action</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="5" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="5" class="td-empty">No warehouses found.</td></tr>
+              <tr v-else-if="rows.length===0"><td colspan="5" class="td-empty">Tidak ada gudang yang ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.searchKey || r.id?.slice(0,8) || '—' }}</span></td>
@@ -55,16 +55,16 @@
                         </button>
                         <div v-if="openDropdown===r.id" class="dropdown-menu" :style="{top: dropdownPos.top+'px', right: dropdownPos.right+'px'}">
                           <button class="dropdown-item" @click="openViewModal(r)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Melihat
                           </button>
                           <button class="dropdown-item" @click="openEditModal(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sunting
                           </button>
                           <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Menghapus
                           </button>
                           <button v-else class="dropdown-item dropdown-item--success" @click="confirmDelete(r)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Tetapkan Sebagai Aktif
                           </button>
                         </div>
                       </div>
@@ -95,9 +95,9 @@
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
-                <span>Warehouse</span>
+                <span>Gudang</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">View Warehouse</span>
+                <span class="bc-active">Lihat Gudang</span>
               </div>
               <div class="modal-title">{{ viewModal.name }}</div>
             </div>
@@ -108,15 +108,15 @@
           <div class="modal-body">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Warehouse Code</div>
+                <div class="detail-label">Kode Gudang</div>
                 <div class="detail-value mono">{{ viewModal.searchKey || '—' }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Warehouse Name</div>
+                <div class="detail-label">Nama Gudang</div>
                 <div class="detail-value">{{ viewModal.name }}</div>
               </div>
               <div class="detail-item" style="grid-column:1/-1">
-                <div class="detail-label">Location/Address</div>
+                <div class="detail-label">Lokasi/Alamat</div>
                 <div class="detail-value">{{ viewModal['locationAddress$_identifier'] || '—' }}</div>
               </div>
               <div class="detail-item" style="grid-column:1/-1">
@@ -156,8 +156,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--secondary" @click="openEditFromView(); viewModal=null">Edit</button>
-            <button class="btn btn--primary" @click="viewModal=null">Close</button>
+            <button class="btn btn--secondary" @click="openEditFromView(); viewModal=null">Sunting</button>
+            <button class="btn btn--primary" @click="viewModal=null">Tutup</button>
           </div>
         </div>
       </div>
@@ -169,11 +169,11 @@
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
-                <span>Warehouse</span>
+                <span>Gudang</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ formModal.mode==='create' ? 'Create Warehouse' : 'Edit Warehouse' }}</span>
+                <span class="bc-active">{{ formModal.mode==='create' ? 'Buat Gudang' : 'Sunting Gudang' }}</span>
               </div>
-              <div class="modal-title">{{ formModal.mode==='create' ? 'Create Warehouse' : 'Edit Warehouse' }}</div>
+              <div class="modal-title">{{ formModal.mode==='create' ? 'Buat Gudang' : 'Sunting Gudang' }}</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -182,19 +182,19 @@
           <div class="modal-body">
             <div class="form-grid-2">
               <div class="form-group">
-                <label>Warehouse Name <span class="req">*</span></label>
-                <input v-model="form.name" placeholder="Warehouse Name" :class="{'input-error':formErrors.name}" />
+                <label>Nama Gudang <span class="req">*</span></label>
+                <input v-model="form.name" placeholder="Nama Gudang" :class="{'input-error':formErrors.name}" />
                 <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
               </div>
               <div class="form-group">
-                <label>Description</label>
-                <input v-model="form.description" placeholder="Description" />
+                <label>Deskripsi</label>
+                <input v-model="form.description" placeholder="Deskripsi" />
               </div>
               
               <div class="form-group" style="grid-column:1/-1; margin-top: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
                 <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display:flex; align-items:center; gap:5px">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  Location / Address
+                  Lokasi / Alamat
                 </label>
               </div>
               <div class="form-group">
@@ -242,20 +242,20 @@
       <div v-if="deleteModal.show" class="modal-overlay" @click.self="deleteModal.show=false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <div class="modal-title">{{ deleteModal.row?.active ? 'Confirm Delete' : 'Confirm Activate' }}</div>
+            <div class="modal-title">{{ deleteModal.row?.active ? 'Konfirmasi Hapus' : 'Konfirmasi Aktifkan' }}</div>
             <button class="modal-close" @click="deleteModal.show=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text" v-if="deleteModal.row?.active">Are you sure you want to deactivate <strong>{{ deleteModal.row?.name }}</strong>?</p>
-            <p class="delete-text" v-else>Are you sure you want to activate <strong>{{ deleteModal.row?.name }}</strong>?</p>
+            <p class="delete-text" v-if="deleteModal.row?.active">Apakah Anda yakin ingin menonaktifkan <strong>{{ deleteModal.row?.name }}</strong>?</p>
+            <p class="delete-text" v-else>Apakah Anda yakin ingin mengaktifkan <strong>{{ deleteModal.row?.name }}</strong>?</p>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--secondary" @click="deleteModal.show=false" :disabled="deleteModal.loading">Cancel</button>
+            <button class="btn btn--secondary" @click="deleteModal.show=false" :disabled="deleteModal.loading">Batal</button>
             <button :class="['btn', deleteModal.row?.active ? 'btn--danger' : 'btn--success']" @click="doDelete" :disabled="deleteModal.loading">
               <span v-if="deleteModal.loading" class="btn-loader"></span>
-              {{ deleteModal.row?.active ? 'Deactivate' : 'Activate' }}
+              {{ deleteModal.row?.active ? 'Nonaktifkan' : 'Aktifkan' }}
             </button>
           </div>
         </div>

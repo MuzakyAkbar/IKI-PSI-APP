@@ -4,18 +4,18 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Payment In</h2>
+          <h2 class="page-title">Pembayaran Masuk</h2>
         </div>
 
         <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search document no or customer..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari dokumen no atau pelanggan..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Payment In
+            Buat Pembayaran Masuk
           </button>
         </div>
 
@@ -23,18 +23,18 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>Document No.</th>
-              <th>Payment Date</th>
-              <th>Customer</th>
-              <th>Amount</th>
-              <th>Deposit To</th>
+              <th>Nomor Dokumen.</th>
+              <th>Tanggal Pembayaran</th>
+              <th>Pelanggan</th>
+              <th>Jumlah</th>
+              <th>Setor Ke</th>
               <th>Status</th>
-              <th class="th-action">Action</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">No payment records found.</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">Tidak ada catatan pembayaran yang ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -51,13 +51,13 @@
                         </button>
                         <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }" @click.stop>
                           <button class="dropdown-item" @click="openViewModal(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Melihat
                           </button>
                           <button v-if="r.status === 'RPAP'" class="dropdown-item" @click="openEditModal(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sunting
                           </button>
                           <button v-if="r.status === 'RPAP'" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r); closeDropdown()">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Menghapus
                           </button>
                         </div>
                       </div>
@@ -99,11 +99,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Payment In</span>
+                <span>Pembayaran Masuk</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} Payment In</span>
+                <span class="bc-active">{{ isEdit ? 'Sunting' : 'Membuat' }} Pembayaran Masuk</span>
               </div>
-              <div class="modal-title">{{ isEdit ? 'Edit' : 'Create' }} Payment In</div>
+              <div class="modal-title">{{ isEdit ? 'Sunting' : 'Membuat' }} Pembayaran Masuk</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -117,11 +117,11 @@
               <span class="pay-statusbar-val pay-statusbar-val--status">{{ isEdit ? payStatusLabel(form.status) : 'Awaiting Payment' }}</span>
             </span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Generated Credit:</span><span class="pay-statusbar-val">0.00</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Dihasilkan:</span><span class="pay-statusbar-val">0.00</span></span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Used Credit:</span><span class="pay-statusbar-val">0.00</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Digunakan:</span><span class="pay-statusbar-val">0.00</span></span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Write-off Amount:</span><span class="pay-statusbar-val">0.00</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Ditulis:</span><span class="pay-statusbar-val">0.00</span></span>
           </div>
 
           <!-- Tabs -->
@@ -138,24 +138,24 @@
               <div class="form-grid-3">
 
                 <div class="form-group">
-                  <label>Organization</label>
+                  <label>Organisasi</label>
                   <input value="XYZ" class="form-input" disabled />
                 </div>
                 <div class="form-group">
-                  <label>Document Type</label>
+                  <label>Tipe Dokumen</label>
                   <input value="AR Receipt" class="form-input" disabled />
                 </div>
                 <div class="form-group">
-                  <label>Document No.</label>
+                  <label>No. Dokumen</label>
                   <input v-model="form.documentNo" class="form-input" placeholder="Auto-generated" disabled />
                 </div>
 
                 <div class="form-group">
-                  <label>Payment Date <span class="req">*</span></label>
+                  <label>Tanggal Pembayaran <span class="req">*</span></label>
                   <input v-model="form.paymentDate" type="date" class="form-input" />
                 </div>
                 <div class="form-group form-group--full">
-                  <label>Received From <span class="req">*</span></label>
+                  <label>Diterima Dari <span class="req">*</span></label>
                   <div class="acc-wrap">
                     <input
                       v-model="customerSearch"
@@ -177,30 +177,30 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Payment Method <span class="req">*</span></label>
+                  <label>Metode Pembayaran <span class="req">*</span></label>
                   <select v-model="form.paymentMethod" class="form-input">
-                    <option value="">Select</option>
+                    <option value="">Pilih</option>
                     <option v-for="m in paymentMethods" :key="m.id" :value="m.id">{{ m.name }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Deposit To <span class="req">*</span></label>
+                  <label>Simpan Ke <span class="req">*</span></label>
                   <select v-model="form.financialAccount" class="form-input">
-                    <option value="">Select</option>
+                    <option value="">Pilih</option>
                     <option v-for="a in financialAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Currency</label>
+                  <label>Mata Uang</label>
                   <input value="IDR" class="form-input" disabled />
                 </div>
 
                 <div class="form-group">
-                  <label>Reference No.</label>
+                  <label>No. Referensi</label>
                   <input v-model="form.referenceNo" class="form-input" placeholder="Reference No." />
                 </div>
                 <div class="form-group form-group--full">
-                  <label>Description</label>
+                  <label>Deskripsi</label>
                   <input v-model="form.description" class="form-input" placeholder="Description" />
                 </div>
 
@@ -212,7 +212,7 @@
               </div>
               <div v-if="savedPaymentId && !isEdit" class="info-box info-box--green" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                Header tersimpan. Buka tab <strong>Detail / Add Invoice</strong> untuk melanjutkan pembayaran invoice.
+                Header tersimpan. Buka tab <strong>Detail / Tambah Faktur</strong> untuk melanjutkan pembayaran invoice.
               </div>
             </div>
 
@@ -221,39 +221,39 @@
 
               <div class="pay-detail-summary">
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Payment Document No.</span>
+                  <span class="pay-ds-label">No. Dokumen Pembayaran</span>
                   <span class="pay-ds-val mono">{{ form.documentNo || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Reference No.</span>
+                  <span class="pay-ds-label">No. Referensi</span>
                   <span class="pay-ds-val">{{ form.referenceNo || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Currency</span>
+                  <span class="pay-ds-label">Mata Uang</span>
                   <span class="pay-ds-val">IDR</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Received From</span>
+                  <span class="pay-ds-label">Diterima Dari</span>
                   <span class="pay-ds-val">{{ customerSearch || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Payment Method</span>
+                  <span class="pay-ds-label">Metode Pembayaran</span>
                   <span class="pay-ds-val">{{ selectedPaymentMethodName }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Payment Date</span>
+                  <span class="pay-ds-label">Tanggal Pembayaran</span>
                   <span class="pay-ds-val">{{ form.paymentDate || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Deposit To</span>
+                  <span class="pay-ds-label">Simpan Ke</span>
                   <span class="pay-ds-val">{{ selectedFinAccName }}</span>
                 </div>
                 <div class="pay-ds-item pay-ds-item--amount">
-                  <span class="pay-ds-label">Actual Payment</span>
+                  <span class="pay-ds-label">Pembayaran Aktual </span>
                   <span class="pay-ds-val pay-ds-val--amount">{{ formatCurrency(totalSelectedAmount) }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Expected Payment</span>
+                  <span class="pay-ds-label">Pembayaran Tertunda</span>
                   <span class="pay-ds-val">{{ formatCurrency(totalOutstandingAmount) }}</span>
                 </div>
               </div>
@@ -261,7 +261,7 @@
               <div class="section-divider" style="margin-top:16px">
                 <div style="display:flex;align-items:center;gap:8px">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  <span>Order / Invoice</span>
+                  <span>Pesanan / Faktur</span>
                 </div>
               </div>
 
@@ -284,14 +284,14 @@
                     <th style="width:40px;text-align:center">
                       <input type="checkbox" v-model="selectAllInvoices" @change="toggleAllInvoices" :disabled="outstandingInvoices.length === 0" />
                     </th>
-                    <th>Order No.</th>
-                    <th>Invoice No.</th>
+                    <th>No. Pesanan</th>
+                    <th>No. Faktur</th>
                     <th>Type</th>
-                    <th>Business Partner</th>
-                    <th>Date</th>
-                    <th style="text-align:right">Amount</th>
-                    <th style="text-align:right">Outstanding</th>
-                    <th style="text-align:right;min-width:140px">Actual Payment</th>
+                    <th>Partner Bisnis</th>
+                    <th>Tanggal</th>
+                    <th style="text-align:right">Jumlah</th>
+                    <th style="text-align:right">Tertunda</th>
+                    <th style="text-align:right;min-width:140px">Pembayaran Aktual</th>
                   </tr></thead>
                   <tbody>
                     <tr v-if="invoiceLoading">
@@ -331,13 +331,13 @@
               <div class="pay-detail-footer">
                 <div class="totals-block" style="margin-top:0">
                   <div class="totals-row"><span>Selected</span><span>{{ selectedInvoices.length }} invoice(s)</span></div>
-                  <div class="totals-row totals-row--grand"><span>Total Payment</span><span>{{ formatCurrency(totalSelectedAmount) }}</span></div>
+                  <div class="totals-row totals-row--grand"><span>Total Pembayaran</span><span>{{ formatCurrency(totalSelectedAmount) }}</span></div>
                 </div>
                 <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-                  <button class="btn btn--ghost" @click="closeFormModal">Cancel</button>
+                  <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
                   <button class="btn btn--primary" :disabled="paying || selectedInvoices.length === 0" @click="processPayment">
                     <span v-if="paying" class="spinner"></span>
-                    {{ paying ? 'Processing...' : 'Done' }}
+                    {{ paying ? 'Dalam Proses...' : 'Selesai' }}
                   </button>
                 </div>
               </div>
@@ -355,10 +355,10 @@
             <button class="btn btn--ghost" @click="closeFormModal">{{ activeFormTab === 'detail' ? 'Close' : 'Cancel' }}</button>
             <button v-if="activeFormTab === 'header'" class="btn btn--primary" :disabled="saving" @click="saveHeader">
               <span v-if="saving" class="spinner"></span>
-              {{ saving ? 'Saving...' : (isEdit ? 'Update' : 'Save Header') }}
+              {{ saving ? 'Sedang Menyimpan...' : (isEdit ? 'Update' : 'Simpan Header') }}
             </button>
             <button v-if="activeFormTab === 'header' && (savedPaymentId || isEdit)" class="btn btn--secondary" @click="switchToDetailTab">
-              Next: Add Invoice →
+              Selanjutnya: Tambah Faktur →
             </button>
           </div>
         </div>
@@ -376,11 +376,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Payment In</span>
+                <span>Pembayaran Masuk</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">View Payment</span>
+                <span class="bc-active">Lihat Pembayaran</span>
               </div>
-              <div class="modal-title">Payment — {{ viewRow?.documentNo }}</div>
+              <div class="modal-title">Pembayaran — {{ viewRow?.documentNo }}</div>
             </div>
             <button class="modal-close" @click="showViewModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -394,16 +394,16 @@
               <span :class="['pay-statusbar-val pay-statusbar-val--status', payStatusClass(viewRow?.status)]">{{ payStatusLabel(viewRow?.status) }}</span>
             </span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Generated Credit:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.generatedCredit ?? 0) }}</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Dihasilkan:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.generatedCredit ?? 0) }}</span></span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Used Credit:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.usedCredit ?? 0) }}</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Digunakan:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.usedCredit ?? 0) }}</span></span>
             <span class="pay-statusbar-sep">|</span>
             <span class="pay-statusbar-item"><span class="pay-statusbar-label">Write-off:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.writeOffAmt ?? 0) }}</span></span>
           </div>
 
           <!-- Tabs -->
           <div class="modal-tabs">
-            <button :class="['modal-tab', viewTab === 'lines' ? 'modal-tab--active' : '']" @click="viewTab = 'lines'">Lines</button>
+            <button :class="['modal-tab', viewTab === 'lines' ? 'modal-tab--active' : '']" @click="viewTab = 'lines'">Detail</button>
             <button :class="['modal-tab', viewTab === 'header' ? 'modal-tab--active' : '']" @click="viewTab = 'header'">Header</button>
           </div>
 
@@ -414,24 +414,24 @@
 
               <!-- Lines table -->
               <div class="section-divider" style="margin-top:0">
-                <span>Payment Lines</span>
+                <span>Detail Pembayaran</span>
               </div>
 
               <div v-if="viewLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table">
                   <thead><tr>
-                    <th>Order No.</th>
-                    <th>Invoice No.</th>
-                    <th>Invoice Date</th>
-                    <th>Due Date</th>
-                    <th style="text-align:right">Invoice Amount</th>
-                    <th style="text-align:right">Expected Amount</th>
-                    <th style="text-align:right">Received Amount</th>
-                    <th>Business Partner</th>
+                    <th>No. Order</th>
+                    <th>No. Faktur</th>
+                    <th>Tanggal Faktur</th>
+                    <th>Tanggal Jatuh Tempo</th>
+                    <th style="text-align:right">Nilai Invoice</th>
+                    <th style="text-align:right">Jumlah yang Diharapkan</th>
+                    <th style="text-align:right">Jumlah yang Diterima</th>
+                    <th>Customer</th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="viewLines.length === 0"><td colspan="8" class="td-empty">No data in grid.</td></tr>
+                    <tr v-if="viewLines.length === 0"><td colspan="8" class="td-empty">Tidak ada data.</td></tr>
                     <tr v-else v-for="line in viewLines" :key="line.id" class="tr-data">
                       <td class="td-secondary">{{ line.orderReference || '—' }}</td>
                       <td><span class="code-badge">{{ line.documentNo || '—' }}</span></td>
@@ -448,7 +448,7 @@
 
               <div v-if="viewLines.length > 0" class="totals-block">
                 <div class="totals-row totals-row--grand">
-                  <span>Total Received</span>
+                  <span>Total Diterima</span>
                   <span>{{ formatCurrency(viewLines.reduce((s,l) => s+(Number(l.amount)||0), 0)) }}</span>
                 </div>
               </div>
@@ -457,22 +457,22 @@
             <!-- ── Header Tab ── -->
             <div v-if="viewTab === 'header'">
               <div class="detail-grid" style="margin-top:8px">
-                <div class="detail-item"><span class="detail-label">Document No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Date</span><span class="detail-value">{{ formatDate(viewRow.paymentDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">No. Dokumen</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
+                <div class="detail-item"><span class="detail-label">Tanggal Pembayaran</span><span class="detail-value">{{ formatDate(viewRow.paymentDate) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', payStatusClass(viewRow.status)]">{{ payStatusLabel(viewRow.status) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Received From</span><span class="detail-value">{{ bpName(viewRow) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Payment Method</span><span class="detail-value">{{ parseIdentifier(viewRow['paymentMethod$_identifier']) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Deposit To</span><span class="detail-value">{{ parseIdentifier(viewRow['account$_identifier']) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Currency</span><span class="detail-value">IDR</span></div>
-                <div class="detail-item"><span class="detail-label">Amount</span><span class="detail-value" style="font-weight:700">{{ formatCurrency(viewRow.amount) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Reference No.</span><span class="detail-value">{{ viewRow.referenceNo || '—' }}</span></div>
-                <div class="detail-item detail-item--full"><span class="detail-label">Description</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Diterima Dari</span><span class="detail-value">{{ bpName(viewRow) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Metode Pembayaran</span><span class="detail-value">{{ parseIdentifier(viewRow['paymentMethod$_identifier']) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Deposit Ke</span><span class="detail-value">{{ parseIdentifier(viewRow['account$_identifier']) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Mata Uang</span><span class="detail-value">IDR</span></div>
+                <div class="detail-item"><span class="detail-label">Jumlah</span><span class="detail-value" style="font-weight:700">{{ formatCurrency(viewRow.amount) }}</span></div>
+                <div class="detail-item"><span class="detail-label">No. Referensi</span><span class="detail-value">{{ viewRow.referenceNo || '—' }}</span></div>
+                <div class="detail-item detail-item--full"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
               </div>
             </div>
 
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showViewModal = false">Close</button>
+            <button class="btn btn--ghost" @click="showViewModal = false">Tutup</button>
           </div>
         </div>
       </div>
@@ -485,17 +485,17 @@
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <div class="modal-title">Delete Payment</div>
+            <div class="modal-title">Hapus Pembayaran</div>
             <button class="modal-close" @click="showDeleteModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Are you sure you want to delete payment <strong>{{ deleteTarget?.documentNo }}</strong>? This action cannot be undone.</p>
+            <p class="delete-text">Apakah Anda yakin ingin menghapus pembayaran <strong>{{ deleteTarget?.documentNo }}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
             <div v-if="deleteError" class="form-api-error" style="margin-top:10px">{{ deleteError }}</div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showDeleteModal = false">Cancel</button>
+            <button class="btn btn--ghost" @click="showDeleteModal = false">Batal</button>
             <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
               <span v-if="deleting" class="spinner"></span>
               {{ deleting ? 'Deleting...' : 'Delete' }}
@@ -902,18 +902,19 @@ async function saveAddDetail() {
         inv._type || 'invoice',
       )
 
-      // 2. Update FIN_Payment_Schedule: paidAmount & outstandingAmount
+      // 2. Update FIN_Payment_Schedule: paidAmount, outstandingAmount, receivedAmount, expectedAmount
       if (inv.scheduleId) {
-        const sched = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
+        const sched       = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
         const currentPaid = Number(sched?.paidAmount) || 0
         const expectedAmt = Number(sched?.amount ?? inv.grandTotalAmount) || 0
-        const updated = await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
+        const newPaid     = currentPaid + actualAmt
+        const newOutstanding = Math.max(0, expectedAmt - newPaid)
+        await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
 
-        // 3. Jika outstandingAmount = 0 → set paymentComplete = true di Invoice (skip jika sudah true)
-        if (inv._type !== 'order' && inv.id && !inv.paymentComplete) {
-          // FIX: cek field `outstanding` (nama field OB), bukan `outstandingAmount`
-          const newOutstanding = Number(updated?.outstanding ?? updated?.outstandingAmount ?? (expectedAmt - currentPaid - actualAmt))
-          if (newOutstanding <= 0) await updateInvoicePaymentComplete(inv.id, true)
+        // 3. Update Invoice: totalPaid, outstandingAmount, paymentComplete
+        if (inv._type !== 'order' && inv.id) {
+          const grandTotal = Number(inv.grandTotalAmount) || expectedAmt
+          await updateInvoicePaymentComplete(inv.id, newOutstanding <= 0, newPaid, grandTotal)
         }
       }
     }
@@ -1093,18 +1094,19 @@ async function processPayment() {
         inv._type || 'invoice',
       )
 
-      // 2. Update FIN_Payment_Schedule: paidAmount & outstandingAmount
+      // 2. Update FIN_Payment_Schedule: paidAmount, outstandingAmount, receivedAmount, expectedAmount
       if (inv.scheduleId) {
-        const sched = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
+        const sched       = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
         const currentPaid = Number(sched?.paidAmount) || 0
         const expectedAmt = Number(sched?.amount ?? inv.grandTotalAmount) || 0
-        const updated = await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
+        const newPaid     = currentPaid + actualAmt
+        const newOutstanding = Math.max(0, expectedAmt - newPaid)
+        await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
 
-        // 3. Jika outstandingAmount = 0 → set paymentComplete = true di Invoice
+        // 3. Update Invoice: totalPaid, outstandingAmount, paymentComplete
         if (inv._type !== 'order' && inv.id) {
-          // FIX: cek field `outstanding` (sesuai nama di OB), bukan `outstandingAmount`
-          const newOutstanding = Number(updated?.outstanding ?? updated?.outstandingAmount ?? (expectedAmt - currentPaid - actualAmt))
-          await updateInvoicePaymentComplete(inv.id, newOutstanding <= 0)
+          const grandTotal = Number(inv.grandTotalAmount) || expectedAmt
+          await updateInvoicePaymentComplete(inv.id, newOutstanding <= 0, newPaid, grandTotal)
         }
       }
     }

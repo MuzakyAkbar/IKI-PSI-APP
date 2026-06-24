@@ -14,14 +14,10 @@ const token = btoa(`${USERNAME}:${PASSWORD}`)
 
 // ==============================
 // Axios Instance
-// withCredentials: true is CRITICAL — tells the browser to send the
-// session cookie (JSESSIONID + CSRF_TOKEN) that Openbravo sets.
-// Without it, every request is treated as a brand-new anonymous session
-// and no CSRF token is ever established.
 // ==============================
 const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true,           // ← send/receive cookies on every request
+  withCredentials: true,
   headers: {
     Authorization: `Basic ${token}`,
     'Content-Type': 'application/json',
@@ -38,18 +34,6 @@ const BPC_DS_BASE     = '/org.openbravo.service.datasource/BusinessPartnerCatego
 
 // ==============================
 // CSRF Token
-//
-// Openbravo stores a CSRF token in the server-side HTTP session and also
-// sets it as the "CSRF_TOKEN" cookie (readable by JS).
-//
-// Flow:
-//   1. Any GET to Openbravo (with withCredentials:true) establishes a session
-//      and sets the CSRF_TOKEN cookie.
-//   2. We read that cookie and send it as the "csrfToken" form field on
-//      every datasource POST.
-//
-// The token is cached in memory; it is refreshed automatically when the
-// server returns InvalidCSRFToken (e.g. after session expiry).
 // ==============================
 let _csrfToken = null
 
@@ -59,27 +43,17 @@ function readCSRFCookie() {
 }
 
 async function fetchCSRFToken() {
-  // A lightweight GET to Openbravo — just enough to establish a session and
-  // receive the CSRF_TOKEN cookie. Any authenticated endpoint works.
   try {
     await api.get(BPC_BASE, { params: { _startRow: 0, _endRow: 1, _noCount: true } })
-  } catch (_) {
-    // Even a failed request may have set the cookie; continue.
-  }
+  } catch (_) { }
   _csrfToken = readCSRFCookie()
   if (!_csrfToken) {
-    console.warn(
-      '[CSRF] CSRF_TOKEN cookie not found after session warm-up. ' +
-      'Datasource POSTs may fail. Make sure the Openbravo server is ' +
-      'reachable and the app is served from the same origin (or a proxied path).',
-    )
+    console.warn('[CSRF] CSRF_TOKEN cookie not found.')
   }
   return _csrfToken
 }
 
 async function getCSRFToken() {
-  // Return cached value, or try reading the cookie directly first (it may
-  // already be set from a previous page load), then warm up a session.
   if (_csrfToken) return _csrfToken
   _csrfToken = readCSRFCookie()
   if (_csrfToken) return _csrfToken
@@ -98,7 +72,7 @@ function checkActionAllowed(res, label = '') {
     throw new Error('User APIService tidak memiliki akses write.')
   }
   if (err?.message === 'InvalidCSRFToken') {
-    _csrfToken = null   // force refresh on next call
+    _csrfToken = null
     throw new Error('InvalidCSRFToken')
   }
   if (status !== undefined && status < 0) {
@@ -108,9 +82,6 @@ function checkActionAllowed(res, label = '') {
   }
 }
 
-// ==============================
-// Helper: POST to datasource with automatic CSRF retry (once)
-// ==============================
 async function datasourcePost(url, buildParams, label) {
   const doRequest = async () => {
     const params = new URLSearchParams()
@@ -124,7 +95,6 @@ async function datasourcePost(url, buildParams, label) {
 
   const res1 = await doRequest()
   if (res1.data?.response?.error?.message === 'InvalidCSRFToken') {
-    // Session expired — refresh token and retry once
     _csrfToken = null
     await fetchCSRFToken()
     const res2 = await doRequest()
@@ -136,23 +106,46 @@ async function datasourcePost(url, buildParams, label) {
 }
 
 // ==============================
-// GET - list business partner categories
+// GET - list business partner categories (Frontend Filter dengan iscust)
 // ==============================
-export async function fetchBPCategories({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchBPCategories({ startRow = 0, pageSize = 20, searchKey = '', isCustomer = false, isVendor = false } = {}) {
   let where = ''
+  
   if (searchKey.trim()) {
     const escaped = searchKey.trim().replace(/'/g, "''")
-    where = `upper(e.name) like upper('%${escaped}%') or upper(e.searchKey) like upper('%${escaped}%')`
+    where = `(upper(e.name) like upper('%${escaped}%') or upper(e.searchKey) like upper('%${escaped}%'))`
   }
+
   const params = {
-    _startRow: startRow,
-    _endRow: startRow + pageSize,
+    _startRow: 0,
+    _endRow: 1000,
     _noCount: false,
     _sortBy: 'searchKey',
   }
+  
   if (where) params._where = where
+
   const res = await api.get(BPC_BASE, { params })
-  return res.data?.response ?? res.data
+  let data = res.data?.response?.data || []
+
+  // FILTER MENGGUNAKAN KOLOM BARU "iscust"
+  if (isCustomer) {
+    data = data.filter(item => item.iscust === true)
+  }
+  
+  if (isVendor) {
+    // Berdasarkan JSON Anda, Vendor memiliki nilai iscust: false
+    data = data.filter(item => item.iscust === false)
+  }
+
+  // TERAPKAN PAGINATION LOKAL
+  const totalRows = data.length
+  const paginatedData = data.slice(startRow, startRow + pageSize)
+
+  return {
+    data: paginatedData,
+    totalRows: totalRows
+  }
 }
 
 // ==============================
@@ -168,6 +161,8 @@ export async function createBPCategory(data) {
       name: data.name,
       description: data.description || null,
       default: data.default ?? false,
+      // SIMPAN NILAI ISCUST KE DATABASE
+      iscust: data.isCustomer ?? false,
     },
   }
   const res = await api.post(BPC_BASE, payload)
@@ -192,6 +187,8 @@ export async function updateBPCategory(id, data) {
       name: data.name,
       description: data.description || null,
       default: data.default ?? false,
+      // SIMPAN NILAI ISCUST KE DATABASE
+      iscust: data.isCustomer ?? false,
     },
   }
   const res = await api.put(`${BPC_BASE}/${id}`, payload)
@@ -201,7 +198,7 @@ export async function updateBPCategory(id, data) {
 }
 
 // ==============================
-// DELETE - business partner category
+// DELETE - business partner category (TIDAK PERLU DIUBAH)
 // ==============================
 export async function deleteBPCategory(id) {
   const res = await api.delete(`${BPC_BASE}/${id}`)
@@ -210,7 +207,7 @@ export async function deleteBPCategory(id) {
 }
 
 // ==============================
-// GET - BPCategoryAccount by category id
+// SISA FUNGSI LAINNYA (COA) - TIDAK PERLU DIUBAH
 // ==============================
 export async function fetchBPCategoryAccount(categoryId) {
   const res = await api.get(BPC_ACCT_BASE, {
@@ -224,9 +221,6 @@ export async function fetchBPCategoryAccount(categoryId) {
   return data[0] ?? null
 }
 
-// ==============================
-// POST - create BPCategoryAccount  (jsonrest — no CSRF needed)
-// ==============================
 export async function createBPCategoryAccount(data) {
   const payload = {
     data: {
@@ -251,9 +245,6 @@ export async function createBPCategoryAccount(data) {
   return result
 }
 
-// ==============================
-// PUT - update BPCategoryAccount  (jsonrest — no CSRF needed)
-// ==============================
 export async function updateBPCategoryAccount(id, data) {
   const payload = {
     data: {
@@ -277,11 +268,6 @@ export async function updateBPCategoryAccount(id, data) {
   return Array.isArray(raw) ? raw[0] : raw ?? res.data
 }
 
-// ==============================
-// FALLBACK datasource variants — use these if jsonrest above returns
-// OBUIAPP_ActionNotAllowed for the APIService user.
-// They rely on the session-cookie CSRF mechanism above.
-// ==============================
 function _buildDSParams(params, id, data) {
   params.append('inpcBpGroupAcctId',  id ?? '')
   params.append('C_Bp_Group_Acct_ID', id ?? '')
@@ -346,9 +332,6 @@ export async function updateBPCategoryAccountDS(id, data) {
   return Array.isArray(raw) ? raw[0] : raw ?? res.data
 }
 
-// ==============================
-// GET - GL Accounts / COA (search)
-// ==============================
 export async function fetchGLAccounts(search = '') {
   const params = {
     _startRow: 1,
@@ -373,9 +356,6 @@ export async function fetchGLAccounts(search = '') {
   return res.data?.response?.data ?? []
 }
 
-// ==============================
-// GET - Accounting Schemas
-// ==============================
 const ACCT_SCHEMA_ENTITIES = [
   'FinancialMgmtAcctSchema',
   'FinancialMgmtAccountingSchema',
@@ -390,10 +370,8 @@ export async function fetchAccountingSchemas() {
       })
       const data = res.data?.response?.data
       if (Array.isArray(data) && data.length > 0) return data
-    } catch (_) { /* try next */ }
+    } catch (_) { }
   }
-
-  // Fallback: derive schemas from existing BPCategoryAccount records
   try {
     const res = await api.get(BPC_ACCT_BASE, { params: { _startRow: 0, _endRow: 10 } })
     const rows = res.data?.response?.data ?? []
@@ -408,13 +386,10 @@ export async function fetchAccountingSchemas() {
       }
     }
     if (seen.size) return [...seen.values()]
-  } catch (_) { /* ignore */ }
+  } catch (_) { }
   return []
 }
 
-// ==============================
-// Axios response interceptor
-// ==============================
 api.interceptors.response.use(
   (res) => {
     const s = res.data?.response?.status

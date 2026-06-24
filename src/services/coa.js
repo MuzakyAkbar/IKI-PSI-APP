@@ -19,14 +19,24 @@ const api = axios.create({
 const COA_BASE = '/org.openbravo.service.json.jsonrest/FinancialMgmtElementValue'
 const ACC_ELEMENT_BASE = '/org.openbravo.service.json.jsonrest/FinancialMgmtElement'
 
-export async function fetchAllCOAs({ startRow = 0, pageSize = 20, searchKey = '' } = {}) {
+export async function fetchAllCOAs({ startRow = 0, pageSize = 20, searchKey = '', sortBy = 'searchKey', sortDir = 'asc' } = {}) {
   let where = ''
   if (searchKey.trim()) {
     const e = searchKey.trim().replace(/'/g, "''")
     where = `upper(e.name) like upper('%${e}%') or upper(e.searchKey) like upper('%${e}%')`
   }
+
+  // Openbravo sort: field direction, e.g. "searchKey asc" atau "name desc"
+  const orderBy = `${sortBy} ${sortDir}`
+
   const res = await api.get(COA_BASE, {
-    params: { _startRow: startRow, _endRow: startRow + pageSize, ...(where && { _where: where }), _noCount: false },
+    params: {
+      _startRow: startRow,
+      _endRow: startRow + pageSize,
+      ...(where && { _where: where }),
+      _orderBy: orderBy,
+      // jangan pakai _noCount agar totalRows dikembalikan
+    },
   })
   return res.data?.response ?? res.data
 }

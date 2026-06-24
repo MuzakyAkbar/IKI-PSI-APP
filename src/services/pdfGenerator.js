@@ -1,242 +1,182 @@
-import { jsPDF } from 'jspdf'
+// src/services/pdfGenerator.js
+import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import logoUrl from '@/assets/logo.png'
+import logoPits from '../../public/assets/logo-pits.png'
 
-// Helper format angka & tanggal
-function formatCurrency(v) {
-  if (v == null || isNaN(v)) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v)
+// Helper untuk format Rupiah
+function formatCurrency(amount) {
+  if (amount == null) return '0'
+  return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(amount)
 }
 
-function formatDate(d) {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+// Helper untuk format Bulan Tahun (misal: "Mei 2026")
+function formatBulanTahun(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 }
 
-function loadImage(src) {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.crossOrigin = 'Anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => resolve(null)
-    img.src = src
-  })
-}
-
-export async function generateDocumentPDF(docType, headerProxy, linesProxy) {
-  // CRITICAL FIX: Unwrapping Vue Proxy
-  const headerData = JSON.parse(JSON.stringify(headerProxy))
-  const linesData = JSON.parse(JSON.stringify(linesProxy))
-
+export async function generateDocumentPDF(title, invoice, lines) {
   const doc = new jsPDF('p', 'mm', 'a4')
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const pageHeight = doc.internal.pageSize.getHeight()
-  
-  const primaryColor = [37, 99, 235]
-  const textColor = [51, 65, 85]
-  const lightGray = [241, 245, 249]
 
-  // 1. LOGO & NAMA PERUSAHAAN
-  const logoImg = await loadImage(logoUrl)
-  if (logoImg) {
-    doc.addImage(logoImg, 'PNG', 15, 15, 30, 15)
+  // 1. HEADER (Logo & Nama Perusahaan)
+  try {
+    const img = new Image()
+    img.src = logoPits
+    await new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = () => reject(new Error('Gagal meload gambar'))
+    })
+    doc.addImage(img, 'PNG', 15, 12, 28, 25)
+  } catch (e) {
+    console.warn('Gagal memuat logo:', e)
   }
-  
+
+  // Teks Header Perusahaan
+  doc.setFont('helvetica', 'bold')
   doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2])
-  doc.text(headerData['organization$_identifier'] || 'Perusahaan Anda', 15, 38)
-  
-  doc.setFontSize(9)
+  doc.text('PERSEROAN DAERAH PEMBANGUNAN INVESTASI TANGERANG', 46, 20)
+  doc.text('SELATAN (PERSERODA PITS)', 46, 26)
+  doc.text('KOTA TANGERANG SELATAN', 46, 32)
+
+  // 2. JUDUL DOKUMEN
+  doc.setFontSize(12)
+  doc.text('INFORMASI TAGIHAN REKENING AIR PELANGGAN', 105, 48, { align: 'center' })
+  doc.setLineWidth(0.4)
+  doc.line(46, 49, 164, 49)
+
+  // 3. INFORMASI PELANGGAN
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(textColor[0], textColor[1], textColor[2])
-  doc.text('Dokumen Sistem Terintegrasi', 15, 43)
-
-  // 2. JUDUL DOKUMEN & KOTAK INFO
-  doc.setFontSize(22)
-  doc.setFont('helvetica', 'bold')
-  doc.text(docType.toUpperCase(), pageWidth - 15, 25, { align: 'right' })
-
-  doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
-  doc.setDrawColor(226, 232, 240)
-  doc.roundedRect(pageWidth - 90, 31, 75, 26, 2, 2, 'FD')
-
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'bold')
-  doc.text('No. Dokumen', pageWidth - 85, 37)
-  doc.text('Tanggal', pageWidth - 85, 44)
-  doc.text('Status', pageWidth - 85, 51)
-
-  doc.setFont('helvetica', 'normal')
-  doc.text(': ' + (headerData.documentNo || '-'), pageWidth - 50, 37)
-  doc.text(': ' + formatDate(headerData.orderDate || headerData.invoiceDate), pageWidth - 50, 44)
-  
-  const sts = headerData.documentStatus
-  const statusLabel = sts === 'DR' ? 'Draft' : (sts === 'CO' || sts === 'TE' ? 'Booked/Complete' : (sts === 'CL' ? 'Closed' : (sts === 'VO' ? 'Voided' : sts || '-')))
-  doc.text(': ' + statusLabel, pageWidth - 50, 51)
-
-  // 3. INFORMASI PARTNER
-  let startY = 65
   doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  const partnerLabel = docType.includes('Purchase') || docType.includes('Vendor') ? 'Informasi Vendor:' : 'Informasi Pelanggan:'
-  doc.text(partnerLabel, 15, startY)
 
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  const partnerName = headerData['businessPartner$_identifier'] || '-'
-  const cleanPartnerName = partnerName.includes(' - ') ? partnerName.split(' - ').slice(1).join(' - ') : partnerName
-  doc.text(cleanPartnerName, 15, startY + 6)
+  const startYInfo = 60
+  const lineH = 6
 
-  doc.setFontSize(9)
-  const address = headerData['partnerAddress$_identifier'] || '-'
-  const addressLines = doc.splitTextToSize(address, 100)
-  doc.text(addressLines, 15, startY + 11)
+  let namaPelanggan = invoice['businessPartner$_identifier'] || '-'
+  if (namaPelanggan.includes(' - ')) {
+    namaPelanggan = namaPelanggan.split(' - ').slice(1).join(' - ')
+  }
 
-  startY = startY + 15 + (addressLines.length * 4)
+  const alamat = invoice['partnerAddress$_identifier'] || '-'
+  
+  // Mengambil No Sambung dari Code Customer dengan fallback yang aman
+  const kodePelanggan = invoice.kodePelanggan || (invoice['businessPartner$_identifier']?.includes(' - ') ? invoice['businessPartner$_identifier'].split(' - ')[0] : '-')
 
-  // 4. TABEL ITEM
-  const isInvoice = docType.includes('Invoice')
-  const headRow = isInvoice 
-    ? [['No', 'Deskripsi Produk', 'Qty', 'Satuan', 'Harga Satuan', 'Pajak', 'Total']]
-    : [['No', 'Deskripsi Produk', 'Qty', 'Satuan', 'Harga Satuan', 'Total Harga']]
+  doc.text('No Sambung', 15, startYInfo)
+  doc.text(': ' + kodePelanggan, 46, startYInfo)
 
-  const bodyRows = linesData.map((line, index) => {
-    const qty = parseFloat(line.orderedQuantity || line.invoicedQuantity || 0)
-    const price = parseFloat(line.unitPrice || 0)
-    const net = parseFloat(line.lineNetAmount || 0)
-    let uom = String(line['uOM$_identifier'] || '-')
-    if (uom.includes(' - ')) uom = uom.split(' - ')[1]
+  doc.text('Nama Pelanggan', 15, startYInfo + lineH)
+  doc.text(': ' + namaPelanggan, 46, startYInfo + lineH)
 
-    const row = [
-      String(index + 1),
-      String(line['product$_identifier'] || '-'),
-      String(qty),
-      uom,
-      formatCurrency(price)
-    ]
+  doc.text('Alamat Pelanggan', 15, startYInfo + (lineH * 2))
+  doc.text(': ' + alamat, 46, startYInfo + (lineH * 2))
 
-    if (isInvoice) row.push(String(line['tax$_identifier'] || '-'))
-    row.push(formatCurrency(net))
-    
-    return row
-  })
+  doc.text('Tahun Tagihan', 15, startYInfo + (lineH * 3))
+  doc.text(': ' + (invoice.invoiceDate ? new Date(invoice.invoiceDate).getFullYear() : '-'), 46, startYInfo + (lineH * 3))
+
+  doc.text('Diproses Tanggal', 15, startYInfo + (lineH * 4))
+  doc.text(': ' + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), 46, startYInfo + (lineH * 4))
+
+  // 4. TABEL TAGIHAN
+  // Map setiap item line (untuk M3) sebagai baris di body tabel
+  const tableBody = lines && lines.length > 0 
+    ? lines.map((line) => [
+        { content: formatBulanTahun(invoice.invoiceDate), styles: { halign: 'center' } },
+        { content: String(line.invoicedQuantity ?? '0'), styles: { halign: 'center' } },
+        { content: formatCurrency(line.lineNetAmount), styles: { halign: 'right' } }
+      ])
+    : [
+        // Fallback jika lines kosong/tidak dimuat
+        [
+          { content: formatBulanTahun(invoice.invoiceDate), styles: { halign: 'center' } },
+          { content: '0', styles: { halign: 'center' } },
+          { content: '0', styles: { halign: 'right' } }
+        ]
+      ]
+
+  // Menghitung Subtotal dan PPN (Pajak)
+  const subtotal = invoice.summedLineAmount || 0
+  const taxAmount = (invoice.grandTotalAmount || 0) - subtotal
+  
+  // Mengambil nama pajak dari line pertama jika tersedia (Misal: "PPN 11%")
+  let taxLabel = 'PPN / Pajak'
+  if (lines && lines.length > 0 && lines[0]['tax$_identifier']) {
+    taxLabel = lines[0]['tax$_identifier']
+  }
+  taxLabel += ' Rp.'
 
   autoTable(doc, {
-    startY: startY,
-    head: headRow,
-    body: bodyRows,
+    startY: startYInfo + (lineH * 4) + 8,
     theme: 'plain',
+    styles: {
+      font: 'helvetica',
+      fontSize: 9,
+      textColor: [0, 0, 0],
+      cellPadding: { top: 3, bottom: 3, left: 2, right: 2 }
+    },
     headStyles: {
-      fillColor: primaryColor,
-      textColor: 255,
       fontStyle: 'bold',
-      halign: 'center',
-      fontSize: 9,
-      cellPadding: 5,
+      valign: 'middle',
+      halign: 'center'
     },
-    bodyStyles: {
-      fontSize: 9,
-      cellPadding: 5,
-      textColor: textColor,
-      lineColor: [226, 232, 240],
-      lineWidth: { bottom: 0.5 },
-    },
-    alternateRowStyles: {
-      fillColor: [250, 252, 253]
-    },
-    columnStyles: {
-      0: { halign: 'center', cellWidth: 16 }, // <--- DIPERLEBAR LAGI (sebelumnya 12)
-      1: { halign: 'left', cellWidth: 'auto' },
-      2: { halign: 'center', cellWidth: 15 },
-      3: { halign: 'center', cellWidth: 22 },
-    },
-    willDrawCell: function (data) {
-      if (data.section === 'body' || data.section === 'head') {
-        const totalIdx = isInvoice ? 6 : 5
-        const taxIdx = isInvoice ? 5 : -1
-        const priceIdx = 4
-
-        if (data.column.index === priceIdx || data.column.index === totalIdx || data.column.index === taxIdx) {
-          data.cell.styles.halign = 'right'
-          // Lebar nominal dikunci
-          if (data.column.index === priceIdx || data.column.index === totalIdx) {
-             data.cell.styles.cellWidth = 32
-          }
-          if (data.column.index === taxIdx) {
-             data.cell.styles.cellWidth = 25
-          }
+    didDrawCell: (data) => {
+      if (data.section === 'head') {
+        doc.setDrawColor(0)
+        doc.setLineWidth(0.3)
+        // Garis atas dan bawah untuk baris header
+        doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y)
+        doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width, data.cell.y + data.cell.height)
+      }
+      if (data.section === 'foot') {
+        doc.setDrawColor(0)
+        doc.setLineWidth(0.3)
+        // Garis atas hanya untuk baris pertama footer (Subtotal)
+        if (data.row.index === 0) {
+          doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y)
+        }
+        // Garis bawah hanya untuk baris terakhir footer (Jumlah Tagihan)
+        if (data.row.index === data.table.foot.length - 1) {
+          doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width, data.cell.y + data.cell.height)
         }
       }
     },
-    margin: { left: 15, right: 15 }
+    head: [
+      [
+        { content: 'Bulan - Tahun\nRekening' },
+        { content: 'M3' },
+        { content: 'Tagihan (Rp.)' }
+      ]
+    ],
+    body: tableBody,
+    foot: [
+      [
+        { content: 'Subtotal Rp.', colSpan: 2, styles: { halign: 'left' } },
+        { content: formatCurrency(subtotal), styles: { halign: 'right' } }
+      ],
+      [
+        { content: taxLabel, colSpan: 2, styles: { halign: 'left' } },
+        { content: formatCurrency(taxAmount), styles: { halign: 'right' } }
+      ],
+      [
+        { content: 'Jumlah Tagihan Rp.', colSpan: 2, styles: { fontStyle: 'bold', halign: 'left' } },
+        { content: formatCurrency(invoice.grandTotalAmount), styles: { fontStyle: 'bold', halign: 'right' } }
+      ]
+    ],
   })
 
-  // 5. TOTAL & SUMMARY
-  const finalY = doc.lastAutoTable.finalY + 15
-  
+  // 5. KETERANGAN / FOOTER NOTES
+  const finalY = doc.lastAutoTable.finalY + 12
+
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Catatan:', 15, finalY)
-  
   doc.setFont('helvetica', 'normal')
-  const descText = headerData.description || 'Dokumen ini sah dan diterbitkan secara elektronik oleh sistem. Tidak memerlukan tanda tangan basah.'
-  const descLines = doc.splitTextToSize(descText, 90)
-  doc.text(descLines, 15, finalY + 5)
 
-  const summaryXText = pageWidth - 65
-  const summaryXVal = pageWidth - 15
-  let currentY = finalY
+  doc.text('Keterangan :', 15, finalY)
+  doc.text('Lembar informasi ini bukan merupakan bukti pembayaran', 15, finalY + 5)
+  doc.text('Informasi tagihan rekening air yang belum dibayar tidak termasuk denda dan materai', 15, finalY + 10)
+  doc.text('Keterlambatan Pembayaran rekening air selama 3 bulan berturut - turut akan di lakukan pemutusan sambungan air pelanggan tanpa', 15, finalY + 15)
+  doc.text('pemberitahuan', 15, finalY + 20)
 
-  const totalBoxHeight = isInvoice ? 26 : 14
-  doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
-  doc.roundedRect(pageWidth - 90, currentY - 5, 75, totalBoxHeight, 2, 2, 'F')
-
-  if (isInvoice) {
-    const subtotal = headerData.summedLineAmount || 0
-    const grandTotal = headerData.grandTotalAmount || 0
-    const tax = grandTotal - subtotal
-    
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Subtotal', summaryXText, currentY + 1)
-    doc.text(formatCurrency(subtotal), summaryXVal, currentY + 1, { align: 'right' })
-    
-    currentY += 7
-    doc.text('Tax', summaryXText, currentY + 1)
-    doc.text(formatCurrency(tax), summaryXVal, currentY + 1, { align: 'right' })
-    
-    currentY += 6
-    doc.setLineWidth(0.5)
-    doc.setDrawColor(200, 200, 200)
-    doc.line(summaryXText, currentY, summaryXVal, currentY)
-    
-    currentY += 6
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Grand Total', summaryXText, currentY)
-    doc.text(formatCurrency(grandTotal), summaryXVal, currentY, { align: 'right' })
-  } else {
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Grand Total', summaryXText, currentY + 3)
-    doc.text(formatCurrency(headerData.grandTotalAmount), summaryXVal, currentY + 3, { align: 'right' })
-  }
-
-  // 6. FOOTER
-  doc.setFontSize(8)
-  doc.setFont('helvetica', 'italic')
-  doc.setTextColor(150, 150, 150)
-  doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 15, pageHeight - 10)
-  
-  const pageCount = doc.internal.getNumberOfPages()
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i)
-    doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - 15, pageHeight - 10, { align: 'right' })
-  }
-
-  // 7. UNDUH
-  const cleanDocNo = (headerData.documentNo || 'Doc').replace(/[^a-zA-Z0-9_-]/g, '')
-  const filename = `${docType.replace(/\s+/g, '_')}_${cleanDocNo}.pdf`
-  doc.save(filename)
+  // Simpan / Unduh PDF
+  const safeDocNo = (invoice.documentNo || 'Invoice').replace(/[^a-zA-Z0-9-]/g, '_')
+  doc.save(`Tagihan_Air_${safeDocNo}.pdf`)
 }

@@ -5,18 +5,18 @@
       <div class="content-card">
 
         <div class="card-header">
-          <h2 class="page-title">Business Partner Category</h2>
+          <h2 class="page-title">Daftar {{ titleName }}</h2>
         </div>
 
         <div v-if="activeTab==='list'">
           <div class="toolbar">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="searchQuery" class="search-input" placeholder="Search..." @input="onSearch" />
+              <input v-model="searchQuery" class="search-input" placeholder="Cari..." @input="onSearch" />
             </div>
             <button class="btn btn--primary" @click="openCreatePage">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Category
+              Buat {{ titleName }}
             </button>
           </div>
 
@@ -30,22 +30,22 @@
                 <col style="width:140px">
               </colgroup>
               <thead><tr>
-                <th>Code</th>
-                <th>Category Name</th>
-                <th>Description</th>
+                <th>Kode</th>
+                <th>Nama Tipe Alokasi</th>
+                <th>Deskripsi</th>
                 <th class="th-center">Default</th>
-                <th class="th-action">Action</th>
+                <th class="th-action">Aksi</th>
               </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="5" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
                 <tr v-else-if="error"><td colspan="5" class="td-empty td-error">{{ error }}</td></tr>
-                <tr v-else-if="categories.length===0"><td colspan="5" class="td-empty">No categories found.</td></tr>
+                <tr v-else-if="categories.length===0"><td colspan="5" class="td-empty">Tidak ada Tipe Alokasi ditemukan.</td></tr>
                 <template v-else>
                   <tr v-for="c in categories" :key="c.id" class="tr-data">
                     <td><span class="code-badge">{{ c.searchKey || '—' }}</span></td>
                     <td class="td-name">
                       {{ c.name }}
-                      <span v-if="!c.active" class="inactive-pill">Inactive</span>
+                      <span v-if="!c.active" class="inactive-pill">Tidak Aktif</span>
                     </td>
                     <td class="td-secondary">{{ c.description || '—' }}</td>
                     <td class="td-center">
@@ -60,13 +60,13 @@
                           </button>
                           <div v-if="openDropdown===c.id" class="dropdown-menu" :style="{top:dropdownPos.top+'px',right:dropdownPos.right+'px'}">
                             <button class="dropdown-item" @click="openViewModal(c)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Lihat
                             </button>
                             <button class="dropdown-item" @click="openEditPage(c); closeDropdown()">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Ubah
                             </button>
                             <button class="dropdown-item dropdown-item--danger" @click="confirmToggle(c)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Hapus
                             </button>
                           </div>
                         </div>
@@ -98,13 +98,13 @@
         <div class="breadcrumb-row">
           <button class="breadcrumb-back" @click="closePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            List Business Partner Category
+            Daftar {{ titleName }}
           </button>
           <span class="breadcrumb-sep">/</span>
-          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Create Category' : 'Edit Category' }}</span>
+          <span class="breadcrumb-cur">{{ page.mode==='create' ? 'Buat Tipe Alokasi' : 'Ubah Tipe Alokasi' }}</span>
         </div>
 
-        <div class="form-page-title">{{ page.mode==='create' ? 'Create Business Partner Category' : 'Edit Business Partner Category' }}</div>
+        <div class="form-page-title">{{ page.mode==='create' ? 'Buat ' + titleName : 'Ubah ' + titleName }}</div>
 
         <div class="page-tabs">
           <button
@@ -112,16 +112,16 @@
             @click="pageTab = 'info'"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Category Info
+            Info Tipe Alokasi
           </button>
           <button
             :class="['page-tab', pageTab==='coa' ? 'page-tab--active' : '']"
             @click="switchToCoaTab"
             :disabled="page.mode==='create' && !page.id"
-            :title="page.mode==='create' && !page.id ? 'Save category first to configure Chart of Accounts' : ''"
+            :title="page.mode==='create' && !page.id ? 'Simpan kategori terlebih dahulu untuk mengonfigurasi Bagan Akun' : ''"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            Chart of Accounts
+            Bagan Akun
             <span v-if="page.mode==='create' && !page.id" class="tab-lock-icon">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </span>
@@ -132,36 +132,36 @@
           <div class="form-card">
             <div class="form-card-title">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              Category Info
+              Info Tipe Alokasi
             </div>
             <div class="form-grid-2">
               <div class="form-group">
-                <label>Category Code <span class="req">*</span></label>
+                <label>Kode Tipe Alokasi <span class="req">*</span></label>
                 <input
                   v-model="form.searchKey"
-                  placeholder="e.g. CUSTOMER"
+                  placeholder="cth. REGULER"
                   :class="{'input-error': formErrors.searchKey}"
                   :disabled="page.mode==='edit'"
                 />
                 <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
               </div>
               <div class="form-group">
-                <label>Category Name <span class="req">*</span></label>
+                <label>Nama Tipe Alokasi <span class="req">*</span></label>
                 <input
                   v-model="form.name"
-                  placeholder="e.g. Customer"
+                  placeholder="cth. Reguler"
                   :class="{'input-error': formErrors.name}"
                 />
                 <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
               </div>
               <div class="form-group" style="grid-column: 1 / -1">
-                <label>Description</label>
-                <input v-model="form.description" placeholder="Optional description" />
+                <label>Deskripsi</label>
+                <input v-model="form.description" placeholder="Deskripsi opsional" />
               </div>
             </div>
             <div class="form-checks" style="margin-top:14px">
-              <label class="check-label"><input type="checkbox" v-model="form.active" /> Active</label>
-              <label class="check-label"><input type="checkbox" v-model="form.default" /> Set as Default</label>
+              <label class="check-label"><input type="checkbox" v-model="form.active" /> Aktif</label>
+              <label class="check-label"><input type="checkbox" v-model="form.default" /> Tetapkan sebagai Default</label>
             </div>
           </div>
 
@@ -171,10 +171,10 @@
           </div>
 
           <div class="page-footer">
-            <button class="btn btn--ghost" @click="closePage" :disabled="formLoading">Cancel</button>
+            <button class="btn btn--ghost" @click="closePage" :disabled="formLoading">Batal</button>
             <button class="btn btn--primary" @click="submitForm" :disabled="formLoading">
               <span v-if="formLoading" class="btn-spinner"></span>
-              {{ formLoading ? 'Saving...' : (page.mode === 'create' ? 'Save & Continue' : 'Save') }}
+              {{ formLoading ? 'Menyimpan...' : (page.mode === 'create' ? 'Simpan & Lanjutkan' : 'Simpan') }}
             </button>
           </div>
         </div>
@@ -184,7 +184,7 @@
             <div class="form-card-title" style="justify-content: space-between; display: flex; align-items: center;">
               <div style="display:flex;align-items:center;gap:7px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                Chart of Accounts
+                Bagan Akun
               </div>
               <button
                 v-if="!coaEntry && !coaLoading"
@@ -192,7 +192,7 @@
                 @click="openCoaForm('create')"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Add Accounts
+                Tambah Akun
               </button>
               <button
                 v-if="coaEntry"
@@ -200,35 +200,35 @@
                 @click="openCoaForm('edit')"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit Accounts
+                Ubah Akun
               </button>
             </div>
 
             <div v-if="coaLoading" class="coa-loading">
               <div class="loading-dots"><span></span><span></span><span></span></div>
-              <p>Loading account configuration...</p>
+              <p>Memuat konfigurasi akun...</p>
             </div>
 
             <div v-else-if="!coaEntry" class="coa-empty">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color:var(--text-muted)"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-              <p>No Chart of Accounts configured for this category.</p>
+              <p>Belum ada Bagan Akun yang dikonfigurasi untuk Tipe Alokasi ini.</p>
               <button class="btn btn--primary" @click="openCoaForm('create')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Configure Accounts
+                Konfigurasi Akun
               </button>
             </div>
 
             <div v-else class="coa-summary">
               <div class="coa-schema-badge">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Accounting Schema: <strong>{{ coaSchemaName }}</strong>
+                Skema Akuntansi: <strong>{{ coaSchemaName }}</strong>
               </div>
               <table class="coa-table">
                 <thead>
                   <tr>
-                    <th>Account Type</th>
-                    <th>Account Code</th>
-                    <th>Account Name</th>
+                    <th>Jenis Akun</th>
+                    <th>Kode Akun</th>
+                    <th>Nama Akun</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,7 +246,7 @@
           </div>
 
           <div class="page-footer">
-            <button class="btn btn--ghost" @click="closePage">Close</button>
+            <button class="btn btn--ghost" @click="closePage">Tutup</button>
           </div>
         </div>
 
@@ -257,7 +257,7 @@
       <div v-if="viewModal.show" class="modal-overlay" @click.self="viewModal.show=false">
         <div class="modal modal--detail">
           <div class="modal-header">
-            <h3 class="modal-title">Business Partner Category Detail</h3>
+            <h3 class="modal-title">Detail {{ titleName }}</h3>
             <button class="modal-close" @click="viewModal.show=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -266,42 +266,42 @@
             <div class="detail-cols">
               <div class="detail-col">
                 <div class="detail-item">
-                  <span class="detail-label">Code</span>
+                  <span class="detail-label">Kode</span>
                   <span class="detail-value mono">{{ viewModal.data.searchKey || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Category Name</span>
+                  <span class="detail-label">Nama Tipe Alokasi</span>
                   <span class="detail-value">{{ viewModal.data.name || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Description</span>
+                  <span class="detail-label">Deskripsi</span>
                   <span class="detail-value">{{ viewModal.data.description || '—' }}</span>
                 </div>
               </div>
               <div class="detail-col">
                 <div class="detail-item">
                   <span class="detail-label">Default</span>
-                  <span class="detail-value">{{ viewModal.data.default ? 'Yes' : 'No' }}</span>
+                  <span class="detail-value">{{ viewModal.data.default ? 'Ya' : 'Tidak' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Organization</span>
+                  <span class="detail-label">Organisasi</span>
                   <span class="detail-value">{{ viewModal.data['organization$_identifier'] || '—' }}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Status</span>
                   <span :class="['status-pill', viewModal.data.active ? 'status-pill--active' : 'status-pill--inactive']">
-                    {{ viewModal.data.active ? 'Active' : 'Inactive' }}
+                    {{ viewModal.data.active ? 'Aktif' : 'Tidak Aktif' }}
                   </span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Created</span>
+                  <span class="detail-label">Dibuat</span>
                   <span class="detail-value mono">{{ formatDate(viewModal.data.creationDate) }}</span>
                 </div>
               </div>
             </div>
 
             <div class="detail-divider"></div>
-            <h4 class="detail-section-title">Chart of Accounts</h4>
+            <h4 class="detail-section-title">Bagan Akun</h4>
             <div v-if="viewModal.loadingCoa" class="coa-loading" style="padding: 20px 0;">
               <div class="loading-dots"><span></span><span></span><span></span></div>
             </div>
@@ -311,19 +311,19 @@
             <div v-else class="detail-cols">
               <div class="detail-col">
                 <div class="detail-item">
-                  <span class="detail-label">Accounting Schema</span>
+                  <span class="detail-label">Skema Akuntansi</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'accountingSchema') }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Vendor Liability</span>
+                  <span class="detail-label">Liabilitas Vendor</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'vendorLiability') }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Vendor Prepayment</span>
+                  <span class="detail-label">Pembayaran Dimuka Vendor</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'vendorPrepayment') }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Write-off</span>
+                  <span class="detail-label">Penghapusan</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'writeoff') }}</span>
                 </div>
               </div>
@@ -332,15 +332,15 @@
                   <span class="detail-label">Spacer</span><span class="detail-value">—</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Customer Receivables</span>
+                  <span class="detail-label">Piutang Pelanggan</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'customerReceivablesNo') }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Customer Prepayment</span>
+                  <span class="detail-label">Pembayaran Dimuka Pelanggan</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'customerPrepayment') }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Non-Invoiced Receipts</span>
+                  <span class="detail-label">Penerimaan Tidak Diinvoice</span>
                   <span class="detail-value">{{ getCoaLabel(viewModal.coa, 'nonInvoicedReceipts') }}</span>
                 </div>
               </div>
@@ -358,21 +358,21 @@
       <div v-if="toggleModal.show" class="modal-overlay" @click.self="toggleModal.show=false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <h3 class="modal-title">Delete Category</h3>
+            <h3 class="modal-title">Hapus Tipe Alokasi</h3>
             <button class="modal-close" @click="toggleModal.show=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="modal-body">
             <p class="delete-text">
-              Are you sure you want to delete <strong>{{ toggleModal.item?.name }}</strong>? This action cannot be undone.
+              Apakah Anda yakin ingin menghapus <strong>{{ toggleModal.item?.name }}</strong>? Tindakan ini tidak dapat dibatalkan.
             </p>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="toggleModal.show=false" :disabled="toggleLoading">Cancel</button>
+            <button class="btn btn--ghost" @click="toggleModal.show=false" :disabled="toggleLoading">Batal</button>
             <button class="btn btn--danger" @click="doToggle" :disabled="toggleLoading">
               <span v-if="toggleLoading" class="btn-spinner"></span>
-              Delete
+              Hapus
             </button>
           </div>
         </div>
@@ -384,7 +384,7 @@
         <div class="modal modal--coa">
           <div class="modal-header">
             <h3 class="modal-title">
-              {{ coaModal.mode==='create' ? 'Configure' : 'Edit' }} Chart of Accounts
+              {{ coaModal.mode==='create' ? 'Konfigurasi' : 'Ubah' }} Bagan Akun
             </h3>
             <button class="modal-close" @click="coaModal.show=false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -393,14 +393,14 @@
           <div class="modal-body">
 
             <div class="form-group" style="margin-bottom:16px">
-              <label>Accounting Schema <span class="req">*</span></label>
+              <label>Skema Akuntansi <span class="req">*</span></label>
               <select
                 v-model="coaForm.accountingSchema"
                 class="form-select"
                 :class="{'input-error': coaFormErrors.accountingSchema}"
                 :disabled="coaModal.mode==='edit'"
               >
-                <option value="">— Select Schema —</option>
+                <option value="">— Pilih Skema —</option>
                 <option v-for="s in accountingSchemas" :key="s.id" :value="s.id">{{ s.name }}</option>
               </select>
               <span class="field-error" v-if="coaFormErrors.accountingSchema">{{ coaFormErrors.accountingSchema }}</span>
@@ -408,11 +408,11 @@
 
             <div class="coa-section-title">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-              Vendor Accounts
+              Akun Vendor
             </div>
             <div class="form-grid-2" style="margin-bottom:16px">
               <div class="form-group">
-                <label>Vendor Liability</label>
+                <label>Liabilitas Vendor</label>
                 <div class="account-select-wrap">
                   <input
                     v-model="coaForm._search.vendorLiability"
@@ -424,7 +424,7 @@
                   />
                   <div v-if="showAccountDropdown==='vendorLiability'" class="account-dropdown">
                     <div v-if="!accountOptions.vendorLiability.length" class="account-option account-option--empty">
-                      {{ coaForm._search.vendorLiability ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                      {{ coaForm._search.vendorLiability ? 'Tidak ada akun ditemukan / Memuat...' : 'Mulai ketik untuk mencari...' }}
                     </div>
                     <template v-else>
                       <div
@@ -437,7 +437,7 @@
                       </div>
                     </template>
                   </div>
-                  <button v-if="coaForm.vendorLiability" class="account-clear" @click.stop.prevent="clearAccount('vendorLiability')" title="Clear">
+                  <button v-if="coaForm.vendorLiability" class="account-clear" @click.stop.prevent="clearAccount('vendorLiability')" title="Bersihkan">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
@@ -448,7 +448,7 @@
               </div>
               
               <div class="form-group">
-                <label>Vendor Prepayment</label>
+                <label>Pembayaran Dimuka Vendor</label>
                 <div class="account-select-wrap">
                   <input
                     v-model="coaForm._search.vendorPrepayment"
@@ -460,7 +460,7 @@
                   />
                   <div v-if="showAccountDropdown==='vendorPrepayment'" class="account-dropdown">
                     <div v-if="!accountOptions.vendorPrepayment.length" class="account-option account-option--empty">
-                      {{ coaForm._search.vendorPrepayment ? 'No accounts found / Loading...' : 'Start typing to search...' }}
+                      {{ coaForm._search.vendorPrepayment ? 'Tidak ada akun ditemukan / Memuat...' : 'Mulai ketik untuk mencari...' }}
                     </div>
                     <template v-else>
                       <div
@@ -486,11 +486,11 @@
 
             <div class="coa-section-title">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Customer Accounts
+              Akun Pelanggan
             </div>
             <div class="form-grid-2" style="margin-bottom:16px">
               <div class="form-group">
-                <label>Customer Receivables</label>
+                <label>Piutang Pelanggan</label>
                 <div class="account-select-wrap">
                   <input
                     v-model="coaForm._search.customerReceivablesNo"
@@ -564,7 +564,7 @@
 
             <div class="coa-section-title">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              Other Accounts
+              Akun Lainnya
             </div>
             <div class="form-grid-2">
               <div class="form-group">
@@ -604,7 +604,7 @@
               </div>
               
               <div class="form-group">
-                <label>Non-Invoiced Receipts</label>
+                <label>Kuitansi Non-faktur</label>
                 <div class="account-select-wrap">
                   <input
                     v-model="coaForm._search.nonInvoicedReceipts"
@@ -669,7 +669,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue'
 import {
   fetchBPCategories,
   createBPCategory,
@@ -681,6 +681,19 @@ import {
   fetchGLAccounts,
   fetchAccountingSchemas,
 } from '@/services/businessPartnerCategory'
+
+// ── Define Props untuk pemisah Customer/Vendor ──────────────
+const props = defineProps({
+  type: {
+    type: String,
+    required: true,
+  }
+})
+
+// ── Computed Variables ──────────────────────────────────────
+const isCustomer = computed(() => props.type === 'customer')
+const isVendor = computed(() => props.type === 'vendor')
+const titleName = computed(() => isCustomer.value ? 'Kategori Pelanggan' : 'Kategori Vendor')
 
 // ── click-outside directive ──────────────────────────────────
 const vClickOutside = {
@@ -735,7 +748,13 @@ async function loadCategories(page = 1) {
   error.value   = ''
   try {
     const startRow = (page - 1) * PAGE_SIZE
-    const res = await fetchBPCategories({ startRow, pageSize: PAGE_SIZE, searchKey: searchQuery.value })
+    const res = await fetchBPCategories({ 
+      startRow, 
+      pageSize: PAGE_SIZE, 
+      searchKey: searchQuery.value,
+      isCustomer: isCustomer.value,
+      isVendor: isVendor.value
+    })
     categories.value = res.data ?? []
     totalRows.value   = res.totalRows ?? categories.value.length
     currentPage.value = page
@@ -757,11 +776,16 @@ function goPage(p) {
   loadCategories(p)
 }
 
-// Global click listener untuk dropdown COA di dalam modal
+// Watch pergerakan router untuk reload
+watch(() => props.type, () => {
+  page.show = false
+  searchQuery.value = ''
+  loadCategories(1)
+})
+
 onMounted(() => {
   loadCategories(1)
   document.addEventListener('click', (e) => {
-    // Jika user click di luar wrapper dropdown, maka tutup.
     if (e.target && e.target.closest && !e.target.closest('.account-select-wrap')) {
       showAccountDropdown.value = null
     }
@@ -841,8 +865,8 @@ function validateForm() {
   let valid = true
   formErrors.searchKey = ''
   formErrors.name      = ''
-  if (!form.searchKey.trim()) { formErrors.searchKey = 'Category code is required.'; valid = false }
-  if (!form.name.trim())      { formErrors.name      = 'Category name is required.'; valid = false }
+  if (!form.searchKey.trim()) { formErrors.searchKey = 'Kode Kategori harus diisi.'; valid = false }
+  if (!form.name.trim())      { formErrors.name      = 'Nama Kategori harus diisi.'; valid = false }
   return valid
 }
 
@@ -851,20 +875,26 @@ async function submitForm() {
   formLoading.value = true
   formError.value   = ''
   try {
+    const payloadData = {
+      ...form,
+      isCustomer: isCustomer.value,
+      isVendor: isVendor.value
+    }
+
     if (page.mode === 'create') {
-      const result = await createBPCategory({ ...form })
+      const result = await createBPCategory(payloadData)
       page.id   = result.id
       page.mode = 'edit'
-      showToast('Category created. You can now configure Chart of Accounts.', 'success')
+      showToast('Kategori berhasil dibuat. Anda sekarang dapat mengkonfigurasi Bagan Akun.', 'success')
       pageTab.value = 'coa'
       await loadCoaData()
     } else {
-      await updateBPCategory(page.id, { ...form })
-      showToast('Category updated successfully.', 'success')
+      await updateBPCategory(page.id, payloadData)
+      showToast('Kategori berhasil diperbarui.', 'success')
     }
     await loadCategories(currentPage.value)
   } catch (e) {
-    formError.value = e.message || 'Failed to save category.'
+    formError.value = e.message || 'Gagal menyimpan kategori.'
   } finally {
     formLoading.value = false
   }
@@ -892,7 +922,6 @@ async function openViewModal(item) {
   }
 }
 
-// Format Label untuk Modal View
 function getCoaLabel(coaRecord, key) {
   if (!coaRecord) return '—'
   const identifier = coaRecord[`${key}$_identifier`]
@@ -908,7 +937,7 @@ function getCoaLabel(coaRecord, key) {
 }
 
 // ════════════════════════════════════════════════════════════
-// TOGGLE ACTIVE MODAL
+// TOGGLE ACTIVE MODAL (DELETE)
 // ════════════════════════════════════════════════════════════
 const toggleModal  = reactive({ show: false, item: null })
 const toggleLoading = ref(false)
@@ -923,11 +952,11 @@ async function doToggle() {
   toggleLoading.value = true
   try {
     await deleteBPCategory(toggleModal.item.id)
-    showToast('Category deleted successfully.', 'success')
+    showToast('Kategori berhasil dihapus.', 'success')
     toggleModal.show = false
     await loadCategories(currentPage.value)
   } catch (e) {
-    showToast(e.message || 'Action failed.', 'error')
+    showToast(e.message || 'Gagal menghapus.', 'error')
   } finally {
     toggleLoading.value = false
   }
@@ -1044,7 +1073,6 @@ async function searchAccounts(field) {
 
 function selectAccount(field, account) {
   coaForm[field]         = account.id
-  // FinancialMgmtAccountingCombination returns _identifier directly
   const label = account._identifier || account.searchKey || account.name || account.id
   coaForm._search[field] = label
   coaForm._labels[field] = label
@@ -1103,7 +1131,7 @@ async function saveCoaForm() {
   coaFormErrors.accountingSchema = ''
 
   if (!coaForm.accountingSchema) {
-    coaFormErrors.accountingSchema = 'Accounting schema is required.'
+    coaFormErrors.accountingSchema = 'Skema akuntansi harus diisi.'
     return
   }
 
@@ -1119,16 +1147,16 @@ async function saveCoaForm() {
 
     if (coaModal.mode === 'create') {
       await createBPCategoryAccount(payload)
-      showToast('Chart of Accounts configured successfully.', 'success')
+      showToast('Bagan Akun berhasil dikonfigurasi.', 'success')
     } else {
       await updateBPCategoryAccount(coaEntry.value.id, payload)
-      showToast('Chart of Accounts updated successfully.', 'success')
+      showToast('Bagan Akun berhasil diperbarui.', 'success')
     }
 
     coaModal.show = false
     await loadCoaData()
   } catch (e) {
-    coaFormError.value = e.message || 'Failed to save accounts.'
+    coaFormError.value = e.message || 'Gagal menyimpan akun.'
   } finally {
     coaSaving.value = false
   }
@@ -1168,8 +1196,8 @@ function formatDate(iso) {
 :root {
   --font:       'Inter', system-ui, -apple-system, sans-serif;
   --font-mono:  'JetBrains Mono', 'Fira Code', monospace;
-  --accent:     #4f46e5;
-  --accent-h:   #4338ca;
+  --accent:     #3b82f6;
+  --accent-h:   #2563eb;
   --danger:     #dc2626;
   --success:    #16a34a;
   --bg:         #f1f5f9;
@@ -1202,8 +1230,8 @@ function formatDate(iso) {
 /* ── Buttons ────────────────────────────────────────────────── */
 .btn { display: inline-flex; align-items: center; gap: 7px; padding: 0 16px; height: 36px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: background .15s, opacity .15s; font-family: var(--font); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
-.btn--primary { background: #4f46e5; color: #fff; }
-.btn--primary:hover:not(:disabled) { background: #4338ca; color: #fff; }
+.btn--primary { background: var(--accent); color: #fff; }
+.btn--primary:hover:not(:disabled) { background: #2563eb; color: #fff; }
 .btn--ghost { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
 .btn--ghost:hover:not(:disabled) { background: #e2e8f0; color: #475569; }
 .btn--danger { background: #dc2626; color: #fff; }
@@ -1223,27 +1251,27 @@ function formatDate(iso) {
 /* ── Table ─────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.table thead tr { border-bottom: 2px solid var(--border); }
-.table th { padding: 11px 14px; text-align: left; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); background: var(--surface2); white-space: nowrap; }
+.table thead tr { border-bottom: 1px solid var(--border); }
+.table th { padding: 11px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
 .th-action { text-align: right; }
 .th-center { text-align: center; }
 .td-empty { text-align: center; padding: 40px 14px; color: var(--text-muted); font-size: 13.5px; }
 .td-error { color: var(--danger); }
-.table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; max-width: 0; }
 .tr-data:last-child td { border-bottom: none; }
-.tr-data:hover td { background: #fafbff; }
+.tr-data:hover td { background: #f8fafc; }
 .td-name { font-weight: 500; color: var(--text-primary); }
 .td-secondary { color: var(--text-secondary); font-size: 13px; }
 .td-center { text-align: center; }
 .td-action-cell { text-align: right; padding-right: 16px; }
-.code-badge { display: inline-block; padding: 2px 9px; background: #eff6ff; color: #1d4ed8; border-radius: 6px; font-size: 12px; font-weight: 600; font-family: var(--font-mono); letter-spacing: .02em; }
+.code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; display: inline-block; }
 .inactive-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #fff1f2; color: var(--danger); margin-left: 6px; vertical-align: middle; }
 .default-pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; background: #f0fdf4; color: var(--success); }
 
 /* ── Dropdown ─────────────────────────────────────────── */
 .action-group { display: flex; justify-content: flex-end; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); transition: background .12s; }
-.action-btn:hover { background: #1d4ed8; }
+.action-btn:hover { background: var(--border); color: var(--text-primary); }
 .dropdown-wrap { position: relative; }
 .dropdown-menu { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 9999; min-width: 160px; overflow: hidden; }
 .dropdown-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; font-size: 12.5px; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text-secondary); font-family: var(--font); transition: background .1s; white-space: nowrap; }

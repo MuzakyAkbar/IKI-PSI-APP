@@ -4,12 +4,12 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Product</h2>
+          <h2 class="page-title">Produk</h2>
         </div>
 
         <div class="tabs">
-          <button :class="['tab', activeTab==='product'?'tab--active':'']" @click="switchTab('product')">Product</button>
-          <button :class="['tab', activeTab==='category'?'tab--active':'']" @click="switchTab('category')">Product Category</button>
+          <button :class="['tab', activeTab==='product'?'tab--active':'']" @click="switchTab('product')">Produk</button>
+          <button :class="['tab', activeTab==='category'?'tab--active':'']" @click="switchTab('category')">Kategori Produk</button>
           <button :class="['tab', activeTab==='uom'?'tab--active':'']" @click="switchTab('uom')">UOM</button>
         </div>
 
@@ -17,11 +17,11 @@
           <div class="toolbar">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="searchQuery" class="search-input" placeholder="Search product..." @input="onSearch" />
+              <input v-model="searchQuery" class="search-input" placeholder="Cari produk..." @input="onSearch" />
             </div>
             <button class="btn btn--primary" @click="openCreateModal('product')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Product
+              Buat Produk
             </button>
           </div>
           <div class="table-wrap">
@@ -36,18 +36,18 @@
                 <col style="width:80px; min-width:80px">
               </colgroup>
               <thead><tr>
-                <th class="sortable" :class="{ asc: sortCol === 'searchKey', desc: sortCol === 'searchKey' && sortDir === 'desc' }" @click="toggleSort('searchKey')">Code</th>
-                <th class="sortable" :class="{ asc: sortCol === 'name', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Product Name</th>
-                <th class="col-hide-md sortable" :class="{ asc: sortCol === 'productCategory.name', desc: sortCol === 'productCategory.name' && sortDir === 'desc' }" @click="toggleSort('productCategory.name')">Category</th>
-                <th class="col-hide-lg sortable" :class="{ asc: sortCol === 'uOM.name', desc: sortCol === 'uOM.name' && sortDir === 'desc' }" @click="toggleSort('uOM.name')">Unit of Measure</th>
-                <th class="col-hide-sm sortable" :class="{ asc: sortCol === 'productType', desc: sortCol === 'productType' && sortDir === 'desc' }" @click="toggleSort('productType')">Type</th>
-                <th class="col-hide-md">Description</th>
-                <th class="th-action">Action</th>
+                <th class="sortable" :class="{ asc: sortCol === 'searchKey', desc: sortCol === 'searchKey' && sortDir === 'desc' }" @click="toggleSort('searchKey')">Kode</th>
+                <th class="sortable" :class="{ asc: sortCol === 'name', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Nama Produk</th>
+                <th class="col-hide-md sortable" :class="{ asc: sortCol === 'productCategory.name', desc: sortCol === 'productCategory.name' && sortDir === 'desc' }" @click="toggleSort('productCategory.name')">Kategori</th>
+                <th class="col-hide-lg sortable" :class="{ asc: sortCol === 'uOM.name', desc: sortCol === 'uOM.name' && sortDir === 'desc' }" @click="toggleSort('uOM.name')">UOM</th>
+                <th class="col-hide-sm sortable" :class="{ asc: sortCol === 'productType', desc: sortCol === 'productType' && sortDir === 'desc' }" @click="toggleSort('productType')">Tipe</th>
+                <th class="col-hide-md">Deskripsi</th>
+                <th class="th-action">Aksi</th>
               </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
                 <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-                <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">No products found.</td></tr>
+                <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">Tidak ada produk ditemukan.</td></tr>
                 <template v-else>
                   <tr v-for="r in rows" :key="r.id" class="tr-data">
                     <td><span class="code-badge">{{ r.searchKey }}</span></td>
@@ -133,12 +133,12 @@
               <thead><tr>
                 <th class="sortable" :class="{ asc: sortCol === 'searchKey', desc: sortCol === 'searchKey' && sortDir === 'desc' }" @click="toggleSort('searchKey')">Code</th>
                 <th class="sortable" :class="{ asc: sortCol === 'name', desc: sortCol === 'name' && sortDir === 'desc' }" @click="toggleSort('name')">Category Name</th>
-                <th>Product Revenue</th>
-                <th>Product Expense</th>
-                <th>Product COGS</th>
-                <th>Product Asset</th>
+                <th>Pendapatan Produk</th>
+                <th>Biaya Produk</th>
+                <th>COGS Produk</th>
+                <th>Asset Produk</th>
                 <th class="sortable" :class="{ asc: sortCol === 'active', desc: sortCol === 'active' && sortDir === 'desc' }" @click="toggleSort('active')">Status</th>
-                <th class="th-action">Action</th>
+                <th class="th-action">Tindakan</th>
               </tr></thead>
               <tbody>
                 <tr v-if="loading"><td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
@@ -160,16 +160,16 @@
                           </button>
                           <div v-if="openDropdown===r.id" class="dropdown-menu" :style="{top: dropdownPos.top+'px', right: dropdownPos.right+'px'}">
                             <button class="dropdown-item" @click="openViewCatModal(r)">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Lihat
                             </button>
                             <button class="dropdown-item" @click="openEditModal('category', r); closeDropdown()">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sunting
                             </button>
                             <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r,'category')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Hapus
                             </button>
                             <button v-else class="dropdown-item dropdown-item--success" @click="confirmDelete(r,'category')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set Aktif
                             </button>
                           </div>
                         </div>
@@ -199,7 +199,7 @@
             </div>
             <button class="btn btn--primary" @click="openCreateModal('uom')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create UOM
+              Buat UOM
             </button>
           </div>
           <div class="table-wrap">
@@ -232,13 +232,13 @@
                           </button>
                           <div v-if="openDropdown===r.id" class="dropdown-menu" :style="{top: dropdownPos.top+'px', right: dropdownPos.right+'px'}">
                             <button class="dropdown-item" @click="openEditModal('uom', r); closeDropdown()">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sunting
                             </button>
                             <button v-if="r.active" class="dropdown-item dropdown-item--danger" @click="confirmDelete(r,'uom')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Hapus
                             </button>
                             <button v-else class="dropdown-item dropdown-item--success" @click="confirmDelete(r,'uom')">
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set As Active
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>Set Aktif
                             </button>
                           </div>
                         </div>
@@ -275,18 +275,18 @@
       <div v-if="viewModal" class="modal-overlay" @click.self="viewModal=null">
         <div class="modal">
           <div class="modal-header">
-            <h3>Product Detail</h3>
+            <h3>Detail Produk</h3>
             <button class="modal-close" @click="viewModal=null"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
             <div class="detail-grid">
-              <div class="detail-item"><span class="detail-label">Product Code/SKU</span><span class="detail-value mono">{{ viewModal.searchKey }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product Type</span><span class="detail-value">{{ productTypeLabel(viewModal.productType) }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product Name</span><span class="detail-value">{{ viewModal.name }}</span></div>
-              <div class="detail-item"><span class="detail-label">Description</span><span class="detail-value">{{ viewModal.description || '-' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product Category</span><span class="detail-value">{{ viewModal['productCategory$_identifier'] || '-' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Unit of Measure</span><span class="detail-value">{{ viewModal['uOM$_identifier'] || '-' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Tax Category</span><span class="detail-value">{{ viewModal['taxCategory$_identifier'] || '-' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Kode Produk</span><span class="detail-value mono">{{ viewModal.searchKey }}</span></div>
+              <div class="detail-item"><span class="detail-label">Jenis Produk</span><span class="detail-value">{{ productTypeLabel(viewModal.productType) }}</span></div>
+              <div class="detail-item"><span class="detail-label">Nama Produk</span><span class="detail-value">{{ viewModal.name }}</span></div>
+              <div class="detail-item"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewModal.description || '-' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Kategori Produk</span><span class="detail-value">{{ viewModal['productCategory$_identifier'] || '-' }}</span></div>
+              <div class="detail-item"><span class="detail-label">UOM</span><span class="detail-value">{{ viewModal['uOM$_identifier'] || '-' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Kategori Pajak</span><span class="detail-value">{{ viewModal['taxCategory$_identifier'] || '-' }}</span></div>
               <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', viewModal.active?'status-pill--active':'status-pill--inactive']">{{ viewModal.active?'Active':'Inactive' }}</span></div>
             </div>
           </div>
@@ -306,22 +306,22 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Product</span>
+                <span>Produk</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">Detail Category</span>
+                <span class="bc-active">Detail Kategori</span>
               </div>
-              <h3 class="modal-title">Category Detail</h3>
+              <h3 class="modal-title">Detail Kategori</h3>
             </div>
             <button class="modal-close" @click="viewCatModal=null"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <div class="modal-body">
             <div class="detail-grid">
               <div class="detail-item"><span class="detail-label">Code/SKU</span><span class="detail-value mono">{{ viewCatModal.searchKey || '-' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Category Name</span><span class="detail-value">{{ viewCatModal.name }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product Revenue</span><span class="detail-value">{{ viewCatModal['productRevenue$_identifier'] || '—' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product Asset</span><span class="detail-value">{{ viewCatModal['fixedAsset$_identifier'] || '—' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product Expense</span><span class="detail-value">{{ viewCatModal['productExpense$_identifier'] || '—' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Product COGS</span><span class="detail-value">{{ viewCatModal['productCOGS$_identifier'] || '—' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Nama Kategori</span><span class="detail-value">{{ viewCatModal.name }}</span></div>
+              <div class="detail-item"><span class="detail-label">Pendapatan Produk</span><span class="detail-value">{{ viewCatModal['productRevenue$_identifier'] || '—' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Aset Produk</span><span class="detail-value">{{ viewCatModal['fixedAsset$_identifier'] || '—' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Biaya Produk</span><span class="detail-value">{{ viewCatModal['productExpense$_identifier'] || '—' }}</span></div>
+              <div class="detail-item"><span class="detail-label">COGS Produk</span><span class="detail-value">{{ viewCatModal['productCOGS$_identifier'] || '—' }}</span></div>
               <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', viewCatModal.active?'status-pill--active':'status-pill--inactive']">{{ viewCatModal.active?'Active':'Inactive' }}</span></div>
             </div>
           </div>
@@ -341,7 +341,7 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Product</span>
+                <span>Produk</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">{{ formModal.mode==='create'?'Create':'Edit' }} {{ formModalTitle }}</span>
               </div>
@@ -354,12 +354,12 @@
             <template v-if="formModal.type==='product'">
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Product Name <span class="req">*</span></label>
-                  <input v-model="form.name" placeholder="Product Name" :class="{'input-error':formErrors.name}" />
+                  <label>Nama Produk <span class="req">*</span></label>
+                  <input v-model="form.name" placeholder="Nama Produk" :class="{'input-error':formErrors.name}" />
                   <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Unit of Measure <span class="req">*</span></label>
+                  <label>UOM <span class="req">*</span></label>
                   <select v-model="form.uOM" :class="{'input-error':formErrors.uOM}">
                     <option value="">Select</option>
                     <option v-for="u in lookups.uoms" :key="u.id" :value="u.id">{{ u.name }}</option>
@@ -367,9 +367,9 @@
                   <span class="field-error" v-if="formErrors.uOM">{{ formErrors.uOM }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Product Type <span class="req">*</span></label>
+                  <label>Tipe Produk <span class="req">*</span></label>
                   <select v-model="form.productType" :class="{'input-error':formErrors.productType}">
-                    <option value="">Select</option>
+                    <option value="">Pilih</option>
                     <option value="I">Item</option>
                     <option value="S">Service</option>
                     <option value="E">Expense</option>
@@ -377,23 +377,23 @@
                   <span class="field-error" v-if="formErrors.productType">{{ formErrors.productType }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Product Category <span class="req">*</span></label>
+                  <label>Kategori Produk <span class="req">*</span></label>
                   <select v-model="form.productCategory" :class="{'input-error':formErrors.productCategory}">
-                    <option value="">Select</option>
+                    <option value="">Pilih</option>
                     <option v-for="c in lookups.categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </select>
                   <span class="field-error" v-if="formErrors.productCategory">{{ formErrors.productCategory }}</span>
                 </div>
                 <div class="form-group" style="grid-column:1/-1">
-                  <label>Description</label>
+                  <label>Deskripsi</label>
                   <input v-model="form.description" placeholder="Description (optional)" />
                 </div>
               </div>
               <div class="form-checks">
-                <label class="check-label"><input type="checkbox" v-model="form.purchase" />Purchase</label>
-                <label class="check-label"><input type="checkbox" v-model="form.sale" />Sale</label>
-                <label class="check-label"><input type="checkbox" v-model="form.stocked" />Stocked</label>
-                <label class="check-label"><input type="checkbox" v-model="form.active" />Active</label>
+                <label class="check-label"><input type="checkbox" v-model="form.purchase" />Pembelian</label>
+                <label class="check-label"><input type="checkbox" v-model="form.sale" />Penjualan</label>
+                <label class="check-label"><input type="checkbox" v-model="form.stocked" />Dalam Stok</label>
+                <label class="check-label"><input type="checkbox" v-model="form.active" />Aktif</label>
               </div>
             </template>
 
@@ -405,12 +405,12 @@
                   <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Category Name <span class="req">*</span></label>
-                  <input v-model="form.name" placeholder="Category Name" :class="{'input-error':formErrors.name}" />
+                  <label>Nama Kategori <span class="req">*</span></label>
+                  <input v-model="form.name" placeholder="Nama Kategori" :class="{'input-error':formErrors.name}" />
                   <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Product Revenue <span class="req">*</span></label>
+                  <label>Pendapatan Produk <span class="req">*</span></label>
                   <div class="acc-wrap" v-click-outside="()=>accOpen.productRevenue=false">
                     <input class="acc-input" :class="{'input-error':formErrors.productRevenue}"
                       :value="accOpen.productRevenue ? accQuery.productRevenue : accLabel('productRevenue')"
@@ -429,7 +429,7 @@
                   <span class="field-error" v-if="formErrors.productRevenue">{{ formErrors.productRevenue }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Product Asset <span class="req">*</span></label>
+                  <label>Asset Produk <span class="req">*</span></label>
                   <div class="acc-wrap" v-click-outside="()=>accOpen.fixedAsset=false">
                     <input class="acc-input" :class="{'input-error':formErrors.fixedAsset}"
                       :value="accOpen.fixedAsset ? accQuery.fixedAsset : accLabel('fixedAsset')"
@@ -499,7 +499,7 @@
                   <span class="field-error" v-if="formErrors.uOMSymbol">{{ formErrors.uOMSymbol }}</span>
                 </div>
                 <div class="form-group">
-                  <label>Unit of Measure Name <span class="req">*</span></label>
+                  <label>UOM <span class="req">*</span></label>
                   <input v-model="form.name" placeholder="UOM Name" :class="{'input-error':formErrors.name}" />
                   <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
                 </div>
@@ -518,7 +518,7 @@
             <button class="btn btn--ghost" @click="closeFormModal" :disabled="formLoading">Cancel</button>
             <button class="btn btn--primary" @click="submitForm" :disabled="formLoading">
               <span v-if="formLoading" class="btn-spinner"></span>
-              {{ formLoading ? 'Saving...' : 'Save' }}
+              {{ formLoading ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </div>
         </div>
@@ -539,7 +539,7 @@
             <button class="btn btn--ghost" @click="deleteModal.show=false" :disabled="deleteLoading">Cancel</button>
             <button class="btn btn--danger" @click="doDelete" :disabled="deleteLoading">
               <span v-if="deleteLoading" class="btn-spinner"></span>
-              {{ deleteLoading ? 'Processing...' : 'Deactivate' }}
+              {{ deleteLoading ? 'Memproses...' : 'Nonaktifkan' }}
             </button>
           </div>
         </div>

@@ -4,7 +4,7 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Tax Rate</h2>
+          <h2 class="page-title">Tarif Pajak</h2>
         </div>
 
         <!-- ══ TOOLBAR ══ -->
@@ -12,21 +12,21 @@
           <div class="toolbar-left">
             <div class="search-wrap">
               <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input v-model="searchQuery" class="search-input" placeholder="Search tax name..." @input="onSearch" />
+              <input v-model="searchQuery" class="search-input" placeholder="Cari nama pajak..." @input="onSearch" />
             </div>
             <select v-model="filterCategory" class="filter-select" @change="onSearch">
-              <option value="">All Categories</option>
+              <option value="">Semua Kategori</option>
               <option v-for="tc in taxCategories" :key="tc.id" :value="tc.id">{{ tc.name }}</option>
             </select>
           </div>
           <div class="toolbar-right">
             <button class="btn btn--secondary" @click="openTaxCategoryModal">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2z"/><path d="M7 7h.01"/></svg>
-              Tax Category
+              Kategori Pajak
             </button>
             <button class="btn btn--primary" @click="openCreateModal">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Create Tax Rate
+              Buat Tarif Pajak
             </button>
           </div>
         </div>
@@ -35,19 +35,19 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th>Name</th>
-              <th>Rate (%)</th>
-              <th>Valid From</th>
-              <th>Tax Category</th>
-              <th>Sales/Purchase</th>
-              <th>Country</th>
-              <th>Base Amount</th>
-              <th class="th-action">Action</th>
+              <th>Nama</th>
+              <th>Tarif (%)</th>
+              <th>Berlaku Dari</th>
+              <th>Kategori Pajak</th>
+              <th>Penjualan/Pembelian</th>
+              <th>Negara</th>
+              <th>Jumlah Dasar</th>
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="8" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="8" class="td-empty">No tax rates found.</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="8" class="td-empty">Tidak ada tarif pajak ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td class="td-name">{{ r.name }}</td>

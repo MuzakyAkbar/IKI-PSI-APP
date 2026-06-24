@@ -4,7 +4,7 @@
 
       <!-- ══ PAGE TITLE ══ -->
       <div class="card-title-row">
-        <h1 class="card-title">General Ledger</h1>
+        <h1 class="card-title">Buku Besar</h1>
       </div>
 
       <!-- ══ TABS ══ -->
@@ -14,7 +14,7 @@
           @click="activeTab = 'filter'"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Filter & Select COA
+          Filter & Pilih COA
         </button>
         <button
           :class="['tab', activeTab === 'result' ? 'tab--active' : '']"
@@ -22,7 +22,7 @@
           :disabled="selectedCOAs.length === 0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          Results
+          Hasil
           <span v-if="selectedCOAs.length > 0" class="tab-badge">{{ selectedCOAs.length }}</span>
         </button>
       </div>
@@ -33,11 +33,11 @@
         <div class="toolbar">
           <div class="toolbar-left">
             <div class="field-group">
-              <label class="field-label">Date From</label>
+              <label class="field-label">Tanggal Dari</label>
               <input v-model="dateFrom" type="date" class="field-input" />
             </div>
             <div class="field-group">
-              <label class="field-label">Date To</label>
+              <label class="field-label">Tanggal Sampai</label>
               <input v-model="dateTo" type="date" class="field-input" />
             </div>
           </div>
@@ -45,7 +45,7 @@
             <button class="btn btn--primary" @click="fetchCOAList" :disabled="loading">
               <span v-if="loading" class="spinner"></span>
               <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              {{ loading ? 'Searching...' : 'Search' }}
+              {{ loading ? 'Mencari...' : 'Cari' }}
             </button>
           </div>
         </div>
@@ -81,10 +81,10 @@
           <div class="summary-actions">
             <button class="btn btn--outline" @click="showModal = true">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Change COA Selection
+              Ganti Pilihan COA
             </button>
             <button class="btn btn--primary" @click="activeTab = 'result'">
-              View Results
+              Lihat Hasil
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
@@ -150,11 +150,11 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th>DATE</th>
-                    <th>DOCUMENT NO</th>
+                    <th>TANGGAL</th>
+                    <th>NO DOKUMEN</th>
                     <th>PARTNER</th>
-                    <th>DESCRIPTION HEADER</th>
-                    <th>DESCRIPTION LINE</th>
+                    <th>DESKRIPSI HEADER</th>
+                    <th>DESKRIPSI LINE</th>
                     <th class="th-r">DEBIT</th>
                     <th class="th-r">CREDIT</th>
                     <th class="th-r">BALANCE</th>
@@ -192,11 +192,11 @@
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
-                <span>General Ledger</span>
+                <span>Buku Besar</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">Select Chart of Account</span>
+                <span class="bc-active">Pilih Chart of Account</span>
               </div>
-              <div class="modal-title">Select Chart of Account</div>
+              <div class="modal-title">Pilih Chart of Account</div>
             </div>
             <button class="modal-close" @click="closeModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -216,7 +216,7 @@
             </div>
 
             <div class="modal-meta">
-              Showing <strong>{{ filteredCOAList.length }}</strong> of <strong>{{ coaList.length }}</strong> accounts
+              Lihat <strong>{{ filteredCOAList.length }}</strong> of <strong>{{ coaList.length }}</strong> accounts
             </div>
 
             <div class="modal-table-wrap">
@@ -226,15 +226,15 @@
                     <th class="th-chk">
                       <input type="checkbox" class="chk" @change="toggleAllCOA" :checked="isAllCOASelected" />
                     </th>
-                    <th>CODE</th>
-                    <th>ACCOUNT NAME</th>
-                    <th>TYPE</th>
+                    <th>KODE</th>
+                    <th>NAMA AKUN</th>
+                    <th>TIPE</th>
                     <th class="th-c">STATUS</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="filteredCOAList.length === 0">
-                    <td colspan="5" class="td-empty">No accounts found</td>
+                    <td colspan="5" class="td-empty">Tidak ada akun yang ditemukan</td>
                   </tr>
                   <tr
                     v-for="coa in filteredCOAList"

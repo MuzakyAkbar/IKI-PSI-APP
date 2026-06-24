@@ -4,17 +4,17 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Storage Bin</h2>
+          <h2 class="page-title">Rak Penyimpanan</h2>
         </div>
 
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search storage bin..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari rak penyimpanan..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Storage Bin
+            Buat Rak Penyimpanan
           </button>
         </div>
 
@@ -31,14 +31,14 @@
               <col style="width:140px">
             </colgroup>
             <thead><tr>
-              <th>Storage Bin Code</th><th>Storage Bin Name</th><th>Warehouse Name</th>
-              <th>Corridor(X)</th><th>Shelves(Y)</th><th>Height(Z)</th>
-              <th>Status</th><th class="th-action">Action</th>
+              <th>Kode Rak Penyimpanan</th><th>Nama Rak Penyimpanan</th><th>Nama Gudang</th>
+              <th>Koridor(X)</th><th>Rak(Y)</th><th>Tinggi(Z)</th>
+              <th>Status</th><th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="8" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="8" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="8" class="td-empty">No storage bins found.</td></tr>
+              <tr v-else-if="rows.length===0"><td colspan="8" class="td-empty">Tidak ada rak penyimpanan ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.searchKey || '—' }}</span></td>
@@ -100,9 +100,9 @@
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
-                <span>Storage Bin</span>
+                <span>Rak Penyimpanan</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">View Storage Bin</span>
+                <span class="bc-active">Lihat Rak Penyimpanan</span>
               </div>
               <div class="modal-title">{{ viewModal.searchKey }}</div>
             </div>
@@ -113,15 +113,15 @@
           <div class="modal-body">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">Storage Bin Code</div>
+                <div class="detail-label">Kode Rak Penyimpanan</div>
                 <div class="detail-value mono">{{ viewModal.searchKey || '—' }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Storage Bin Name</div>
+                <div class="detail-label">Nama Rak Penyimpanan</div>
                 <div class="detail-value">{{ viewModal.searchKey || '—' }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Warehouse Name</div>
+                <div class="detail-label">Nama Gudang</div>
                 <div class="detail-value">{{ viewModal['warehouse$_identifier'] || '—' }}</div>
               </div>
               <div class="detail-item">
@@ -131,19 +131,19 @@
                 </div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Corridor (X)</div>
+                <div class="detail-label">Koridor (X)</div>
                 <div class="detail-value">{{ viewModal.x || '—' }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Shelves (Y)</div>
+                <div class="detail-label">Rak (Y)</div>
                 <div class="detail-value">{{ viewModal.y || '—' }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Height (Z)</div>
+                <div class="detail-label">Tinggi (Z)</div>
                 <div class="detail-value">{{ viewModal.z || '—' }}</div>
               </div>
               <div class="detail-item">
-                <div class="detail-label">Organization</div>
+                <div class="detail-label">Organisasi</div>
                 <div class="detail-value">{{ viewModal['organization$_identifier'] || '—' }}</div>
               </div>
             </div>
@@ -176,11 +176,11 @@
           <div class="modal-header">
             <div>
               <div class="modal-breadcrumb">
-                <span>Storage Bin</span>
+                <span>Rak Penyimpanan</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ formModal.mode==='create' ? 'Create Storage Bin' : 'Edit Storage Bin' }}</span>
+                <span class="bc-active">{{ formModal.mode==='create' ? 'Buat Rak Penyimpanan' : 'Edit Rak Penyimpanan' }}</span>
               </div>
-              <div class="modal-title">{{ formModal.mode==='create' ? 'Create Storage Bin' : 'Edit Storage Bin' }}</div>
+              <div class="modal-title">{{ formModal.mode==='create' ? 'Buat Rak Penyimpanan' : 'Edit Rak Penyimpanan' }}</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -189,12 +189,12 @@
           <div class="modal-body">
             <div class="form-grid-2">
               <div class="form-group">
-                <label>Storage Bin Code <span class="req">*</span></label>
+                <label>Kode Rak Penyimpanan <span class="req">*</span></label>
                 <input v-model="form.searchKey" placeholder="e.g. BIN-A-01" :class="{'input-error':formErrors.searchKey}" />
                 <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
               </div>
               <div class="form-group">
-                <label>Warehouse <span class="req">*</span></label>
+                <label>Gudang <span class="req">*</span></label>
                 <select v-model="form.warehouseId" :class="{'input-error':formErrors.warehouseId}">
                   <option value="">— Select Warehouse —</option>
                   <option v-for="w in warehouseOptions" :key="w.id" :value="w.id">{{ w.name }}</option>
@@ -202,15 +202,15 @@
                 <span class="field-error" v-if="formErrors.warehouseId">{{ formErrors.warehouseId }}</span>
               </div>
               <div class="form-group">
-                <label>Corridor (X)</label>
+                <label>Koridor (X)</label>
                 <input v-model="form.x" placeholder="Corridor" />
               </div>
               <div class="form-group">
-                <label>Shelves (Y)</label>
+                <label>Rak (Y)</label>
                 <input v-model="form.y" placeholder="Shelves" />
               </div>
               <div class="form-group">
-                <label>Height (Z)</label>
+                <label>Tinggi (Z)</label>
                 <input v-model="form.z" placeholder="Height" />
               </div>
             </div>

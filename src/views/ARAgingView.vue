@@ -5,8 +5,8 @@
 
         <div class="page-header">
           <div>
-            <h2 class="page-title">AR Aging — Receivables Aging Schedule</h2>
-            <p class="page-subtitle">Aging piutang berdasarkan invoice yang masih outstanding</p>
+            <h2 class="page-title">AR Aging — Rentang Waktu Piutang Pelanggan</h2>
+            <p class="page-subtitle">Aging piutang berdasarkan faktur yang masih tersedia</p>
           </div>
         </div>
 
@@ -14,7 +14,7 @@
         <div class="filter-panel">
           <div class="filter-grid">
             <div class="filter-group">
-              <label>As Of Date</label>
+              <label>Tanggal Awal</label>
               <input v-model="filters.asOfDate" type="date" class="form-input" />
             </div>
             <div class="filter-group">
@@ -54,22 +54,22 @@
               </div>
             </div>
             <div class="filter-group">
-              <label>Group Days</label>
+              <label>Kelompok Hari</label>
               <div class="day-groups">
                 <div class="day-group-row">
-                  <span class="day-label">Group 1</span>
+                  <span class="day-label">Kelompok 1</span>
                   <input v-model.number="filters.group1" type="number" class="form-input form-input--sm" />
                 </div>
                 <div class="day-group-row">
-                  <span class="day-label">Group 2</span>
+                  <span class="day-label">Kelompok 2</span>
                   <input v-model.number="filters.group2" type="number" class="form-input form-input--sm" />
                 </div>
                 <div class="day-group-row">
-                  <span class="day-label">Group 3</span>
+                  <span class="day-label">Kelompok 3</span>
                   <input v-model.number="filters.group3" type="number" class="form-input form-input--sm" />
                 </div>
                 <div class="day-group-row">
-                  <span class="day-label">Group 4</span>
+                  <span class="day-label">Kelompok 4</span>
                   <input v-model.number="filters.group4" type="number" class="form-input form-input--sm" />
                 </div>
               </div>
@@ -78,7 +78,7 @@
               <button class="btn btn--primary" :disabled="running" @click="runReport">
                 <span v-if="running" class="spinner"></span>
                 <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                {{ running ? 'Loading...' : 'View' }}
+                {{ running ? 'Memuat...' : 'Lihat' }}
               </button>
               <button class="btn btn--export" :disabled="!hasData" @click="exportExcel">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -100,9 +100,9 @@
 
         <!-- ══ REPORT META ══ -->
         <div v-if="hasData" class="report-meta">
-          <div class="meta-item"><span class="meta-label">Organization</span><span class="meta-value">XYZ</span></div>
-          <div class="meta-item"><span class="meta-label">General Ledger</span><span class="meta-value">XYZ</span></div>
-          <div class="meta-item"><span class="meta-label">As Of Date</span><span class="meta-value">{{ formatDisplayDate(filters.asOfDate) }}</span></div>
+          <div class="meta-item"><span class="meta-label">Organisasi</span><span class="meta-value">PITS</span></div>
+          <div class="meta-item"><span class="meta-label">Buku Besar</span><span class="meta-value">PITS</span></div>
+          <div class="meta-item"><span class="meta-label">Tanggal</span><span class="meta-value">{{ formatDisplayDate(filters.asOfDate) }}</span></div>
         </div>
 
         <!-- ══ SUMMARY TABLE ══ -->
@@ -111,8 +111,8 @@
             <table class="table aging-table">
               <thead>
                 <tr class="aging-header-row">
-                  <th class="th-bp">BUSINESS PARTNER</th>
-                  <th class="th-num">CURRENT</th>
+                  <th class="th-bp">CUSTOMER</th>
+                  <th class="th-num">SAAT INI</th>
                   <th class="th-num">1–{{ filters.group1 }}</th>
                   <th class="th-num">{{ filters.group1 + 1 }}–{{ filters.group2 }}</th>
                   <th class="th-num">{{ filters.group2 + 1 }}–{{ filters.group3 }}</th>
@@ -125,7 +125,7 @@
               </thead>
               <tbody>
                 <tr v-if="summaryRows.length === 0">
-                  <td colspan="10" class="td-empty">Tidak ada data outstanding.</td>
+                  <td colspan="10" class="td-empty">Tidak ada data tersedia.</td>
                 </tr>
                 <tr
                   v-for="row in summaryRows"
@@ -168,7 +168,7 @@
         <!-- ══ EMPTY STATE ══ -->
         <div v-else-if="!running && !reportError" class="empty-state">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <p>Atur filter dan klik <strong>View</strong> untuk melihat aging report</p>
+          <p>Atur filter dan klik <strong>Lihat</strong> untuk melihat aging report</p>
         </div>
 
       </div>
@@ -187,7 +187,7 @@
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">{{ detailRow?.bpName }}</span>
               </div>
-              <div class="modal-title">Receivables Aging Schedule Details — {{ detailRow?.bpName }}</div>
+              <div class="modal-title">Detail Rentang Waktu Piutang Pelanggan — {{ detailRow?.bpName }}</div>
             </div>
             <button class="modal-close" @click="showDetail = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -195,9 +195,9 @@
           </div>
 
           <div class="modal-subheader">
-            <span>Organization: <strong>XYZ</strong></span>
-            <span>As Of Date: <strong>{{ formatDisplayDate(filters.asOfDate) }}</strong></span>
-            <span>General Ledger: <strong>XYZ</strong></span>
+            <span>Organisasi: <strong>XYZ</strong></span>
+            <span>Tanggal: <strong>{{ formatDisplayDate(filters.asOfDate) }}</strong></span>
+            <span>Buku Besar: <strong>XYZ</strong></span>
           </div>
 
           <div class="modal-body">
@@ -214,19 +214,19 @@
                       <th>Document No.</th>
                       <th>Document Date</th>
                       <th>Due Date</th>
-                      <th class="th-num">Current</th>
+                      <th class="th-num">SAAT INI</th>
                       <th class="th-num">1–{{ filters.group1 }}</th>
                       <th class="th-num">{{ filters.group1 + 1 }}–{{ filters.group2 }}</th>
                       <th class="th-num">{{ filters.group2 + 1 }}–{{ filters.group3 }}</th>
                       <th class="th-num">{{ filters.group3 + 1 }}–{{ filters.group4 }}</th>
                       <th class="th-num">&gt;{{ filters.group4 }}</th>
-                      <th class="th-num">Credits</th>
-                      <th class="th-num">Net Due</th>
+                      <th class="th-num">Kredit</th>
+                      <th class="th-num">Jatuh Tempo</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-if="detailInvoices.length === 0">
-                      <td colspan="11" class="td-empty">Tidak ada invoice outstanding.</td>
+                      <td colspan="11" class="td-empty">Tidak ada invoice tersedia.</td>
                     </tr>
                     <tr v-for="inv in detailInvoices" :key="inv.id" class="tr-data">
                       <td><span class="code-badge">{{ inv.documentNo }}</span></td>
@@ -261,7 +261,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showDetail = false">Close</button>
+            <button class="btn btn--ghost" @click="showDetail = false">Tutup</button>
             <button class="btn btn--export" @click="exportDetailExcel">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               XLS

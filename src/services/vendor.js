@@ -187,7 +187,7 @@ export async function fetchFinancialAccounts() {
 // ==============================
 export async function fetchBPCategories() {
   const res = await api.get(BPC_BASE, {
-    params: { _startRow: 0, _endRow: 100, _where: `e.active = true and upper(e.name) like upper('%Vendor%')` },
+    params: { _startRow: 0, _endRow: 100, _where: `e.active = true and upper(e.name) like upper('%Vendor%') and e.iscust = false` },
   })
   return res.data?.response?.data ?? []
 }

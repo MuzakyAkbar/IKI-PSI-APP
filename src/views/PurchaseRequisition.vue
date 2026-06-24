@@ -4,18 +4,18 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Purchase Requisition</h2>
+          <h2 class="page-title">Permintaan Pembelian</h2>
         </div>
 
         <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search document no or vendor..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari nomor dokumen atau vendor..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create PR
+            Buat PR
           </button>
         </div>
 
@@ -23,20 +23,20 @@
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th class="sortable" :class="{ asc: sortCol==='documentNo'&&sortDir==='asc', desc: sortCol==='documentNo'&&sortDir==='desc' }" @click="toggleSort('documentNo')">Doc No.</th>
+              <th class="sortable" :class="{ asc: sortCol==='documentNo'&&sortDir==='asc', desc: sortCol==='documentNo'&&sortDir==='desc' }" @click="toggleSort('documentNo')">No. Dok.</th>
               <th class="sortable" :class="{ asc: sortCol==='businessPartner.name'&&sortDir==='asc', desc: sortCol==='businessPartner.name'&&sortDir==='desc' }" @click="toggleSort('businessPartner.name')">Vendor</th>
-              <th>Department</th>
-              <th>Requester</th>
-              <th>Price List</th>
-              <th>Currency</th>
+              <th>Departemen</th>
+              <th>Peminta</th>
+              <th>Daftar Harga</th>
+              <th>Mata Uang</th>
               <th class="sortable" :class="{ asc: sortCol==='documentStatus'&&sortDir==='asc', desc: sortCol==='documentStatus'&&sortDir==='desc' }" @click="toggleSort('documentStatus')">Status</th>
-              <th>Approval</th>
-              <th class="th-action">Action</th>
+              <!-- <th>Persetujuan</th> -->
+              <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="9" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="9" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="9" class="td-empty">No purchase requisitions found.</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="9" class="td-empty">Tidak ada permintaan pembelian ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -46,7 +46,7 @@
                   <td class="td-secondary">{{ r['priceList$_identifier'] || '—' }}</td>
                   <td class="td-secondary">{{ r['currency$_identifier'] || '—' }}</td>
                   <td><span :class="['status-pill', statusClass(r.documentStatus)]">{{ statusLabel(r.documentStatus) }}</span></td>
-                  <td><span :class="['approval-pill', approvalClass(r.rapvStatus)]">{{ approvalLabel(r.rapvStatus) }}</span></td>
+                  <!-- <td><span :class="['approval-pill', approvalClass(r.rapvStatus)]">{{ approvalLabel(r.rapvStatus) }}</span></td> -->
                   <td class="td-action-cell">
                     <div class="action-group">
                       <div class="dropdown-wrap" v-click-outside="closeDropdown">
@@ -103,11 +103,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Purchase Requisition</span>
+                <span>Permintaan Pembelian</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ isEdit ? 'Edit' : 'Create' }} PR</span>
+                <span class="bc-active">{{ isEdit ? 'Sunting' : 'Buat' }} PR</span>
               </div>
-              <div class="modal-title">{{ isEdit ? 'Edit' : 'Create' }} Purchase Requisition</div>
+              <div class="modal-title">{{ isEdit ? 'Sunting' : 'Buat' }} Permintaan Pembelian</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -121,28 +121,28 @@
             <div class="form-grid-4">
 
               <div class="form-group">
-                <label>Document No.</label>
+                <label>No. Dokumen</label>
                 <input :value="form.documentNo || '<auto>'" class="form-input" disabled />
               </div>
 
               <div class="form-group">
-                <label>Organization</label>
+                <label>Organisasi</label>
                 <input value="XYZ" class="form-input" disabled />
               </div>
 
               <div class="form-group">
-                <label>Requester</label>
+                <label>Pemohon</label>
                 <input value="APIService" class="form-input" disabled />
               </div>
 
               <div class="form-group">
-                <label>Approval Status</label>
+                <label>Status Persetujuan</label>
                 <input value="Submit Approval" class="form-input" disabled />
               </div>
 
               <!-- Business Partner (Vendor only) -->
               <div class="form-group">
-                <label>Business Partner</label>
+                <label>Vendor</label>
                 <div class="acc-wrap">
                   <input v-model="bpSearch" class="acc-input" placeholder="Search vendor..." @input="onBpSearch" @focus="showBpDrop=true" @blur="onBpBlur" />
                   <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -150,26 +150,26 @@
                     <li v-for="bp in bpOptions" :key="bp.id" class="acc-opt" @mousedown.prevent="selectBp(bp)">{{ bp['_identifier'] || bp.name }}</li>
                   </ul>
                   <ul v-else-if="showBpDrop && bpSearch.length > 1 && !bpOptions.length" class="acc-dropdown">
-                    <li class="acc-empty">No vendors found</li>
+                    <li class="acc-empty">Tidak ada vendor ditemukan</li>
                   </ul>
                 </div>
               </div>
 
               <!-- Price List -->
               <div class="form-group">
-                <label>Price List</label>
+                <label>Daftar Harga</label>
                 <input value="Purchase Price IDR" class="form-input" disabled />
               </div>
 
               <!-- Currency -->
               <div class="form-group">
-                <label>Currency</label>
+                <label>Mata Uang</label>
                 <input value="IDR" class="form-input" disabled />
               </div>
 
               <!-- Department -->
               <div class="form-group">
-                <label>Department <span class="req">*</span></label>
+                <label>Departmen <span class="req">*</span></label>
                 <div class="acc-wrap">
                   <input v-model="deptSearch" class="acc-input" placeholder="Search department..." @input="onDeptSearch" @focus="showDeptDrop=true" @blur="onDeptBlur" />
                   <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
@@ -177,13 +177,13 @@
                     <li v-for="d in deptOptions" :key="d.id" class="acc-opt" @mousedown.prevent="selectDept(d)">{{ d.value }} - {{ d.name }}</li>
                   </ul>
                   <ul v-else-if="showDeptDrop && deptSearch.length > 0 && !deptOptions.length" class="acc-dropdown">
-                    <li class="acc-empty">No departments found</li>
+                    <li class="acc-empty">Tidak ada departemen ditemukan</li>
                   </ul>
                 </div>
               </div>
 
               <div class="form-group form-group--full">
-                <label>Description</label>
+                <label>Deskripsi</label>
                 <textarea v-model="form.description" class="form-input form-textarea" rows="2" placeholder="Description..." />
               </div>
 
@@ -191,27 +191,28 @@
 
             <!-- Lines Section -->
             <div class="section-divider">
-              Lines
+              Detail Permintaan Pembelian
               <button class="btn-add-line" @click="addLine">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Add Line
+                Tambah Detail
               </button>
             </div>
 
             <div class="table-wrap" style="margin-bottom:0">
               <table class="table table--lines">
-                <thead><tr>
-                    <th class="sortable" :class="{ asc: sortCol==='documentNo' && sortDir==='asc', desc: sortCol==='documentNo' && sortDir==='desc' }" @click="toggleSort('documentNo')">Doc No.</th>
-                    <th class="sortable" :class="{ asc: sortCol==='businessPartner.name' && sortDir==='asc', desc: sortCol==='businessPartner.name' && sortDir==='desc' }" @click="toggleSort('businessPartner.name')">Vendor</th>
-                    <th class="sortable" :class="{ asc: sortCol==='gmmDepartement.name' && sortDir==='asc', desc: sortCol==='gmmDepartement.name' && sortDir==='desc' }" @click="toggleSort('gmmDepartement.name')">Department</th>
-                    <th class="sortable" :class="{ asc: sortCol==='userContact.name' && sortDir==='asc', desc: sortCol==='userContact.name' && sortDir==='desc' }" @click="toggleSort('userContact.name')">Requester</th>
-                    <th class="sortable" :class="{ asc: sortCol==='priceList.name' && sortDir==='asc', desc: sortCol==='priceList.name' && sortDir==='desc' }" @click="toggleSort('priceList.name')">Price List</th>
-                    <th class="sortable" :class="{ asc: sortCol==='currency.isoCode' && sortDir==='asc', desc: sortCol==='currency.isoCode' && sortDir==='desc' }" @click="toggleSort('currency.isoCode')">Currency</th>
-                    <th class="sortable" :class="{ asc: sortCol==='documentStatus' && sortDir==='asc', desc: sortCol==='documentStatus' && sortDir==='desc' }" @click="toggleSort('documentStatus')">Status</th>
-                    <th class="sortable" :class="{ asc: sortCol==='rapvStatus' && sortDir==='asc', desc: sortCol==='rapvStatus' && sortDir==='desc' }" @click="toggleSort('rapvStatus')">Approval</th>
-                    <th class="th-action">Action</th>
-                    </tr></thead>
-                <tbody>
+              <thead><tr>
+                <th style="width:44px; text-align:center;">No.</th>
+                <th style="width:140px">Tanggal Dibutuhkan</th>
+                <th style="width:220px">Produk</th>
+                <th style="width:80px; text-align:center">Qty</th>
+                <th style="width:80px; text-align:center">UOM</th>
+                <th style="width:180px">Vendor</th>
+                <th style="width:150px">Anggaran</th>
+                <th style="width:130px; text-align:right">Harga Satuan Tetap</th>
+                <th style="width:140px; text-align:right">Jumlah Baris</th>
+                <th style="width:44px; text-align:center">Tindakan</th>
+              </tr></thead>
+              <tbody>
                   <tr v-if="lines.length === 0"><td colspan="10" class="td-empty" style="padding:20px">No lines yet. Click "Add Line".</td></tr>
                   <tr v-for="(ln, idx) in lines" :key="idx">
                     <td class="td-secondary" style="text-align:center">{{ idx + 1 }}</td>
@@ -227,7 +228,7 @@
                           <li v-for="p in ln.productOptions" :key="p.id" class="acc-opt" @mousedown.prevent="selectLineProduct(ln, p)">{{ p['_identifier'] || p.name }}</li>
                         </ul>
                         <ul v-else-if="ln.showProductDrop && ln.productSearch.length > 1 && !ln.productOptions.length" class="acc-dropdown acc-dropdown--teleport" :style="ln.productDropStyle">
-                          <li class="acc-empty">No products found</li>
+                          <li class="acc-empty">Tidak ada produk ditemukan</li>
                         </ul>
                       </teleport>
                     </td>
@@ -246,7 +247,7 @@
                           <li v-for="bp in ln.bpOptions" :key="bp.id" class="acc-opt" @mousedown.prevent="selectLineBp(ln, bp)">{{ bp['_identifier'] || bp.name }}</li>
                         </ul>
                         <ul v-else-if="ln.showBpDrop && ln.bpSearch.length > 1 && !ln.bpOptions.length" class="acc-dropdown acc-dropdown--teleport" :style="ln.bpDropStyle">
-                          <li class="acc-empty">No vendors found</li>
+                          <li class="acc-empty">Tidak ada vendor ditemukan</li>
                         </ul>
                       </teleport>
                     </td>
@@ -259,7 +260,7 @@
                           <li v-for="b in ln.budgetOptions" :key="b.id" class="acc-opt" @mousedown.prevent="selectLineBudget(ln, b)">{{ b['_identifier'] || b.name }}</li>
                         </ul>
                         <ul v-else-if="ln.showBudgetDrop && ln.budgetSearch.length > 1 && !ln.budgetOptions.length" class="acc-dropdown acc-dropdown--teleport" :style="ln.budgetDropStyle">
-                          <li class="acc-empty">No budget found</li>
+                          <li class="acc-empty">Tidak ada anggaran ditemukan</li>
                         </ul>
                       </teleport>
                     </td>
@@ -292,7 +293,7 @@
             <button class="btn btn--ghost" @click="closeFormModal">Cancel</button>
             <button class="btn btn--primary" :disabled="saving" @click="doSavePR">
               <span v-if="saving" class="spinner"></span>
-              {{ saving ? 'Saving...' : 'Save' }}
+              {{ saving ? 'Menyimpan...' : 'Simpan' }}
             </button>
           </div>
         </div>
@@ -310,7 +311,7 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Purchase Requisition</span>
+                <span>Permintaan Pembelian</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 <span class="bc-active">View PR</span>
               </div>
@@ -354,19 +355,19 @@
 
               <!-- Header Info -->
               <div class="detail-grid">
-                <div class="detail-item"><span class="detail-label">Document No.</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
+                <div class="detail-item"><span class="detail-label">No Dokumen</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
                 <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', statusClass(viewRow.documentStatus)]">{{ statusLabel(viewRow.documentStatus) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Approval Status</span><span :class="['approval-pill', approvalClass(viewRow.rapvStatus)]">{{ approvalLabel(viewRow.rapvStatus) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Organization</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Business Partner</span><span class="detail-value">{{ bpName(viewRow['businessPartner$_identifier']) || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Requester</span><span class="detail-value">{{ viewRow['userContact$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Status Persetujuan</span><span :class="['approval-pill', approvalClass(viewRow.rapvStatus)]">{{ approvalLabel(viewRow.rapvStatus) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Organisasi</span><span class="detail-value">{{ viewRow['organization$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Vendor</span><span class="detail-value">{{ bpName(viewRow['businessPartner$_identifier']) || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Pemohon</span><span class="detail-value">{{ viewRow['userContact$_identifier'] || '—' }}</span></div>
                 <div class="detail-item"><span class="detail-label">Department</span><span class="detail-value">{{ viewRow['gmmDepartement$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Price List</span><span class="detail-value">{{ viewRow['priceList$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Currency</span><span class="detail-value">{{ viewRow['currency$_identifier'] || '—' }}</span></div>
-                <div class="detail-item detail-item--full"><span class="detail-label">Description</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Created By</span><span class="detail-value">{{ viewRow['createdBy$_identifier'] || '—' }}</span></div>
-                <div class="detail-item"><span class="detail-label">Created Date</span><span class="detail-value">{{ formatDate(viewRow.creationDate) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Updated</span><span class="detail-value">{{ formatDate(viewRow.updated) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Daftar Harga</span><span class="detail-value">{{ viewRow['priceList$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Mata Uang</span><span class="detail-value">{{ viewRow['currency$_identifier'] || '—' }}</span></div>
+                <div class="detail-item detail-item--full"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Dibuat Oleh</span><span class="detail-value">{{ viewRow['createdBy$_identifier'] || '—' }}</span></div>
+                <div class="detail-item"><span class="detail-label">Tanggal Dibuat</span><span class="detail-value">{{ formatDate(viewRow.creationDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Diperbarui</span><span class="detail-value">{{ formatDate(viewRow.updated) }}</span></div>
               </div>
 
               <!-- Lines Section -->
@@ -376,17 +377,17 @@
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table">
                   <thead><tr>
-                    <th>Line No.</th>
-                    <th>Product</th>
+                    <th>No.</th>
+                    <th>Produk</th>
                     <th style="text-align:center">Qty</th>
                     <th>UOM</th>
-                    <th>Need By Date</th>
-                    <th>Business Partner</th>
-                    <th>Budget</th>
-                    <th style="text-align:right">Net Unit Price</th>
-                    <th style="text-align:right">Line Net Amt</th>
+                    <th>Tanggal Dibutuhkan</th>
+                    <th>Vendor</th>
+                    <th>Anggaran</th>
+                    <th style="text-align:right">Harga Satuan Tetap</th>
+                    <th style="text-align:right">Jumlah Net Line</th>
                     <th>Status</th>
-                    <th style="width:120px;text-align:center">Action</th>
+                    <th style="width:120px;text-align:center">Tindakan</th>
                   </tr></thead>
                   <tbody>
                     <tr v-if="viewLines.length === 0"><td colspan="11" class="td-empty" style="padding:24px">No lines found.</td></tr>
@@ -413,7 +414,7 @@
                           >
                             <span v-if="lineActionLoading[ln.id] === 'O'" class="spinner spinner--sm"></span>
                             <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            Open
+                            Buka
                           </button>
                           <button
                             v-if="ln.requisitionLineStatus !== 'C'"
@@ -424,7 +425,7 @@
                           >
                             <span v-if="lineActionLoading[ln.id] === 'C'" class="spinner spinner--sm"></span>
                             <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            Close
+                            Tutup
                           </button>
                           <button
                             v-if="ln.requisitionLineStatus !== 'CA'"
@@ -435,7 +436,7 @@
                           >
                             <span v-if="lineActionLoading[ln.id] === 'CA'" class="spinner spinner--sm"></span>
                             <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                            Cancel
+                            Batal
                           </button>
                         </div>
                       </td>
@@ -451,11 +452,11 @@
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table">
                   <thead><tr>
-                    <th>Purchase Order Line</th>
-                    <th style="text-align:right">Quantity</th>
+                    <th>Baris Pesanan Pembelian</th>
+                    <th style="text-align:right">Kuantitas</th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="viewMatchedPO.length === 0"><td colspan="2" class="td-empty" style="padding:24px">No matched PO lines found.</td></tr>
+                    <tr v-if="viewMatchedPO.length === 0"><td colspan="2" class="td-empty" style="padding:24px">Tidak ditemukan baris PO yang cocok.</td></tr>
                     <tr v-for="m in viewMatchedPO" :key="m.id">
                       <td class="td-secondary">{{ m['salesOrderLine$_identifier'] || m['_identifier'] || '—' }}</td>
                       <td class="td-secondary" style="text-align:right">{{ m.quantity ?? '—' }}</td>
@@ -468,7 +469,11 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showViewModal = false">Close</button>
+            <button class="btn btn--ghost" @click="showViewModal = false">Batal</button>
+            <button class="btn btn--ghost" @click="doPrintPR">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print
+            </button>
           </div>
         </div>
       </div>
@@ -488,10 +493,10 @@
             <p class="delete-text">Are you sure you want to delete PR <strong>{{ deleteTarget?.documentNo }}</strong>? This action cannot be undone.</p>
           </div>
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showDeleteModal=false">Cancel</button>
+            <button class="btn btn--ghost" @click="showDeleteModal=false">Batal</button>
             <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
               <span v-if="deleting" class="spinner"></span>
-              {{ deleting ? 'Deleting...' : 'Delete' }}
+              {{ deleting ? 'Menghapus...' : 'Hapus' }}
             </button>
           </div>
         </div>
@@ -519,6 +524,7 @@ import {
   statusLabel, statusClass, approvalLabel, approvalClass,
   lineStatusLabel, lineStatusClass, bpName, formatCurrency, formatDate,
 } from '@/services/purchaseRequisition.js'
+import { generatePRPDF } from '@/services/pdfGeneratorPR.js'
 
 // ── List State ────────────────────────────────────────────
 const rows        = ref([])
@@ -662,7 +668,8 @@ async function onLineProductSearch(ln) {
 function openLineProductDrop(ln, evt) {
   ln.showProductDrop = true
   const rect = evt.target.getBoundingClientRect()
-  ln.productDropStyle = { top: `${rect.bottom + window.scrollY + 2}px`, left: `${rect.left + window.scrollX}px`, width: `${rect.width}px`, zIndex: 600 }
+  // Hapus window.scrollY & window.scrollX, naikkan zIndex
+  ln.productDropStyle = { top: `${rect.bottom + 2}px`, left: `${rect.left}px`, width: `${rect.width}px`, zIndex: 9999 }
 }
 function onLineProductBlur(ln) { setTimeout(() => { ln.showProductDrop = false }, 200) }
 function selectLineProduct(ln, p) {
@@ -682,7 +689,7 @@ async function onLineBpSearch(ln) {
 function openLineBpDrop(ln, evt) {
   ln.showBpDrop = true
   const rect = evt.target.getBoundingClientRect()
-  ln.bpDropStyle = { top: `${rect.bottom + window.scrollY + 2}px`, left: `${rect.left + window.scrollX}px`, width: `${rect.width}px`, zIndex: 600 }
+  ln.bpDropStyle = { top: `${rect.bottom + 2}px`, left: `${rect.left}px`, width: `${rect.width}px`, zIndex: 9999 }
 }
 function onLineBpBlur(ln) { setTimeout(() => { ln.showBpDrop = false }, 200) }
 function selectLineBp(ln, bp) { ln.businessPartner = bp.id; ln.bpSearch = bpName(bp['_identifier']) || bp.name; ln.showBpDrop = false; ln.bpOptions = [] }
@@ -698,7 +705,7 @@ async function onLineBudgetSearch(ln) {
 function openLineBudgetDrop(ln, evt) {
   ln.showBudgetDrop = true
   const rect = evt.target.getBoundingClientRect()
-  ln.budgetDropStyle = { top: `${rect.bottom + window.scrollY + 2}px`, left: `${rect.left + window.scrollX}px`, width: `${rect.width}px`, zIndex: 600 }
+  ln.budgetDropStyle = { top: `${rect.bottom + 2}px`, left: `${rect.left}px`, width: `${rect.width}px`, zIndex: 9999 }
 }
 function onLineBudgetBlur(ln) { setTimeout(() => { ln.showBudgetDrop = false }, 200) }
 function selectLineBudget(ln, b) { ln.budget = b.id; ln.budgetSearch = b['_identifier'] || b.id; ln.showBudgetDrop = false; ln.budgetOptions = [] }
@@ -832,6 +839,18 @@ async function doClosePR() {
   } catch (e) {
     showToast(e.response?.data?.response?.error?.message || 'Failed to close PR', 'error')
   } finally { actionLoading.value = null }
+}
+
+// ── Print PR PDF ───────────────────────────────────────────
+async function doPrintPR() {
+  if (!viewRow.value) return
+  try {
+    await generatePRPDF(viewRow.value, viewLines.value)
+    showToast('Dokumen PDF berhasil diunduh.')
+  } catch (e) {
+    console.error('Error printing PR PDF:', e)
+    showToast('Gagal men-generate PDF.', 'error')
+  }
 }
 
 // ── Update Line Status ────────────────────────────────────
@@ -1075,8 +1094,18 @@ onMounted(() => { loadRows() })
 .btn-add-line:hover { background: #dbeafe; }
 .btn-rm-line { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #fee2e2; color: var(--danger); border: none; cursor: pointer; }
 .btn-rm-line:hover { background: #fecaca; }
-.table--lines { table-layout: fixed; min-width: 1100px; }
-.table--lines th, .table--lines td { padding: 8px 10px; vertical-align: middle; }
+.table--lines { 
+  table-layout: fixed; 
+  min-width: 1300px; /* Lebarkan minimal batas ini agar tidak tergencet */
+}
+.table--lines th, .table--lines td { 
+  padding: 8px 10px; 
+  vertical-align: middle; 
+}
+.table--lines .form-input--sm, .table--lines .acc-input--sm { 
+  width: 100%; 
+  min-width: 0; /* Mencegah input memanjang melebihi batas <td> */
+}
 
 /* ── Combobox ── */
 .acc-wrap { position: relative; width: 100%; }
@@ -1085,7 +1114,18 @@ onMounted(() => { loadRows() })
 .acc-input--sm { height: 32px; font-size: 12.5px; }
 .acc-chevron { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
 .acc-dropdown { position: absolute; z-index: 300; top: calc(100% + 3px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto; list-style: none; margin: 0; padding: 4px 0; }
-.acc-dropdown--teleport { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); max-height: 200px; overflow-y: auto; list-style: none; margin: 0; padding: 4px 0; }
+.acc-dropdown--teleport { 
+  position: fixed; /* <- Pastikan ini fixed, bukan absolute */
+  background: var(--surface); 
+  border: 1px solid var(--border); 
+  border-radius: var(--radius-sm); 
+  box-shadow: var(--shadow-md); 
+  max-height: 200px; 
+  overflow-y: auto; 
+  list-style: none; 
+  margin: 0; 
+  padding: 4px 0; 
+}
 .acc-opt { padding: 8px 12px; font-size: 12.5px; color: var(--text-primary); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acc-opt:hover { background: var(--accent-light); }
 .acc-empty { padding: 8px 12px; font-size: 12.5px; color: var(--text-muted); font-style: italic; }

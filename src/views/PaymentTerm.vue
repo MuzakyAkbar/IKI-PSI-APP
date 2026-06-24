@@ -14,13 +14,13 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
             <div>
-              <h2 class="page-title">Payment Term</h2>
-              <p class="page-subtitle">Manage payment terms and schedules</p>
+              <h2 class="page-title">Term Pembayaran</h2>
+              <p class="page-subtitle">Kelola Term pembayaran dan jadwal</p>
             </div>
           </div>
           <button class="btn btn--primary" @click="openCreatePage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Payment Term
+            Buat Term Pembayaran
           </button>
         </div>
 
@@ -28,10 +28,10 @@
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search by name or key..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari berdasarkan nama atau kunci..." @input="onSearch" />
           </div>
           <div class="toolbar-right">
-            <span class="row-count" v-if="!loading && rows.length > 0">{{ totalRows }} result{{ totalRows !== 1 ? 's' : '' }}</span>
+            <span class="row-count" v-if="!loading && rows.length > 0">{{ totalRows }} hasil{{ totalRows !== 1 ? '' : '' }}</span>
           </div>
         </div>
 
@@ -49,13 +49,13 @@
             </colgroup>
             <thead>
               <tr>
-                <th>Search Key</th>
-                <th>Name</th>
-                <th>Overdue Days</th>
-                <th>Offset Month</th>
+                <th>Kata Kunci</th>
+                <th>Nama</th>
+                <th>Tanggal Jatuh Tempo</th>
+                <th>Bulan Offset</th>
                 <th>Status</th>
                 <th>Default</th>
-                <th class="th-action">Actions</th>
+                <th class="th-action">Tindakan</th>
               </tr>
             </thead>
             <tbody>
@@ -79,8 +79,8 @@
                     <div class="empty-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     </div>
-                    <p class="empty-title">No payment terms found</p>
-                    <p class="empty-desc">Try adjusting your search or create a new payment term</p>
+                    <p class="empty-title">Tidak ada term pembayaran</p>
+                    <p class="empty-desc">Coba sesuaikan pencarian atau buat term pembayaran baru</p>
                   </div>
                 </td>
               </tr>
@@ -112,16 +112,16 @@
                         <div v-if="openDropdown === r.id" class="dropdown-menu" :style="{ top: dropdownPos.top + 'px', right: dropdownPos.right + 'px' }">
                           <button class="dropdown-item" @click="openViewModal(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            View Detail
+                            Lihat Detail
                           </button>
                           <button class="dropdown-item" @click="openEditPage(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            Edit
+                            Sunting
                           </button>
                           <div class="dropdown-divider"></div>
                           <button class="dropdown-item dropdown-item--danger" @click="confirmDelete(r)">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                            Delete
+                            Hapus
                           </button>
                         </div>
                       </Teleport>
@@ -166,7 +166,7 @@
           <div class="breadcrumb-row">
             <button class="breadcrumb-back" @click="closePage">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-              List Payment Term
+              Daftar Term Pembayaran
             </button>
             <span class="breadcrumb-sep">/</span>
             <span class="breadcrumb-cur">{{ page.mode === 'create' ? 'Create Payment Term' : 'Edit Payment Term' }}</span>
@@ -177,8 +177,8 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             </div>
             <div>
-              <h1 class="form-page-title">{{ page.mode === 'create' ? 'Create Payment Term' : 'Edit Payment Term' }}</h1>
-              <p class="form-page-desc">{{ page.mode === 'create' ? 'Fill in the details below to add a new payment term' : 'Update the information for this payment term' }}</p>
+              <h1 class="form-page-title">{{ page.mode === 'Membuat' ? 'Membuat Term Pembayaran' : 'Edit Payment Term' }}</h1>
+              <p class="form-page-desc">{{ page.mode === 'Membuat' ? 'Isi detail di bawah ini untuk menambahkan term pembayaran baru' : 'Update the information for this payment term' }}</p>
             </div>
           </div>
 
@@ -188,12 +188,12 @@
               <div class="form-section-icon">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
               </div>
-              <span class="form-section-title">Payment Term Info</span>
+              <span class="form-section-title">Informasi Term Pembayaran</span>
             </div>
 
             <div class="form-grid-3">
               <div class="form-group">
-                <label class="form-label">Search Key <span class="req">*</span></label>
+                <label class="form-label">Kata Kunci <span class="req">*</span></label>
                 <input
                   v-model="form.searchKey"
                   class="form-input"
@@ -204,7 +204,7 @@
                 <span class="field-error" v-if="formErrors.searchKey">{{ formErrors.searchKey }}</span>
               </div>
               <div class="form-group">
-                <label class="form-label">Name <span class="req">*</span></label>
+                <label class="form-label">Nama <span class="req">*</span></label>
                 <input
                   v-model="form.name"
                   class="form-input"
@@ -214,7 +214,7 @@
                 <span class="field-error" v-if="formErrors.name">{{ formErrors.name }}</span>
               </div>
               <div class="form-group">
-                <label class="form-label">Description</label>
+                <label class="form-label">Deskripsi</label>
                 <input v-model="form.description" class="form-input" placeholder="Optional description" />
               </div>
             </div>
@@ -228,11 +228,11 @@
 
             <div class="form-grid-2" style="margin-top:16px">
               <div class="form-group">
-                <label class="form-label">Offset Month Due</label>
+                <label class="form-label">Bulan Jatuh Tempo</label>
                 <input v-model.number="form.offsetMonthDue" class="form-input" type="number" min="0" placeholder="0" />
               </div>
               <div class="form-group">
-                <label class="form-label">Overdue Payment Days Rule</label>
+                <label class="form-label">Aturan Hari Pembayaran Terlambat</label>
                 <input v-model.number="form.overduePaymentDaysRule" class="form-input" type="number" min="0" placeholder="0" />
               </div>
             </div>
@@ -251,12 +251,12 @@
               <label class="check-label">
                 <input type="checkbox" v-model="form.fixedDueDate" class="check-input" />
                 <span class="check-box"><svg v-if="form.fixedDueDate" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-                Fixed Due Date
+                Tanggal Jatuh Tempo Tetap
               </label>
               <label class="check-label">
                 <input type="checkbox" v-model="form.nextBusinessDay" class="check-input" />
                 <span class="check-box"><svg v-if="form.nextBusinessDay" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-                Next Business Day
+                Pindahkan ke Hari Kerja Berikutnya
               </label>
             </div>
           </div>
@@ -268,31 +268,31 @@
                 <div class="form-section-icon">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 </div>
-                <span class="form-section-title">Payment Term Lines</span>
+                <span class="form-section-title">Detail Term Pembayaran</span>
                 <span v-if="form.lines.length > 0" class="count-badge">{{ form.lines.length }}</span>
               </div>
               <button type="button" class="btn btn--outline btn--sm" @click="addLine">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Add Line
+                Tambah Detail
               </button>
             </div>
 
             <div v-if="form.lines.length === 0" class="section-empty">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              No lines added yet.
+              Tidak ada detail term pembayaran. Klik "Tambah Detail" untuk menambahkan aturan pembayaran lebih lanjut.
             </div>
 
             <div v-else class="lines-table-wrap">
               <table class="lines-table">
                 <thead>
                   <tr>
-                    <th style="width:80px">Line No</th>
-                    <th style="width:110px">% Due</th>
-                    <th style="width:120px">Overdue Days</th>
-                    <th style="width:120px">Offset Month</th>
+                    <th style="width:80px">Nomor</th>
+                    <th style="width:110px">% Jatuh Tempo</th>
+                    <th style="width:120px">Hari Terlambat</th>
+                    <th style="width:120px">Bulan Offset</th>
                     <th style="width:70px">Rest</th>
-                    <th style="width:90px">Next Biz Day</th>
-                    <th style="width:90px">Excl. Tax</th>
+                    <th style="width:90px">Hari Kerja Berikutnya</th>
+                    <th style="width:90px">Tanpa Pajak</th>
                     <th style="width:48px"></th>
                   </tr>
                 </thead>
@@ -323,35 +323,35 @@
                 <div class="form-section-icon">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
                 </div>
-                <span class="form-section-title">Translations</span>
+                <span class="form-section-title">Translasi</span>
                 <span v-if="form.translations.length > 0" class="count-badge">{{ form.translations.length }}</span>
               </div>
               <button type="button" class="btn btn--outline btn--sm" @click="addTranslation">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Add Translation
+                Tambah Translasi
               </button>
             </div>
 
             <div v-if="form.translations.length === 0" class="section-empty">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8l6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
-              No translations added yet.
+              Tidak ada translasi. Klik "Tambah Translasi" untuk menambahkan nama dan deskripsi dalam bahasa lain.
             </div>
 
             <div v-else class="lines-table-wrap">
               <table class="lines-table">
                 <thead>
                   <tr>
-                    <th style="width:160px">Language</th>
-                    <th>Name</th>
-                    <th>Description</th>
+                    <th style="width:160px">Bahasa</th>
+                    <th>Nama</th>
+                    <th>Deskripsi</th>
                     <th style="width:48px"></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(trl, idx) in form.translations" :key="idx" class="line-row">
                     <td><input class="line-input" v-model="trl.language" placeholder="e.g. en_US" /></td>
-                    <td><input class="line-input" v-model="trl.name" placeholder="Translation name" /></td>
-                    <td><input class="line-input" v-model="trl.description" placeholder="Optional" /></td>
+                    <td><input class="line-input" v-model="trl.name" placeholder="Nama translasi" /></td>
+                    <td><input class="line-input" v-model="trl.description" placeholder="Deskripsi opsional" /></td>
                     <td class="td-center">
                       <button type="button" class="line-del-btn" @click="removeTranslation(idx)" title="Remove translation">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
@@ -393,7 +393,7 @@
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
               </div>
               <div>
-                <h3 class="modal-title">Payment Term Detail</h3>
+                <h3 class="modal-title">Detail Term Pembayaran</h3>
                 <p class="modal-subtitle" v-if="viewModal.data">{{ viewModal.data.name }}</p>
               </div>
             </div>
@@ -449,12 +449,12 @@
             <div v-if="viewModal.lines.length" class="modal-sub-section">
               <div class="modal-sub-header">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>
-                Lines <span class="count-badge">{{ viewModal.lines.length }}</span>
+                Detail <span class="count-badge">{{ viewModal.lines.length }}</span>
               </div>
               <table class="lines-table">
                 <thead>
                   <tr>
-                    <th>Line No</th><th>% Due</th><th>Overdue Days</th><th>Offset Month</th><th>Rest</th><th>Next Biz Day</th>
+                    <th>Nomor</th><th>% Jatuh Tempo</th><th>Hari Terlambat</th><th>Bulan Offset</th><th>Rest</th><th>Hari Kerja Berikutnya</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -474,10 +474,10 @@
             <div v-if="viewModal.translations.length" class="modal-sub-section">
               <div class="modal-sub-header">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
-                Translations <span class="count-badge">{{ viewModal.translations.length }}</span>
+                Translasi <span class="count-badge">{{ viewModal.translations.length }}</span>
               </div>
               <table class="lines-table">
-                <thead><tr><th>Language</th><th>Name</th><th>Description</th></tr></thead>
+                <thead><tr><th>Bahasa</th><th>Nama</th><th>Deskripsi </th></tr></thead>
                 <tbody>
                   <tr v-for="t in viewModal.translations" :key="t.id">
                     <td class="td-mono">{{ t.language$_identifier || t.language }}</td>
@@ -493,7 +493,7 @@
             <button class="btn btn--ghost" @click="viewModal.show = false">Close</button>
             <button class="btn btn--primary" @click="editFromView">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit
+              Sunting
             </button>
           </div>
         </div>
@@ -509,7 +509,7 @@
               <div class="modal-header-icon modal-header-icon--danger">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
               </div>
-              <h3 class="modal-title">Delete Payment Term</h3>
+              <h3 class="modal-title">Hapus Term Pembayaran</h3>
             </div>
             <button class="modal-close" @click="deleteModal.show = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -517,8 +517,8 @@
           </div>
           <div class="modal-body">
             <p class="delete-text">
-              Are you sure you want to permanently delete <strong>{{ deleteModal.row?.name }}</strong>?
-              This action <strong>cannot be undone</strong> and will also remove all associated lines and translations.
+              Apakah Anda yakin ingin menghapus <strong>{{ deleteModal.row?.name }}</strong>?
+              Tindakan ini <strong>tidak dapat dibatalkan</strong> dan juga akan menghapus semua baris dan translasi yang terkait.
             </p>
             <div v-if="deleteError" class="form-api-error" style="margin-top:12px">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

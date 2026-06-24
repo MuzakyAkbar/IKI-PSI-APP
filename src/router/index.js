@@ -24,6 +24,11 @@ import PaymentTermView from '@/views/PaymentTerm.vue'
 import BusinessPartnerCategoryView from '@/views/BusinessPartnerCategory.vue'
 import BudgetView from '@/views/Budget.vue'
 import PurchaseRequisitionView from '@/views/PurchaseRequisition.vue'
+import PaymentoutView from '@/views/PaymentOut.vue'
+import RequisitionToOrderView from '@/views/RequisitionToOrderView.vue'
+import GoodsReceiptView from '@/views/GoodReceipt.vue'
+import EnrollmentView from '@/views/Enrollment.vue'  // ← NEW
+import GLItemView from '@/views/GLItem.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -49,9 +54,15 @@ const routes = [
   { path: '/profit-and-loss', component: ProfitAndLossView },
   { path: '/tax-rate', component: TaxRateView },
   { path: '/payment-term', component: PaymentTermView },
-  { path: '/bp-category', component: BusinessPartnerCategoryView },
+  { path: '/bp-category-customer', component: BusinessPartnerCategoryView, props: { type: 'customer' } },
+  { path: '/bp-category-vendor', component: BusinessPartnerCategoryView, props: { type: 'vendor' } },
   { path: '/budget', component: BudgetView },
   { path: '/purchase-requisition', component: PurchaseRequisitionView },
+  { path: '/rto', component: RequisitionToOrderView },
+  { path: '/payment-out', component: PaymentoutView },
+  { path: '/goods-receipt', component: GoodsReceiptView },
+  { path: '/enrollment', component: EnrollmentView },  // ← NEW
+  { path: '/gl-item', component: GLItemView },
 ]
 
 const router = createRouter({

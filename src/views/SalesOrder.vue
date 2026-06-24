@@ -4,35 +4,35 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Sales Order</h2>
+          <h2 class="page-title">Pesanan Penjualan</h2>
         </div>
 
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Search order no or customer..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari nomor pesanan atau pelanggan..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Create Sales Order
+            Buat Pesanan Penjualan
           </button>
         </div>
 
         <div class="table-wrap">
           <table class="table">
             <thead><tr>
-              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">SO No.</th>
-              <th class="sortable" :class="{ asc: sortCol === 'orderDate', desc: sortCol === 'orderDate' && sortDir === 'desc' }" @click="toggleSort('orderDate')">Order Date</th>
-              <th class="sortable" :class="{ asc: sortCol === 'businessPartner.name', desc: sortCol === 'businessPartner.name' && sortDir === 'desc' }" @click="toggleSort('businessPartner.name')">Customer</th>
+              <th class="sortable" :class="{ asc: sortCol === 'documentNo', desc: sortCol === 'documentNo' && sortDir === 'desc' }" @click="toggleSort('documentNo')">No. PJ</th>
+              <th class="sortable" :class="{ asc: sortCol === 'orderDate', desc: sortCol === 'orderDate' && sortDir === 'desc' }" @click="toggleSort('orderDate')">Tanggal Pesanan</th>
+              <th class="sortable" :class="{ asc: sortCol === 'businessPartner.name', desc: sortCol === 'businessPartner.name' && sortDir === 'desc' }" @click="toggleSort('businessPartner.name')">Pelanggan</th>
               <th class="sortable" :class="{ asc: sortCol === 'documentStatus', desc: sortCol === 'documentStatus' && sortDir === 'desc' }" @click="toggleSort('documentStatus')">Status</th>
-              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Grand Total</th>
-              <th class="sortable" :class="{ asc: sortCol === 'scheduledDeliveryDate', desc: sortCol === 'scheduledDeliveryDate' && sortDir === 'desc' }" @click="toggleSort('scheduledDeliveryDate')">Est. Arrival</th>
-              <th class="th-action">Action</th>
+              <th class="sortable" :class="{ asc: sortCol === 'grandTotalAmount', desc: sortCol === 'grandTotalAmount' && sortDir === 'desc' }" @click="toggleSort('grandTotalAmount')">Total Grand</th>
+              <th class="sortable" :class="{ asc: sortCol === 'scheduledDeliveryDate', desc: sortCol === 'scheduledDeliveryDate' && sortDir === 'desc' }" @click="toggleSort('scheduledDeliveryDate')">Estimasi Kedatangan</th>
+              <th class="th-action">Aksi</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">No sales orders found.</td></tr>
+              <tr v-else-if="rows.length===0"><td colspan="7" class="td-empty">Tidak ada pesanan penjualan ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -440,7 +440,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn--ghost" @click="showViewModal=false">Close</button>
+            <button class="btn btn--ghost" @click="showViewModal=false">Tutup</button>
             
             <button class="btn btn--ghost" @click="doPrint">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>

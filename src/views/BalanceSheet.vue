@@ -4,7 +4,7 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Balance Sheet</h2>
+          <h2 class="page-title">Neraca</h2>
           <p class="page-subtitle">Laporan Posisi Keuangan (Neraca)</p>
         </div>
 
@@ -143,171 +143,135 @@
 
           <div id="bs-print-area">
 
+            <!-- Print Header (hanya tampil saat print / export PDF) -->
             <div class="print-header">
-              <div class="print-company">Balance Sheet</div>
-              <div class="print-subtitle">Laporan Posisi Keuangan (Neraca)</div>
-              <div class="print-period">Per Tanggal: {{ formatDate(filters.asOfDate) }}</div>
-              <div class="print-currency">(Dalam Rupiah)</div>
+              <div class="print-company">{{ orgName || 'PERSERODA PEMBANGUNAN INVESTASI TANGERANG SELATAN' }}</div>
+              <div class="print-title">Neraca (Standar)</div>
+              <div class="print-period">Per Tgl. {{ formatDateShort(filters.asOfDate) }}</div>
             </div>
 
             <div class="table-wrap" v-if="reportGroups.length > 0">
               <table class="table bs-table" id="bs-table">
                 <thead>
                   <tr>
-                    <th class="bs-col-account">Akun</th>
-                    <th class="bs-col-bal tb-num">{{ formatDate(filters.asOfDate) }}</th>
-                    <th v-if="showRef" class="bs-col-bal tb-num">{{ formatDate(filters.asOfRefDate) }}</th>
-                    <th v-if="showRef" class="bs-col-diff tb-num">Selisih</th>
+                    <th class="bs-col-account">Description</th>
+                    <th class="bs-col-bal">Balance</th>
+                    <th v-if="showRef" class="bs-col-bal">{{ formatDate(filters.asOfRefDate) }}</th>
+                    <th v-if="showRef" class="bs-col-diff">Selisih</th>
                   </tr>
                 </thead>
                 <tbody>
 
+                  <!-- ═══ AKTIVA ═══ -->
                   <template v-if="assetGroups.length > 0">
-                    <tr class="tr-category-header">
-                      <td colspan="99">
-                        <div class="category-header-content category-asset">
-                          <span class="category-name">ASET</span>
-                        </div>
-                      </td>
+                    <tr class="tr-section-lv1">
+                      <td colspan="99" class="td-section-lv1">Aktiva</td>
                     </tr>
                     <template v-for="group in assetGroups" :key="group.id">
-                      <tr class="tr-group-header">
-                        <td colspan="99">
-                          <div class="group-header-content group-asset">
-                            <span class="group-name">{{ group.name }}</span>
-                            <span v-if="group.description" class="group-desc">{{ group.description }}</span>
-                          </div>
-                        </td>
+                      <!-- Nama group = "Aktiva Lancar", "Aktiva Tetap", dll -->
+                      <tr class="tr-section-lv2">
+                        <td colspan="99" class="td-section-lv2">{{ group.name }}</td>
                       </tr>
-                      <tr v-for="node in group.nodes" :key="node.id" class="tr-data tr-node">
-                        <td class="bs-node-cell">
-                          <div class="node-content">
-                            <span class="acc-code acc-code--asset">{{ node.searchKey }}</span>
-                            <span class="node-name">{{ node.name }}</span>
-                          </div>
-                        </td>
-                        <td class="tb-num tb-asset">{{ fmt(node.balance) }}</td>
-                        <td v-if="showRef" class="tb-num tb-asset">{{ fmt(node.refBalance) }}</td>
-                        <td v-if="showRef" class="tb-num" :class="diffClass(node.balance - node.refBalance)">{{ fmt(node.balance - node.refBalance) }}</td>
+                      <!-- Sub-group nodes — ditampilkan flat, indented -->
+                      <tr v-for="node in group.nodes" :key="node.id" class="tr-detail">
+                        <td class="td-detail">{{ node.name }}</td>
+                        <td class="tb-num td-bal">{{ fmt(node.balance) }}</td>
+                        <td v-if="showRef" class="tb-num td-bal">{{ fmt(node.refBalance) }}</td>
+                        <td v-if="showRef" class="tb-num td-bal" :class="diffClass(node.balance - node.refBalance)">{{ fmt(node.balance - node.refBalance) }}</td>
                       </tr>
-                      <tr class="tr-group-total group-total-asset">
-                        <td class="group-total-label">Total {{ group.name }}</td>
-                        <td class="tb-num tb-group-total">{{ fmt(group.total) }}</td>
-                        <td v-if="showRef" class="tb-num tb-group-total">{{ fmt(group.refTotal) }}</td>
-                        <td v-if="showRef" class="tb-num" :class="diffClass(group.total - group.refTotal)">{{ fmt(group.total - group.refTotal) }}</td>
+                      <!-- Subtotal group -->
+                      <tr class="tr-subtotal">
+                        <td class="td-subtotal">Jumlah {{ group.name }}</td>
+                        <td class="tb-num td-subtotal-val">{{ fmt(group.total) }}</td>
+                        <td v-if="showRef" class="tb-num td-subtotal-val">{{ fmt(group.refTotal) }}</td>
+                        <td v-if="showRef" class="tb-num td-subtotal-val" :class="diffClass(group.total - group.refTotal)">{{ fmt(group.total - group.refTotal) }}</td>
                       </tr>
                     </template>
-                    <tr class="tr-section-total section-total-asset">
-                      <td class="section-total-label">TOTAL ASET</td>
-                      <td class="tb-num section-total-val">{{ fmt(totalAset) }}</td>
-                      <td v-if="showRef" class="tb-num section-total-val">{{ fmt(refTotalAset) }}</td>
-                      <td v-if="showRef" class="tb-num section-total-val" :class="diffClass(totalAset - refTotalAset)">{{ fmt(totalAset - refTotalAset) }}</td>
+                    <!-- Total Aktiva -->
+                    <tr class="tr-total-section">
+                      <td class="td-total-section">Jumlah Aktiva</td>
+                      <td class="tb-num td-total-section-val">{{ fmt(totalAset) }}</td>
+                      <td v-if="showRef" class="tb-num td-total-section-val">{{ fmt(refTotalAset) }}</td>
+                      <td v-if="showRef" class="tb-num td-total-section-val" :class="diffClass(totalAset - refTotalAset)">{{ fmt(totalAset - refTotalAset) }}</td>
                     </tr>
                   </template>
 
+                  <!-- ═══ KEWAJIBAN DAN EKUITAS ═══ -->
+                  <template v-if="liabGroups.length > 0 || equityGroups.length > 0">
+                    <tr class="tr-spacer-row"><td colspan="99"></td></tr>
+                    <tr class="tr-section-lv1">
+                      <td colspan="99" class="td-section-lv1">Kewajiban dan Ekuitas</td>
+                    </tr>
+                  </template>
+
+                  <!-- Kewajiban -->
                   <template v-if="liabGroups.length > 0">
-                    <tr class="tr-spacer"><td colspan="99"></td></tr>
-                    <tr class="tr-category-header">
-                      <td colspan="99">
-                        <div class="category-header-content category-liab">
-                          <span class="category-name">LIABILITAS</span>
-                        </div>
-                      </td>
+                    <tr class="tr-section-lv2">
+                      <td colspan="99" class="td-section-lv2">Kewajiban</td>
                     </tr>
                     <template v-for="group in liabGroups" :key="group.id">
-                      <tr class="tr-group-header">
-                        <td colspan="99">
-                          <div class="group-header-content group-liab">
-                            <span class="group-name">{{ group.name }}</span>
-                            <span v-if="group.description" class="group-desc">{{ group.description }}</span>
-                          </div>
-                        </td>
+                      <tr class="tr-section-lv3">
+                        <td colspan="99" class="td-section-lv3">{{ group.name }}</td>
                       </tr>
-                      <tr v-for="node in group.nodes" :key="node.id" class="tr-data tr-node">
-                        <td class="bs-node-cell">
-                          <div class="node-content">
-                            <span class="acc-code acc-code--liab">{{ node.searchKey }}</span>
-                            <span class="node-name">{{ node.name }}</span>
-                          </div>
-                        </td>
-                        <td class="tb-num tb-liab">{{ fmt(node.balance) }}</td>
-                        <td v-if="showRef" class="tb-num tb-liab">{{ fmt(node.refBalance) }}</td>
-                        <td v-if="showRef" class="tb-num" :class="diffClass(node.balance - node.refBalance)">{{ fmt(node.balance - node.refBalance) }}</td>
+                      <tr v-for="node in group.nodes" :key="node.id" class="tr-detail">
+                        <td class="td-detail">{{ node.name }}</td>
+                        <td class="tb-num td-bal">{{ fmt(node.balance) }}</td>
+                        <td v-if="showRef" class="tb-num td-bal">{{ fmt(node.refBalance) }}</td>
+                        <td v-if="showRef" class="tb-num td-bal" :class="diffClass(node.balance - node.refBalance)">{{ fmt(node.balance - node.refBalance) }}</td>
                       </tr>
-                      <tr class="tr-group-total group-total-liab">
-                        <td class="group-total-label">Total {{ group.name }}</td>
-                        <td class="tb-num tb-group-total">{{ fmt(group.total) }}</td>
-                        <td v-if="showRef" class="tb-num tb-group-total">{{ fmt(group.refTotal) }}</td>
-                        <td v-if="showRef" class="tb-num" :class="diffClass(group.total - group.refTotal)">{{ fmt(group.total - group.refTotal) }}</td>
+                      <tr class="tr-subtotal">
+                        <td class="td-subtotal">Jumlah {{ group.name }}</td>
+                        <td class="tb-num td-subtotal-val">{{ fmt(group.total) }}</td>
+                        <td v-if="showRef" class="tb-num td-subtotal-val">{{ fmt(group.refTotal) }}</td>
+                        <td v-if="showRef" class="tb-num td-subtotal-val" :class="diffClass(group.total - group.refTotal)">{{ fmt(group.total - group.refTotal) }}</td>
                       </tr>
                     </template>
-                    <tr class="tr-section-total section-total-liab">
-                      <td class="section-total-label">TOTAL LIABILITAS</td>
-                      <td class="tb-num section-total-val">{{ fmt(totalLiabilitas) }}</td>
-                      <td v-if="showRef" class="tb-num section-total-val">{{ fmt(refTotalLiabilitas) }}</td>
-                      <td v-if="showRef" class="tb-num section-total-val" :class="diffClass(totalLiabilitas - refTotalLiabilitas)">{{ fmt(totalLiabilitas - refTotalLiabilitas) }}</td>
+                    <!-- Total Kewajiban -->
+                    <tr class="tr-total-subsection">
+                      <td class="td-total-subsection">Jumlah Kewajiban</td>
+                      <td class="tb-num td-total-subsection-val">{{ fmt(totalLiabilitas) }}</td>
+                      <td v-if="showRef" class="tb-num td-total-subsection-val">{{ fmt(refTotalLiabilitas) }}</td>
+                      <td v-if="showRef" class="tb-num td-total-subsection-val" :class="diffClass(totalLiabilitas - refTotalLiabilitas)">{{ fmt(totalLiabilitas - refTotalLiabilitas) }}</td>
                     </tr>
                   </template>
 
+                  <!-- Ekuitas -->
                   <template v-if="equityGroups.length > 0">
-                    <tr class="tr-spacer"><td colspan="99"></td></tr>
-                    <tr class="tr-category-header">
-                      <td colspan="99">
-                        <div class="category-header-content category-equity">
-                          <span class="category-name">EKUITAS</span>
-                        </div>
-                      </td>
+                    <tr class="tr-section-lv2">
+                      <td colspan="99" class="td-section-lv2">Ekuitas</td>
                     </tr>
                     <template v-for="group in equityGroups" :key="group.id">
-                      <tr class="tr-group-header">
-                        <td colspan="99">
-                          <div class="group-header-content group-equity">
-                            <span class="group-name">{{ group.name }}</span>
-                            <span v-if="group.description" class="group-desc">{{ group.description }}</span>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr v-for="node in group.nodes" :key="node.id" class="tr-data tr-node">
-                        <td class="bs-node-cell">
-                          <div class="node-content">
-                            <span class="acc-code acc-code--equity">{{ node.searchKey }}</span>
-                            <span class="node-name">{{ node.name }}</span>
-                          </div>
-                        </td>
-                        <td class="tb-num tb-equity">{{ fmt(node.balance) }}</td>
-                        <td v-if="showRef" class="tb-num tb-equity">{{ fmt(node.refBalance) }}</td>
-                        <td v-if="showRef" class="tb-num" :class="diffClass(node.balance - node.refBalance)">{{ fmt(node.balance - node.refBalance) }}</td>
-                      </tr>
-                      <tr class="tr-group-total group-total-equity">
-                        <td class="group-total-label">Total {{ group.name }}</td>
-                        <td class="tb-num tb-group-total">{{ fmt(group.total) }}</td>
-                        <td v-if="showRef" class="tb-num tb-group-total">{{ fmt(group.refTotal) }}</td>
-                        <td v-if="showRef" class="tb-num" :class="diffClass(group.total - group.refTotal)">{{ fmt(group.total - group.refTotal) }}</td>
+                      <tr v-for="node in group.nodes" :key="node.id" class="tr-detail">
+                        <td class="td-detail">{{ node.name }}</td>
+                        <td class="tb-num td-bal">{{ fmt(node.balance) }}</td>
+                        <td v-if="showRef" class="tb-num td-bal">{{ fmt(node.refBalance) }}</td>
+                        <td v-if="showRef" class="tb-num td-bal" :class="diffClass(node.balance - node.refBalance)">{{ fmt(node.balance - node.refBalance) }}</td>
                       </tr>
                     </template>
-                    <tr class="tr-section-total section-total-equity">
-                      <td class="section-total-label">TOTAL EKUITAS</td>
-                      <td class="tb-num section-total-val">{{ fmt(totalEkuitas) }}</td>
-                      <td v-if="showRef" class="tb-num section-total-val">{{ fmt(refTotalEkuitas) }}</td>
-                      <td v-if="showRef" class="tb-num section-total-val" :class="diffClass(totalEkuitas - refTotalEkuitas)">{{ fmt(totalEkuitas - refTotalEkuitas) }}</td>
+                    <!-- Total Ekuitas -->
+                    <tr class="tr-total-subsection">
+                      <td class="td-total-subsection">Jumlah Ekuitas</td>
+                      <td class="tb-num td-total-subsection-val">{{ fmt(totalEkuitas) }}</td>
+                      <td v-if="showRef" class="tb-num td-total-subsection-val">{{ fmt(refTotalEkuitas) }}</td>
+                      <td v-if="showRef" class="tb-num td-total-subsection-val" :class="diffClass(totalEkuitas - refTotalEkuitas)">{{ fmt(totalEkuitas - refTotalEkuitas) }}</td>
                     </tr>
                   </template>
 
                 </tbody>
                 <tfoot>
-                  <tr class="tr-spacer"><td colspan="99"></td></tr>
-                  <tr class="tr-liab-equity">
-                    <td class="liab-equity-label">TOTAL LIABILITAS DAN EKUITAS</td>
-                    <td class="tb-num liab-equity-val">{{ fmt(totalLiabilitas + totalEkuitas) }}</td>
-                    <td v-if="showRef" class="tb-num liab-equity-val">{{ fmt(refTotalLiabilitas + refTotalEkuitas) }}</td>
-                    <td v-if="showRef" class="tb-num liab-equity-diff">{{ fmt((totalLiabilitas + totalEkuitas) - (refTotalLiabilitas + refTotalEkuitas)) }}</td>
+                  <!-- Total Kewajiban dan Ekuitas -->
+                  <tr class="tr-grand-total">
+                    <td class="td-grand-total">Jumlah Kewajiban dan Ekuitas</td>
+                    <td class="tb-num td-grand-total-val">{{ fmt(totalLiabilitas + totalEkuitas) }}</td>
+                    <td v-if="showRef" class="tb-num td-grand-total-val">{{ fmt(refTotalLiabilitas + refTotalEkuitas) }}</td>
+                    <td v-if="showRef" class="tb-num td-grand-total-val" :class="diffClass((totalLiabilitas + totalEkuitas) - (refTotalLiabilitas + refTotalEkuitas))">{{ fmt((totalLiabilitas + totalEkuitas) - (refTotalLiabilitas + refTotalEkuitas)) }}</td>
                   </tr>
-                  <tr class="tr-balance-check" :class="isBalanced ? 'tr-balanced' : 'tr-unbalanced'">
-                    <td class="balance-check-label" colspan="2">
-                      <span v-if="isBalanced">✓ Neraca Seimbang &nbsp;(Aset = Liabilitas + Ekuitas)</span>
+                  <!-- Balance check (hanya screen) -->
+                  <tr class="tr-balance-check screen-only" :class="isBalanced ? 'tr-balanced' : 'tr-unbalanced'">
+                    <td class="balance-check-label" colspan="99">
+                      <span v-if="isBalanced">✓ Neraca Seimbang &nbsp;(Aktiva = Kewajiban + Ekuitas)</span>
                       <span v-else>✗ Neraca Tidak Seimbang — selisih: {{ formatCurrency(Math.abs(totalAset - (totalLiabilitas + totalEkuitas))) }}</span>
                     </td>
-                    <td v-if="showRef" colspan="2"></td>
                   </tr>
                 </tfoot>
               </table>
@@ -389,10 +353,22 @@ const isBalanced = computed(() =>
   Math.abs(totalAset.value - (totalLiabilitas.value + totalEkuitas.value)) < 1
 )
 
+// ── orgName: nama organisasi yang dipilih (untuk header print)
+const orgName = computed(() => {
+  if (!filters.value.organization) return ''
+  const found = organizations.value.find(o => o.id === filters.value.organization)
+  return found ? found.name : ''
+})
+
 // ── formatters
 function formatDate(d) {
   if (!d) return '—'
   return new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+function formatDateShort(d) {
+  // "08 May 2026" style sesuai PDF ACCURATE
+  if (!d) return '—'
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 function formatCurrency(v) {
   if (v == null) return '—'
@@ -742,7 +718,7 @@ async function exportXlsx() {
 }
 
 // ════════════════════════════════════════════════════
-// EXPORT PDF
+// EXPORT PDF — gaya ACCURATE (clean, hitam-putih, hierarki indentasi)
 // ════════════════════════════════════════════════════
 async function exportPdf() {
   exporting.value = 'pdf'
@@ -753,94 +729,160 @@ async function exportPdf() {
     const autoTable = autoTableMod.default || autoTableMod
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const company = orgName.value || 'PERSERODA PEMBANGUNAN INVESTASI TANGERANG SELATAN'
+    const hasRef  = showRef.value
+    const colSpan = hasRef ? 4 : 2
 
+    // ══ HEADER: ACCURATE style ══
+    // Baris 1: nama perusahaan (bold, uppercase)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
+    doc.setTextColor(0, 0, 0)
+    doc.text(company.toUpperCase(), 105, 13, { align: 'center' })
+
+    // Baris 2: judul laporan (bold, merah, besar) — simulasi dengan warna merah
     doc.setFont('helvetica', 'bold'); doc.setFontSize(14)
-    doc.text('BALANCE SHEET', 105, 14, { align: 'center' })
+    doc.setTextColor(180, 0, 0)
+    doc.text('Neraca (Standar)', 105, 21, { align: 'center' })
+
+    // Baris 3: Per Tgl.
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9)
-    doc.text('Laporan Posisi Keuangan (Neraca)', 105, 20, { align: 'center' })
-    doc.text(`Per Tanggal: ${formatDate(filters.value.asOfDate)}`, 105, 26, { align: 'center' })
-    doc.text('(Dalam Rupiah)', 105, 31, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+    doc.text(`Per Tgl. ${formatDateShort(filters.value.asOfDate)}`, 105, 27, { align: 'center' })
 
-    const col1 = formatDate(filters.value.asOfDate)
-    const col2 = showRef.value ? formatDate(filters.value.asOfRefDate) : null
-    const colSpan = col2 ? 3 : 2
+    // Garis bawah header
+    doc.setDrawColor(0, 0, 0)
+    doc.setLineWidth(0.3)
+    doc.line(10, 30, 200, 30)
 
-    const head = [
-      col2
-        ? [{ content: 'Akun', styles: { halign: 'left' } }, { content: col1, styles: { halign: 'right' } }, { content: col2, styles: { halign: 'right' } }, { content: 'Selisih', styles: { halign: 'right' } }]
-        : [{ content: 'Akun', styles: { halign: 'left' } }, { content: col1, styles: { halign: 'right' } }],
-    ]
+    // ══ TABLE BODY ══
     const body = []
 
-    const addCatHdr = (label, fill, text) => body.push([{ content: label, colSpan, styles: { fontStyle: 'bold', fillColor: fill, textColor: text, fontSize: 9, cellPadding: { top: 4, bottom: 4, left: 6, right: 6 } } }])
-    const addGrpHdr = (label, fill, text) => body.push([{ content: `  ${label}`, colSpan, styles: { fontStyle: 'bold', fillColor: fill, textColor: text, fontSize: 8.5 } }])
-    const addLine   = (n) => {
-      const row = [{ content: `    ${n.searchKey}  ${n.name}`, styles: { fontSize: 8, halign: 'left' } }, { content: fmt(n.balance), styles: { halign: 'right' } }]
-      if (col2) { row.push({ content: fmt(n.refBalance), styles: { halign: 'right' } }); row.push({ content: fmt(n.balance - n.refBalance), styles: { halign: 'right' } }) }
-      body.push(row)
-    }
-    const addGrpTot = (label, total, refTotal, fill, text) => {
-      const row = [{ content: `  Total ${label}`, styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'left' } }, { content: fmt(total), styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'right' } }]
-      if (col2) { row.push({ content: fmt(refTotal||0), styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'right' } }); row.push({ content: fmt((total||0)-(refTotal||0)), styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'right' } }) }
-      body.push(row)
-    }
-    const addSecTot = (label, total, refTotal, fill, text) => {
-      const row = [{ content: label, styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'left', fontSize: 9 } }, { content: fmt(total), styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'right', fontSize: 9 } }]
-      if (col2) { row.push({ content: fmt(refTotal||0), styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'right', fontSize: 9 } }); row.push({ content: fmt((total||0)-(refTotal||0)), styles: { fontStyle: 'bold', fillColor: fill, textColor: text, halign: 'right', fontSize: 9 } }) }
-      body.push(row)
-    }
-    const addSpacer = () => body.push([{ content: '', colSpan, styles: { cellPadding: 1.5 } }])
+    // Warna-warna ACCURATE style (minimal, hitam-putih)
+    const WHITE   = [255, 255, 255]
+    const BLACK   = [0, 0, 0]
+    const BOLD_BG = [255, 255, 255]  // header section: putih, bold saja
 
-    // ASET
-    addCatHdr('ASET', [219, 234, 254], [30, 58, 138])
+    // Helper padding untuk indentasi
+    const pad = (n) => ' '.repeat(n)
+
+    // Helper baris
+    const addSectionLv1 = (label) => body.push([
+      { content: label, colSpan, styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8.5, cellPadding: { top: 3, bottom: 1, left: 4, right: 4 } } }
+    ])
+    const addSectionLv2 = (label) => body.push([
+      { content: pad(2) + label, colSpan, styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8.5, cellPadding: { top: 2, bottom: 1, left: 4, right: 4 } } }
+    ])
+    const addSectionLv3 = (label) => body.push([
+      { content: pad(4) + label, colSpan, styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8, cellPadding: { top: 2, bottom: 1, left: 4, right: 4 } } }
+    ])
+    const addDetail = (n) => {
+      const row = [
+        { content: pad(6) + n.name, styles: { fontStyle: 'normal', fillColor: WHITE, textColor: BLACK, fontSize: 8, halign: 'left' } },
+        { content: fmt(n.balance),  styles: { fontStyle: 'normal', fillColor: WHITE, textColor: BLACK, fontSize: 8, halign: 'right' } },
+      ]
+      if (hasRef) {
+        row.push({ content: fmt(n.refBalance), styles: { fontSize: 8, halign: 'right', fillColor: WHITE, textColor: BLACK } })
+        row.push({ content: fmt(n.balance - n.refBalance), styles: { fontSize: 8, halign: 'right', fillColor: WHITE, textColor: BLACK } })
+      }
+      body.push(row)
+    }
+    const addSubtotal = (label, total, refTotal) => {
+      const row = [
+        { content: pad(2) + label, styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8, halign: 'left', lineWidth: { top: 0.3 } } },
+        { content: fmt(total),     styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8, halign: 'right', lineWidth: { top: 0.3 } } },
+      ]
+      if (hasRef) {
+        row.push({ content: fmt(refTotal||0), styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8, halign: 'right', lineWidth: { top: 0.3 } } })
+        row.push({ content: fmt((total||0)-(refTotal||0)), styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8, halign: 'right', lineWidth: { top: 0.3 } } })
+      }
+      body.push(row)
+    }
+    const addTotalSection = (label, total, refTotal) => {
+      const row = [
+        { content: label, styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8.5, halign: 'left', lineWidth: { top: 0.5 }, lineColor: [0,0,0] } },
+        { content: fmt(total), styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8.5, halign: 'right', lineWidth: { top: 0.5 }, lineColor: [0,0,0] } },
+      ]
+      if (hasRef) {
+        row.push({ content: fmt(refTotal||0), styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8.5, halign: 'right', lineWidth: { top: 0.5 }, lineColor: [0,0,0] } })
+        row.push({ content: fmt((total||0)-(refTotal||0)), styles: { fontStyle: 'bold', fillColor: WHITE, textColor: BLACK, fontSize: 8.5, halign: 'right', lineWidth: { top: 0.5 }, lineColor: [0,0,0] } })
+      }
+      body.push(row)
+    }
+    const addSpacer = () => body.push([{ content: '', colSpan, styles: { cellPadding: { top: 1.5, bottom: 0, left: 0, right: 0 }, fillColor: WHITE } }])
+
+    // ── AKTIVA ──
+    addSectionLv1('Aktiva')
     for (const g of assetGroups.value) {
-      addGrpHdr(g.name, [239, 246, 255], [29, 78, 216])
-      for (const n of g.nodes) addLine(n)
-      addGrpTot(g.name, g.total, g.refTotal, [219, 234, 254], [30, 64, 175])
+      addSectionLv2(g.name)
+      for (const n of g.nodes) addDetail(n)
+      addSubtotal(`Jumlah ${g.name}`, g.total, g.refTotal)
     }
-    addSecTot('TOTAL ASET', totalAset.value, refTotalAset.value, [30, 58, 138], [255, 255, 255])
+    addTotalSection('Jumlah Aktiva', totalAset.value, refTotalAset.value)
     addSpacer()
 
-    // LIABILITAS
-    addCatHdr('LIABILITAS', [254, 226, 226], [153, 27, 27])
-    for (const g of liabGroups.value) {
-      addGrpHdr(g.name, [255, 241, 242], [220, 38, 38])
-      for (const n of g.nodes) addLine(n)
-      addGrpTot(g.name, g.total, g.refTotal, [254, 202, 202], [153, 27, 27])
+    // ── KEWAJIBAN DAN EKUITAS ──
+    if (liabGroups.value.length > 0 || equityGroups.value.length > 0) {
+      addSectionLv1('Kewajiban dan Ekuitas')
+
+      if (liabGroups.value.length > 0) {
+        addSectionLv2('Kewajiban')
+        for (const g of liabGroups.value) {
+          addSectionLv3(g.name)
+          for (const n of g.nodes) addDetail(n)
+          addSubtotal(`Jumlah ${g.name}`, g.total, g.refTotal)
+        }
+        addSubtotal('Jumlah Kewajiban', totalLiabilitas.value, refTotalLiabilitas.value)
+      }
+
+      if (equityGroups.value.length > 0) {
+        addSectionLv2('Ekuitas')
+        for (const g of equityGroups.value) {
+          for (const n of g.nodes) addDetail(n)
+        }
+        addSubtotal('Jumlah Ekuitas', totalEkuitas.value, refTotalEkuitas.value)
+      }
+
+      addTotalSection('Jumlah Kewajiban dan Ekuitas',
+        totalLiabilitas.value + totalEkuitas.value,
+        refTotalLiabilitas.value + refTotalEkuitas.value,
+      )
     }
-    addSecTot('TOTAL LIABILITAS', totalLiabilitas.value, refTotalLiabilitas.value, [153, 27, 27], [255, 255, 255])
-    addSpacer()
 
-    // EKUITAS
-    addCatHdr('EKUITAS', [209, 250, 229], [6, 95, 70])
-    for (const g of equityGroups.value) {
-      addGrpHdr(g.name, [236, 253, 245], [5, 150, 105])
-      for (const n of g.nodes) addLine(n)
-      addGrpTot(g.name, g.total, g.refTotal, [167, 243, 208], [6, 95, 70])
-    }
-    addSecTot('TOTAL EKUITAS', totalEkuitas.value, refTotalEkuitas.value, [6, 95, 70], [255, 255, 255])
-    addSpacer()
+    // ── Table headers ──
+    const headRow = hasRef
+      ? [
+          { content: 'Description', styles: { halign: 'left', fontStyle: 'bold', textColor: [180,0,0] } },
+          { content: 'Balance',     styles: { halign: 'right', fontStyle: 'bold', textColor: [180,0,0] } },
+          { content: formatDate(filters.value.asOfRefDate), styles: { halign: 'right', fontStyle: 'bold', textColor: [180,0,0] } },
+          { content: 'Selisih',     styles: { halign: 'right', fontStyle: 'bold', textColor: [180,0,0] } },
+        ]
+      : [
+          { content: 'Description', styles: { halign: 'left',  fontStyle: 'bold', textColor: [180,0,0] } },
+          { content: 'Balance',     styles: { halign: 'right', fontStyle: 'bold', textColor: [180,0,0] } },
+        ]
 
-    // TOTAL LIABILITAS & EKUITAS
-    addSecTot('TOTAL LIABILITAS DAN EKUITAS',
-      totalLiabilitas.value + totalEkuitas.value,
-      refTotalLiabilitas.value + refTotalEkuitas.value,
-      [30, 58, 138], [255, 255, 255]
-    )
-
-    const colStyles = col2
-      ? { 0: { cellWidth: 'auto' }, 1: { cellWidth: 34, halign: 'right' }, 2: { cellWidth: 34, halign: 'right' }, 3: { cellWidth: 26, halign: 'right' } }
-      : { 0: { cellWidth: 'auto' }, 1: { cellWidth: 46, halign: 'right' } }
+    const colStyles = hasRef
+      ? { 0: { cellWidth: 'auto' }, 1: { cellWidth: 38, halign: 'right' }, 2: { cellWidth: 38, halign: 'right' }, 3: { cellWidth: 28, halign: 'right' } }
+      : { 0: { cellWidth: 'auto' }, 1: { cellWidth: 50, halign: 'right' } }
 
     const tableOpts = {
-      head, body, startY: 36,
-      styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
-      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
+      head:  [headRow],
+      body,
+      startY: 33,
+      styles: {
+        fontSize: 8, cellPadding: { top: 2, bottom: 2, left: 4, right: 4 },
+        overflow: 'linebreak', lineColor: [200, 200, 200], lineWidth: 0,
+        fillColor: WHITE, textColor: BLACK, font: 'helvetica',
+      },
+      headStyles: {
+        fillColor: WHITE, textColor: [180, 0, 0], fontStyle: 'bold', fontSize: 8.5,
+        lineColor: [180, 0, 0], lineWidth: { bottom: 0.5 },
+      },
       columnStyles: colStyles,
-      alternateRowStyles: { fillColor: [248, 250, 252] },
+      alternateRowStyles: { fillColor: WHITE }, // no alternating color — ACCURATE style
       margin: { left: 10, right: 10 },
-      tableLineColor: [226, 232, 240],
-      tableLineWidth: 0.1,
+      tableLineColor: [200, 200, 200],
+      tableLineWidth: 0,
     }
 
     if (typeof doc.autoTable === 'function') {
@@ -849,45 +891,20 @@ async function exportPdf() {
       autoTable(doc, tableOpts)
     }
 
-    // ── Balance check box — dirender di luar tabel pada halaman terakhir
-    const selisihPdf  = totalAset.value - (totalLiabilitas.value + totalEkuitas.value)
-    const balancedPdf = Math.abs(selisihPdf) < 1
-    const chkFill     = balancedPdf ? [220, 252, 231] : [254, 226, 226]
-    const chkBorder   = balancedPdf ? [22, 101, 52]   : [153, 27, 27]
-    const chkTxtColor = balancedPdf ? [22, 101, 52]   : [153, 27, 27]
-    const chkLabelPdf = balancedPdf
-      ? 'NERACA SEIMBANG  (Aset = Liabilitas + Ekuitas)'
-      : `NERACA TIDAK SEIMBANG  -  Selisih: ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2 }).format(Math.abs(selisihPdf))}`
-
-    // Ambil posisi Y akhir tabel, lalu gambar kotak di bawahnya
-    const lastPage  = doc.getNumberOfPages()
-    doc.setPage(lastPage)
-    const finalY    = (doc.lastAutoTable?.finalY ?? 200) + 4
-    const boxX      = 10
-    const boxW      = 190
-    const boxH      = 9
-
-    // Background fill
-    doc.setFillColor(...chkFill)
-    doc.setDrawColor(...chkBorder)
-    doc.setLineWidth(0.4)
-    doc.rect(boxX, finalY, boxW, boxH, 'FD')  // F=fill, D=draw border
-
-    // Teks
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9)
-    doc.setTextColor(...chkTxtColor)
-    doc.text(chkLabelPdf, boxX + boxW / 2, finalY + boxH / 2 + 0.5, { align: 'center', baseline: 'middle' })
-
-    // Reset warna teks sebelum footer
-    doc.setTextColor(148, 163, 184)
-
+    // ── Footer: nomor halaman + tanggal cetak (ACCURATE style) ──
+    const nowStr = `Cetak di ${new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })} - ${new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' })}`
     const pageCount = doc.getNumberOfPages()
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i)
-      doc.setFontSize(7.5); doc.setTextColor(148, 163, 184)
-      doc.text(`Halaman ${i} dari ${pageCount}`, 105, 290, { align: 'center' })
-      doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })}`, 195, 290, { align: 'right' })
+
+      // Garis footer
+      doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3)
+      doc.line(10, 285, 200, 285)
+
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(100, 100, 100)
+      doc.text('ACCURATE Accounting System Report', 105, 289, { align: 'center' })
+      doc.text(nowStr, 10, 289)
+      doc.text(`(${i})`, 200, 289, { align: 'right' })
     }
 
     doc.save(bsFileName('pdf'))
@@ -982,89 +999,162 @@ const loadScript = (src) => new Promise((resolve, reject) => {
 /* Print header (hanya tampil saat print) */
 .print-header { display: none; }
 
-/* Table */
+/* ── TABLE ── */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.bs-table thead th { background: #1e3a8a; border-bottom: 2px solid #1e40af; padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #fff; white-space: nowrap; }
+
+/* thead */
+.bs-table thead th {
+  background: #fff;
+  border-top: 1px solid #ccc;
+  border-bottom: 2px solid #b00000;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b00000;
+  white-space: nowrap;
+}
 .bs-table thead th:first-child { text-align: left; }
-.bs-col-account { width: auto; min-width: 300px; }
-.bs-col-bal  { width: 160px; text-align: right !important; }
-.bs-col-diff { width: 130px; text-align: right !important; }
+.bs-col-account { width: auto; min-width: 320px; }
+.bs-col-bal  { width: 150px; text-align: right !important; }
+.bs-col-diff { width: 120px; text-align: right !important; }
 
-/* Category headers */
-.tr-category-header td { padding: 0; border-bottom: none; }
-.category-header-content { padding: 10px 14px 7px; margin-top: 8px; }
-.category-asset  { background: linear-gradient(90deg, #dbeafe, transparent); border-left: 4px solid #2563eb; }
-.category-liab   { background: linear-gradient(90deg, #fee2e2, transparent); border-left: 4px solid #dc2626; }
-.category-equity { background: linear-gradient(90deg, #d1fae5, transparent); border-left: 4px solid #16a34a; }
-.category-name { font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-.category-asset  .category-name { color: #1e3a8a; }
-.category-liab   .category-name { color: #991b1b; }
-.category-equity .category-name { color: #065f46; }
+/* Level 1: "Aktiva" / "Kewajiban dan Ekuitas" */
+.tr-section-lv1 td,
+.td-section-lv1 {
+  padding: 8px 10px 3px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fff;
+  border-bottom: none;
+}
 
-/* Group headers */
-.tr-group-header td { padding: 0; border-bottom: none; }
-.group-header-content { display: flex; align-items: center; gap: 8px; padding: 7px 14px 5px 28px; }
-.group-asset  { background: #eff6ff; }
-.group-liab   { background: #fff1f2; }
-.group-equity { background: #ecfdf5; }
-.group-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-.group-asset  .group-name { color: #1d4ed8; }
-.group-liab   .group-name { color: #dc2626; }
-.group-equity .group-name { color: #059669; }
-.group-desc { font-size: 11px; color: var(--text-muted); }
+/* Level 2: "Aktiva Lancar", "Kewajiban", "Ekuitas" */
+.tr-section-lv2 td,
+.td-section-lv2 {
+  padding: 6px 10px 2px 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+  background: #fff;
+  border-bottom: none;
+}
 
-/* Data rows */
-.tr-data td { padding: 7px 14px; border-bottom: 1px solid #f1f5f9; }
-.tr-data:hover td { background: #f8faff; }
-.bs-node-cell { padding: 7px 14px 7px 36px !important; }
-.node-content { display: flex; align-items: center; gap: 8px; }
-.node-name { font-size: 13px; color: var(--text-primary); }
+/* Level 3: group di dalam Kewajiban */
+.tr-section-lv3 td,
+.td-section-lv3 {
+  padding: 5px 10px 2px 30px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  background: #fff;
+  border-bottom: none;
+}
 
-/* Account codes */
-.acc-code { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-.acc-code--asset  { color: #1d4ed8; background: #eff6ff; }
-.acc-code--liab   { color: #dc2626; background: #fff1f2; }
-.acc-code--equity { color: #059669; background: #ecfdf5; }
+/* Detail rows */
+.tr-detail td { border-bottom: none; background: #fff; }
+.td-detail {
+  padding: 3px 10px 3px 50px;
+  font-size: 12.5px;
+  color: #374151;
+}
+.td-bal {
+  padding: 3px 10px;
+  font-size: 12.5px;
+  color: #374151;
+}
 
-/* Group subtotals */
-.tr-group-total td { padding: 7px 14px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.group-total-asset  td { background: #dbeafe; }
-.group-total-liab   td { background: #fecaca; }
-.group-total-equity td { background: #a7f3d0; }
-.group-total-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; padding-left: 36px !important; }
-.tb-group-total { font-weight: 700; }
+/* Subtotal rows (Jumlah Kas dan Bank, dll) */
+.tr-subtotal td { background: #fff; }
+.td-subtotal {
+  padding: 4px 10px 4px 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  border-top: 1px solid #94a3b8;
+  border-bottom: 1px solid #94a3b8;
+}
+.td-subtotal-val {
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  border-top: 1px solid #94a3b8;
+  border-bottom: 1px solid #94a3b8;
+}
 
-/* Section totals */
-.tr-section-total td { padding: 9px 14px; border-top: 2px solid; border-bottom: 2px solid; }
-.section-total-asset  td { background: #1e3a8a; border-color: #1e40af; }
-.section-total-liab   td { background: #991b1b; border-color: #b91c1c; }
-.section-total-equity td { background: #065f46; border-color: #047857; }
-.section-total-label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #fff; }
-.section-total-val   { font-weight: 800; color: #fff !important; }
+/* Total subsection (Jumlah Kewajiban, Jumlah Ekuitas) */
+.tr-total-subsection td { background: #fff; }
+.td-total-subsection {
+  padding: 5px 10px 5px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  border-top: 1.5px solid #475569;
+  border-bottom: 1.5px solid #475569;
+}
+.td-total-subsection-val {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  border-top: 1.5px solid #475569;
+  border-bottom: 1.5px solid #475569;
+}
+
+/* Total section (Jumlah Aktiva / Jumlah Kewajiban dan Ekuitas) */
+.tr-total-section td { background: #fff; }
+.td-total-section {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  border-top: 2px solid #0f172a;
+  border-bottom: 2px solid #0f172a;
+}
+.td-total-section-val {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  border-top: 2px solid #0f172a;
+  border-bottom: 2px solid #0f172a;
+}
+
+/* Grand total footer */
+.tr-grand-total td { background: #fff; }
+.td-grand-total {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  border-top: 2px solid #0f172a;
+  border-bottom: 3px double #0f172a;
+}
+.td-grand-total-val {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  border-top: 2px solid #0f172a;
+  border-bottom: 3px double #0f172a;
+}
 
 /* Spacer row */
-.tr-spacer td { padding: 6px; background: #f8fafc; }
+.tr-spacer-row td { padding: 4px; background: #fff; border: none; }
 
-/* Footer: Total Liabilitas + Ekuitas */
-.tr-liab-equity td { padding: 11px 14px; background: #1e3a8a; border-top: 3px solid #3b82f6; }
-.liab-equity-label { font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: .05em; }
-.liab-equity-val   { font-weight: 800; color: #bfdbfe !important; font-family: var(--font-mono); font-size: 12.5px; }
-.liab-equity-diff  { font-weight: 700; color: #bfdbfe !important; font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
+/* Number */
+.tb-num { text-align: right; font-family: var(--font-mono); font-size: 12.5px; }
+.tb-diff-pos { color: #1d4ed8; }
+.tb-diff-neg { color: #dc2626; }
 
-/* Balance check row */
+/* Balance check (screen only) */
+.screen-only { }
 .tr-balance-check td { padding: 7px 14px; font-size: 12px; font-weight: 600; }
 .tr-balanced   td { background: #dcfce7; color: #166534; }
 .tr-unbalanced td { background: #fee2e2; color: #991b1b; }
 .balance-check-label { font-size: 12px; font-weight: 700; }
-
-/* Number colors */
-.tb-num    { text-align: right; font-family: var(--font-mono); font-size: 12.5px; }
-.tb-asset  { color: #1d4ed8; }
-.tb-liab   { color: #dc2626; }
-.tb-equity { color: #059669; }
-.tb-diff-pos { color: #1d4ed8; }
-.tb-diff-neg { color: #dc2626; }
 
 /* Empty / Loading */
 .tb-empty-state { padding: 56px 24px; text-align: center; color: var(--text-muted); font-size: 13.5px; line-height: 1.6; }
@@ -1079,50 +1169,93 @@ const loadScript = (src) => new Promise((resolve, reject) => {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ════════════════════════════════════════════════════
-   PRINT STYLES
-   Semua elemen non-laporan disembunyikan saat print.
-   Hanya #bs-print-area yang tampil, plus header print.
+   PRINT STYLES — ACCURATE style
    ════════════════════════════════════════════════════ */
 @media print {
-  /* Sembunyikan semua kecuali area print */
   .layout { background: #fff !important; }
   .main { padding: 0 !important; }
   .content-card { box-shadow: none !important; border-radius: 0 !important; }
   .page-header,
   .filter-panel,
   .summary-cards,
-  .tb-error { display: none !important; }
+  .tb-error,
+  .screen-only { display: none !important; }
 
-  /* Tampilkan print header */
+  /* Print header: ACCURATE style */
   .print-header {
     display: block !important;
     text-align: center;
-    padding: 12px 0 8px;
-    border-bottom: 2px solid #1e3a8a;
-    margin-bottom: 8px;
+    padding: 0 0 6px;
+    margin-bottom: 4px;
   }
-  .print-company { font-size: 15pt; font-weight: 800; color: #1e3a8a; }
-  .print-subtitle { font-size: 9pt; color: #475569; margin-top: 2px; }
-  .print-period   { font-size: 9pt; color: #0f172a; margin-top: 4px; font-weight: 600; }
-  .print-currency { font-size: 8pt; color: #94a3b8; font-style: italic; }
+  .print-company {
+    font-size: 11pt;
+    font-weight: 800;
+    color: #000;
+    letter-spacing: .02em;
+  }
+  .print-title {
+    font-size: 16pt;
+    font-weight: 800;
+    color: #b00000;
+    margin: 2px 0;
+  }
+  .print-period {
+    font-size: 9pt;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 4px;
+  }
 
   /* Tabel print */
   .table-wrap { overflow: visible !important; }
   .bs-table { font-size: 8pt !important; }
-  .bs-table thead th { font-size: 8pt !important; padding: 5px 8px !important; }
-  .tr-data td { padding: 4px 8px !important; }
-  .bs-node-cell { padding: 4px 8px 4px 20px !important; }
-  .acc-code { font-size: 7pt !important; }
-  .node-name { font-size: 8pt !important; }
-  .tr-category-header .category-header-content { padding: 5px 8px !important; margin-top: 4px !important; }
-  .group-header-content { padding: 4px 8px 3px 16px !important; }
-  .tr-group-total td { padding: 4px 8px !important; }
-  .tr-section-total td { padding: 5px 8px !important; }
-  .tr-liab-equity td { padding: 6px 8px !important; }
-  .tr-balance-check td { padding: 4px 8px !important; }
 
-  /* Page break */
-  @page { size: A4 portrait; margin: 12mm 10mm; }
+  .bs-table thead th {
+    font-size: 8pt !important;
+    padding: 4px 6px !important;
+    color: #b00000 !important;
+    background: #fff !important;
+    border-top: 1px solid #aaa !important;
+    border-bottom: 2px solid #b00000 !important;
+  }
+
+  .td-section-lv1 { padding: 5px 6px 2px !important; font-size: 8.5pt !important; }
+  .td-section-lv2 { padding: 4px 6px 1px 14px !important; font-size: 8pt !important; }
+  .td-section-lv3 { padding: 3px 6px 1px 20px !important; font-size: 8pt !important; }
+  .td-detail       { padding: 2px 6px 2px 32px !important; font-size: 8pt !important; }
+  .td-bal          { padding: 2px 6px !important; font-size: 8pt !important; }
+
+  .td-subtotal,
+  .td-subtotal-val {
+    padding: 3px 6px !important; font-size: 8pt !important;
+    border-top: 0.5px solid #888 !important;
+    border-bottom: 0.5px solid #888 !important;
+  }
+  .td-subtotal     { padding-left: 14px !important; }
+
+  .td-total-subsection,
+  .td-total-subsection-val {
+    padding: 3px 6px !important; font-size: 8pt !important;
+    border-top: 1px solid #333 !important;
+    border-bottom: 1px solid #333 !important;
+  }
+
+  .td-total-section,
+  .td-total-section-val {
+    padding: 4px 6px !important; font-size: 8.5pt !important;
+    border-top: 1.5px solid #000 !important;
+    border-bottom: 1.5px solid #000 !important;
+  }
+
+  .td-grand-total,
+  .td-grand-total-val {
+    padding: 4px 6px !important; font-size: 8.5pt !important;
+    border-top: 1.5px solid #000 !important;
+    border-bottom: 2px double #000 !important;
+  }
+
+  @page { size: A4 portrait; margin: 12mm 10mm 15mm; }
   tr { page-break-inside: avoid; }
 }
 </style>

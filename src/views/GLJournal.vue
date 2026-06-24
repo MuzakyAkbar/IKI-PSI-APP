@@ -1017,7 +1017,7 @@ onMounted(async () => {
   --text-secondary: #475569;
   --text-muted: #94a3b8;
   --radius: 12px;
-  --radius-sm: 7px;
+  --radius-sm: 8px;
   --shadow-md: 0 4px 20px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
 }
 
@@ -1058,15 +1058,15 @@ onMounted(async () => {
 /* Table */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.table th { padding: 9px 14px; text-align: left; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
-.table td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+.table th { padding: 11px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; max-width: 0; }
 .table tr:last-child td { border-bottom: none; }
 .table--lines th, .table--lines td { padding: 8px 10px; }
 .th-action { text-align: right; }
 .tr-data:hover td { background: #f8fafc; }
-.code-badge { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-light); padding: 2px 8px; border-radius: 5px; }
+.code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; display: inline-block; }
 .acc-code { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: var(--text-primary); background: var(--surface2); padding: 1px 6px; border-radius: 4px; margin-right: 4px; border: 1px solid var(--border); }
-.td-secondary { color: var(--text-secondary); }
+.td-secondary { color: var(--text-secondary); font-size: 13px; }
 .td-clip { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-name { font-weight: 500; }
 .td-empty { text-align: center; color: var(--text-muted); padding: 48px 16px; font-size: 13px; }
