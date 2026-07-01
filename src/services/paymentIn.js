@@ -813,6 +813,82 @@ export async function fetchPaymentMethods() {
 }
 
 // ════════════════════════════════════════════════════
+// GL ITEM — fetch list for dropdown
+// ════════════════════════════════════════════════════
+const GL_ITEM_BASE = '/org.openbravo.service.json.jsonrest/FinancialMgmtGLItem'
+
+export async function fetchGLItemsForPayment(search = '') {
+  let where = `e.active = true`
+  if (search.trim()) {
+    const s = search.trim().replace(/'/g, "''")
+    where += ` and (upper(e.name) like upper('%${s}%') or upper(e.description) like upper('%${s}%'))`
+  }
+  const res = await api.get(GL_ITEM_BASE, {
+    params: { _where: where, _startRow: 0, _endRow: 100, _orderBy: 'e.name asc' },
+  })
+  return res.data?.response?.data ?? []
+}
+
+// ════════════════════════════════════════════════════
+// GL ITEM PAYMENT LINE
+// FIN_Payment_ScheduleDetail dengan glitem diisi,
+// tanpa invoicePaymentSchedule/orderPaymentSchedule (bukan dari invoice/order)
+// ════════════════════════════════════════════════════
+export async function addGLItemPaymentDetail(
+  paymentDetailId,
+  glItemId,
+  amount,
+  businessPartnerId,
+  organizationId,
+  description = null,
+  paymentId   = null,
+) {
+  const linkField = paymentDetailId
+    ? { paymentDetails: paymentDetailId }
+    : paymentId
+      ? { finPayment: paymentId }
+      : {}
+
+  const res = await api.post('/org.openbravo.service.json.jsonrest/FIN_Payment_ScheduleDetail', {
+    data: {
+      _entityName:        'FIN_Payment_ScheduleDetail',
+      organization:       organizationId || DEFAULT_ORGANIZATION,
+      businessPartner:    businessPartnerId,
+      amount,
+      expectedAmount:     0,
+      invoiceAmount:      amount,
+      writeOffAmt:        0,
+      doubtfulDebtAmount: 0,
+      canceled:           false,
+      invoicePaid:        false,
+      glitem:             glItemId,
+      ...(description && { description }),
+      ...linkField,
+    },
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+// ════════════════════════════════════════════════════
+// ACCOUNTING FACTS (FinancialMgmtAccountingFact)
+// Table ID for FIN_Payment = 800008
+// ════════════════════════════════════════════════════
+const FACT_BASE_PAYIN = '/org.openbravo.service.json.jsonrest/FinancialMgmtAccountingFact'
+
+export async function fetchAccountingFacts(paymentId) {
+  const res = await api.get(FACT_BASE_PAYIN, {
+    params: {
+      _where:    `e.recordID = '${paymentId}' and e.table.id = 'D1A97202E832470285C9B1EB026D54E2'`,
+      _startRow: 0,
+      _endRow:   100,
+      _orderBy:  'e.sequenceNumber asc',
+    },
+  })
+  return res.data?.response?.data ?? []
+}
+
+// ════════════════════════════════════════════════════
 // ERROR INTERCEPTOR
 // ════════════════════════════════════════════════════
 api.interceptors.response.use(

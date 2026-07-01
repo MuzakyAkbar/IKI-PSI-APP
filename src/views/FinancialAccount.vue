@@ -9,6 +9,10 @@
             <div>
               <h2 class="page-title">Akun Keuangan</h2>
             </div>
+            <button class="btn btn--primary" @click="openCreateModal">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              Tambah Akun
+            </button>
           </div>
         </div>
 
@@ -416,6 +420,135 @@
       </div>
     </transition>
 
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- CREATE FINANCIAL ACCOUNT MODAL                         -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <transition name="fade">
+      <div v-if="showCreateModal" class="modal-overlay" @mousedown.self="closeCreateModal">
+        <div class="modal modal--create">
+          <div class="modal-header">
+            <div>
+              <div class="modal-breadcrumb">
+                <span>Akun Keuangan</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                <span class="bc-active">Tambah Akun Baru</span>
+              </div>
+              <div class="modal-title">Buat Akun Keuangan</div>
+            </div>
+            <button class="modal-close" @click="closeCreateModal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Error banner -->
+            <div v-if="createError" class="form-error-banner">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {{ createError }}
+            </div>
+
+            <div class="form-grid">
+              <!-- Nama -->
+              <div class="form-group form-group--full">
+                <label class="form-label">Nama Akun <span class="form-required">*</span></label>
+                <input v-model="createForm.name" class="form-input" :class="{ 'form-input--error': formErrors.name }" placeholder="Contoh: Kas Operasional, Bank BCA" maxlength="100" />
+                <span v-if="formErrors.name" class="form-hint form-hint--error">{{ formErrors.name }}</span>
+              </div>
+
+              <!-- Tipe -->
+              <div class="form-group">
+                <label class="form-label">Tipe Akun <span class="form-required">*</span></label>
+                <div class="sd-wrap" :class="{ 'sd-wrap--error': formErrors.type }" ref="tipeWrap">
+                  <div class="sd-control" :class="{ 'sd-control--open': openDropdown === 'tipe' }" @click="toggleDropdown('tipe')">
+                    <span v-if="createForm.type" class="sd-value">{{ accTypeLabel(createForm.type) }}</span>
+                    <span v-else class="sd-placeholder">Cari tipe akun...</span>
+                    <svg class="sd-arrow" :class="{ 'sd-arrow--open': openDropdown === 'tipe' }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div v-if="openDropdown === 'tipe'" class="sd-dropdown">
+                    <div class="sd-search-wrap">
+                      <svg class="sd-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                      <input v-model="tipeSearch" class="sd-search" placeholder="Cari..." ref="tipeInput" @keydown.esc="openDropdown = null" />
+                    </div>
+                    <ul class="sd-list">
+                      <li v-for="opt in filteredTipeOptions" :key="opt.value"
+                          class="sd-item" :class="{ 'sd-item--active': createForm.type === opt.value }"
+                          @mousedown.prevent="selectTipe(opt.value)">
+                        {{ opt.label }}
+                      </li>
+                      <li v-if="filteredTipeOptions.length === 0" class="sd-empty">Tidak ditemukan</li>
+                    </ul>
+                  </div>
+                </div>
+                <span v-if="formErrors.type" class="form-hint form-hint--error">{{ formErrors.type }}</span>
+              </div>
+
+              <!-- Mata Uang -->
+              <div class="form-group">
+                <label class="form-label">Mata Uang <span class="form-required">*</span></label>
+                <div class="sd-wrap" :class="{ 'sd-wrap--error': formErrors.currency }" ref="currencyWrap">
+                  <div class="sd-control" :class="{ 'sd-control--open': openDropdown === 'currency' }" @click="toggleDropdown('currency')">
+                    <span v-if="createForm.currency" class="sd-value">{{ selectedCurrencyLabel }}</span>
+                    <span v-else-if="currencyLoading" class="sd-placeholder">Memuat mata uang...</span>
+                    <span v-else class="sd-placeholder">Cari mata uang...</span>
+                    <svg class="sd-arrow" :class="{ 'sd-arrow--open': openDropdown === 'currency' }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div v-if="openDropdown === 'currency'" class="sd-dropdown">
+                    <div class="sd-search-wrap">
+                      <svg class="sd-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                      <input v-model="currencySearch" class="sd-search" placeholder="Ketik kode atau nama..." ref="currencyInput" @keydown.esc="openDropdown = null" />
+                    </div>
+                    <ul class="sd-list">
+                      <li v-if="currencyLoading" class="sd-empty">Memuat...</li>
+                      <template v-else>
+                        <li v-for="c in filteredCurrencies" :key="c.id"
+                            class="sd-item" :class="{ 'sd-item--active': createForm.currency === c.id }"
+                            @mousedown.prevent="selectCurrency(c)">
+                          <span class="sd-item-code">{{ c.iSOCode }}</span>
+                          <span class="sd-item-name">{{ c.symbol || c.description || '' }}</span>
+                        </li>
+                        <li v-if="filteredCurrencies.length === 0" class="sd-empty">Tidak ditemukan</li>
+                      </template>
+                    </ul>
+                  </div>
+                </div>
+                <span v-if="formErrors.currency" class="form-hint form-hint--error">{{ formErrors.currency }}</span>
+              </div>
+
+
+              <!-- Saldo Awal -->
+              <div class="form-group">
+                <label class="form-label">Saldo Awal</label>
+                <input v-model="createForm.initialBalance" class="form-input" type="number" min="0" step="1000" placeholder="0" />
+                <span class="form-hint">Kosongkan jika 0</span>
+              </div>
+
+              <!-- Nomor Akun / Search Key -->
+              <div class="form-group">
+                <label class="form-label">Nomor Akun</label>
+                <input v-model="createForm.searchKey" class="form-input" placeholder="Kode unik akun (opsional)" maxlength="40" />
+                <span class="form-hint">Diisi otomatis jika kosong</span>
+              </div>
+
+              <!-- Deskripsi -->
+              <div class="form-group form-group--full">
+                <label class="form-label">Deskripsi</label>
+                <textarea v-model="createForm.description" class="form-textarea" rows="3" placeholder="Deskripsi singkat akun ini (opsional)" maxlength="255"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn--ghost" @click="closeCreateModal" :disabled="createLoading">Batal</button>
+            <button class="btn btn--primary" @click="submitCreateAccount" :disabled="createLoading">
+              <svg v-if="createLoading" class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+              {{ createLoading ? 'Menyimpan...' : 'Simpan Akun' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- ══ TOAST ══ -->
     <transition name="fade">
       <div v-if="toast.show" :class="['toast', `toast--${toast.type}`]">
@@ -436,6 +569,8 @@ import {
   fetchFinancialAccounts,
   fetchFinaccTransactions,
   fetchFinaccTransactionAcct,
+  createFinancialAccount,
+  fetchCurrencies,
 } from '@/services/financialAccount.js'
 
 const PAGE_SIZE = 20
@@ -470,6 +605,35 @@ const acctError        = ref('')
 // ── toast
 const toast = ref({ show: false, type: 'success', message: '' })
 
+// ── create modal
+const showCreateModal = ref(false)
+const createLoading   = ref(false)
+const createError     = ref('')
+const createForm      = ref({
+  name:           '',
+  type:           '',
+  currency:       '',
+  organization:   '',
+  initialBalance: '',
+  searchKey:      '',
+  description:    '',
+})
+const formErrors      = ref({})
+
+// ── dropdown data untuk form
+const currencies      = ref([])
+const currencyLoading = ref(false)
+
+// ── searchable dropdown state
+const openDropdown   = ref(null)   // 'tipe' | 'currency' | null
+const tipeSearch     = ref('')
+const currencySearch = ref('')
+
+const TIPE_OPTIONS = [
+  { value: 'B', label: 'Bank' },
+  { value: 'C', label: 'Cash' },
+]
+
 // ── computed
 const filteredAccounts = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -499,6 +663,28 @@ const totalDeposit = computed(() =>
 const totalPaymentAmt = computed(() =>
   transactions.value.reduce((s, t) => s + (Number(t.paymentAmount) || 0), 0)
 )
+
+const filteredTipeOptions = computed(() => {
+  const q = tipeSearch.value.trim().toLowerCase()
+  if (!q) return TIPE_OPTIONS
+  return TIPE_OPTIONS.filter(o => o.label.toLowerCase().includes(q))
+})
+
+const filteredCurrencies = computed(() => {
+  const q = currencySearch.value.trim().toLowerCase()
+  if (!q) return currencies.value
+  return currencies.value.filter(c =>
+    c.iSOCode?.toLowerCase().includes(q) ||
+    c.description?.toLowerCase().includes(q) ||
+    c.symbol?.toLowerCase().includes(q)
+  )
+})
+
+const selectedCurrencyLabel = computed(() => {
+  if (!createForm.value.currency) return ''
+  const c = currencies.value.find(c => c.id === createForm.value.currency)
+  return c ? `${c.iSOCode} – ${c.symbol || c.description || c.iSOCode}` : createForm.value.currency
+})
 
 // ── helpers
 function formatCurrency(v, curr = 'IDR') {
@@ -548,15 +734,15 @@ function showToast(msg, type = 'success') {
 
 // ── type / status label & class helpers
 function accTypeLabel(t) {
-  const map = { B: 'Bank', C: 'Cash', O: 'Other' }
+  const map = { B: 'Bank', C: 'Cash' }
   return map[t] || t || '—'
 }
 function accTypeClass(t) {
-  const map = { B: 'type-bank', C: 'type-cash', O: 'type-other' }
+  const map = { B: 'type-bank', C: 'type-cash' }
   return map[t] || 'type-other'
 }
 function accIconClass(t) {
-  const map = { B: 'acc-icon--bank', C: 'acc-icon--cash', O: 'acc-icon--other' }
+  const map = { B: 'acc-icon--bank', C: 'acc-icon--cash' }
   return map[t] || 'acc-icon--other'
 }
 
@@ -675,6 +861,102 @@ async function openTxnDetail(txn) {
     } finally {
       acctLoading.value = false
     }
+  }
+}
+
+// ── searchable dropdown logic
+function toggleDropdown(name) {
+  if (openDropdown.value === name) {
+    openDropdown.value = null
+    return
+  }
+  openDropdown.value = name
+  tipeSearch.value     = ''
+  currencySearch.value = ''
+  // focus the search input on next tick
+  setTimeout(() => {
+    if (name === 'tipe')     document.querySelector('.sd-search')?.focus()
+    if (name === 'currency') document.querySelectorAll('.sd-search')[1]?.focus()
+  }, 30)
+}
+
+function selectTipe(value) {
+  createForm.value.type = value
+  openDropdown.value    = null
+  tipeSearch.value      = ''
+  if (formErrors.value.type) delete formErrors.value.type
+}
+
+function selectCurrency(c) {
+  createForm.value.currency = c.id
+  openDropdown.value         = null
+  currencySearch.value       = ''
+  if (formErrors.value.currency) delete formErrors.value.currency
+}
+
+function onClickOutside(e) {
+  if (!e.target.closest('.sd-wrap')) openDropdown.value = null
+}
+
+// ── create modal logic
+async function openCreateModal() {
+  showCreateModal.value = true
+  createError.value     = ''
+  formErrors.value      = {}
+  openDropdown.value    = null
+  createForm.value      = { name: '', type: '', currency: '', initialBalance: '', searchKey: '', description: '' }
+  document.addEventListener('mousedown', onClickOutside)
+
+  // Lazy-load dropdown data
+  if (currencies.value.length === 0) {
+    currencyLoading.value = true
+    try { currencies.value = await fetchCurrencies() }
+    catch { /* ignore — user can retry */ }
+    finally { currencyLoading.value = false }
+  }
+}
+
+function closeCreateModal() {
+  if (createLoading.value) return
+  showCreateModal.value = false
+  openDropdown.value    = null
+  document.removeEventListener('mousedown', onClickOutside)
+}
+
+function validateCreateForm() {
+  const e = {}
+  if (!createForm.value.name.trim())         e.name         = 'Nama akun wajib diisi.'
+  if (!createForm.value.type)                e.type         = 'Tipe akun wajib dipilih.'
+  if (!createForm.value.currency)            e.currency     = 'Mata uang wajib dipilih.'
+  formErrors.value = e
+  return Object.keys(e).length === 0
+}
+
+async function submitCreateAccount() {
+  createError.value = ''
+  if (!validateCreateForm()) return
+
+  createLoading.value = true
+  try {
+    const payload = {
+      name:           createForm.value.name.trim(),
+      type:           createForm.value.type,
+      currency:       { id: createForm.value.currency },
+      organization:   { id: 'B3FE20F490CF49989D7250C0D3341603' }, // PITS (hardcoded)
+      initialBalance: createForm.value.initialBalance !== '' ? Number(createForm.value.initialBalance) : 0,
+      ...(createForm.value.searchKey.trim()   && { searchKey:   createForm.value.searchKey.trim() }),
+      ...(createForm.value.description.trim() && { description: createForm.value.description.trim() }),
+    }
+    await createFinancialAccount(payload)
+    showCreateModal.value = false
+    openDropdown.value    = null
+    document.removeEventListener('mousedown', onClickOutside)
+    showToast('Akun keuangan berhasil dibuat.')
+    await loadAccounts()   // refresh list
+  } catch (e) {
+    createError.value = e.message || 'Gagal menyimpan akun keuangan.'
+  } finally {
+    createLoading.value = false
   }
 }
 
@@ -872,7 +1154,104 @@ onMounted(() => loadAccounts())
 .acct-empty { text-align: center; color: var(--text-muted); padding: 20px; font-size: 13px; border: 1px dashed var(--border); border-radius: var(--radius-sm); margin-top: 12px; }
 .acct-error { color: var(--danger); border-color: #fecaca; }
 
-/* ── Transitions */
+/* ── Create modal width */
+.modal--create { max-width: 560px; }
+
+/* ── Form elements */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group--full { grid-column: 1 / -1; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+.form-required { color: var(--danger); }
+.form-input,
+.form-select,
+.form-textarea {
+  height: 38px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: var(--font); outline: none;
+  background: var(--surface2); color: var(--text-primary);
+  transition: border-color .15s, background .15s;
+  width: 100%;
+}
+.form-textarea { height: auto; padding: 10px 12px; resize: vertical; }
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus { border-color: var(--accent); background: #fff; }
+.form-input--error { border-color: var(--danger) !important; }
+.form-hint { font-size: 11.5px; color: var(--text-muted); }
+.form-hint--error { color: var(--danger); }
+.form-select:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── Error banner */
+.form-error-banner {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  color: #b91c1c; font-size: 13px; margin-bottom: 16px;
+}
+
+/* ── Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-icon { animation: spin .7s linear infinite; flex-shrink: 0; }
+
+
+/* ── Searchable Dropdown */
+.sd-wrap { position: relative; width: 100%; }
+
+.sd-control {
+  /* identik dengan .form-input */
+  display: flex; align-items: center; justify-content: space-between;
+  height: 38px; padding: 0 10px 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: var(--font);
+  background: var(--surface2); color: var(--text-primary);
+  cursor: pointer; width: 100%;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.sd-control:hover { border-color: #94a3b8; }
+.sd-control--open  { border-color: var(--accent); background: #fff; }
+.sd-wrap--error .sd-control { border-color: var(--danger) !important; }
+
+.sd-value       { font-size: 13px; color: var(--text-primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-placeholder { font-size: 13px; color: var(--text-muted);   flex: 1; }
+.sd-arrow { color: var(--text-muted); flex-shrink: 0; transition: transform .15s; margin-left: 6px; }
+.sd-arrow--open { transform: rotate(180deg); }
+
+.sd-dropdown {
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 300;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1), 0 1px 4px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+.sd-search-wrap {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.sd-search-icon { color: var(--text-muted); flex-shrink: 0; }
+.sd-search {
+  flex: 1; border: none; outline: none;
+  font-size: 13px; font-family: var(--font);
+  background: transparent; color: var(--text-primary);
+}
+.sd-search::placeholder { color: var(--text-muted); }
+
+.sd-list { list-style: none; max-height: 190px; overflow-y: auto; padding: 4px 0; margin: 0; }
+.sd-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer; font-size: 13px;
+  color: var(--text-primary); transition: background .08s;
+}
+.sd-item:hover    { background: var(--surface2); }
+.sd-item--active  { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.sd-item-code     { font-weight: 600; min-width: 36px; }
+.sd-item-name     { color: var(--text-muted); font-size: 12px; }
+.sd-empty         { padding: 12px; text-align: center; font-size: 12.5px; color: var(--text-muted); }
+
 .fade-enter-active,.fade-leave-active { transition: opacity .15s; }
 .fade-enter-from,.fade-leave-to { opacity: 0; }
 .slide-up-enter-active { transition: all .25s ease; }

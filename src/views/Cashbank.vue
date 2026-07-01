@@ -4,18 +4,18 @@
       <div class="content-card">
 
         <div class="page-header">
-          <h2 class="page-title">Pengeluaran Pembayaran</h2>
+          <h2 class="page-title">{{ pageTitle }}</h2>
         </div>
 
         <!-- ══ TOOLBAR ══ -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input v-model="searchQuery" class="search-input" placeholder="Cari no dokumen atau vendor..." @input="onSearch" />
+            <input v-model="searchQuery" class="search-input" placeholder="Cari no dokumen atau partner..." @input="onSearch" />
           </div>
           <button class="btn btn--primary" @click="openCreateModal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Buat Pengeluaran Pembayaran
+            Buat {{ pageTitle }}
           </button>
         </div>
 
@@ -24,17 +24,17 @@
           <table class="table">
             <thead><tr>
               <th>No. Dokumen</th>
-              <th>Tanggal Pembayaran</th>
-              <th>Vendor</th>
+              <th>Tanggal</th>
+              <th>Partner Bisnis</th>
               <th>Jumlah</th>
-              <th>Dibayarkan Dari</th>
+              <th>{{ accountColumnLabel }}</th>
               <th>Status</th>
               <th class="th-action">Tindakan</th>
             </tr></thead>
             <tbody>
               <tr v-if="loading"><td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td></tr>
               <tr v-else-if="error"><td colspan="7" class="td-empty td-error">{{ error }}</td></tr>
-              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">Tidak ada catatan pembayaran yang ditemukan.</td></tr>
+              <tr v-else-if="rows.length === 0"><td colspan="7" class="td-empty">Tidak ada catatan {{ pageTitle.toLowerCase() }} yang ditemukan.</td></tr>
               <template v-else>
                 <tr v-for="r in rows" :key="r.id" class="tr-data">
                   <td><span class="code-badge">{{ r.documentNo || '—' }}</span></td>
@@ -114,11 +114,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Pengeluaran Pembayaran</span>
+                <span>{{ pageTitle }}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">{{ isEdit ? 'Sunting' : 'Buat' }} Pengeluaran Pembayaran</span>
+                <span class="bc-active">{{ isEdit ? 'Sunting' : 'Buat' }} {{ pageTitle }}</span>
               </div>
-              <div class="modal-title">{{ isEdit ? 'Sunting' : 'Buat' }} Pengeluaran Pembayaran</div>
+              <div class="modal-title">{{ isEdit ? 'Sunting' : 'Buat' }} {{ pageTitle }}</div>
             </div>
             <button class="modal-close" @click="closeFormModal">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -129,20 +129,16 @@
           <div class="pay-statusbar">
             <span class="pay-statusbar-item">
               <span class="pay-statusbar-label">Status:</span>
-              <span class="pay-statusbar-val pay-statusbar-val--status">{{ isEdit ? payStatusLabel(form.status) : 'Menunggu Pembayaran' }}</span>
+              <span class="pay-statusbar-val pay-statusbar-val--status">{{ isEdit ? payStatusLabel(form.status) : 'Menunggu Diproses' }}</span>
             </span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Dihasilkan:</span><span class="pay-statusbar-val">0.00</span></span>
-            <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit Terpakai:</span><span class="pay-statusbar-val">0.00</span></span>
-            <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Jumlah Write-off:</span><span class="pay-statusbar-val">0.00</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Jumlah:</span><span class="pay-statusbar-val">{{ formatCurrency(form.amount || 0) }}</span></span>
           </div>
 
           <!-- Tabs -->
           <div class="modal-tabs">
             <button :class="['modal-tab', activeFormTab === 'header' ? 'modal-tab--active' : '']" @click="activeFormTab = 'header'">Header</button>
-            <button :class="['modal-tab', activeFormTab === 'detail' ? 'modal-tab--active' : '']" @click="switchToDetailTab" :disabled="!savedPaymentId && !isEdit">Detail / Tambah Tagihan</button>
+            <button :class="['modal-tab', activeFormTab === 'detail' ? 'modal-tab--active' : '']" @click="switchToDetailTab" :disabled="!savedPaymentId && !isEdit">Detail / G/L Item</button>
           </div>
 
           <!-- Body -->
@@ -158,7 +154,7 @@
                 </div>
                 <div class="form-group">
                   <label>Tipe Dokumen</label>
-                  <input value="AP Payment" class="form-input" disabled />
+                  <input :value="docTypeLabel" class="form-input" disabled />
                 </div>
                 <div class="form-group">
                   <label>No. Dokumen</label>
@@ -166,27 +162,27 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Tanggal Pembayaran <span class="req">*</span></label>
+                  <label>Tanggal <span class="req">*</span></label>
                   <input v-model="form.paymentDate" type="date" class="form-input" />
                 </div>
                 <div class="form-group form-group--full">
-                  <label>Bayar Ke (Vendor) <span class="req">*</span></label>
+                  <label>{{ partnerLabel }}</label>
                   <div class="acc-wrap">
                     <input
-                      v-model="vendorSearch"
+                      v-model="partnerSearch"
                       class="acc-input"
-                      placeholder="Cari vendor..."
+                      placeholder="Cari partner bisnis (opsional)..."
                       :disabled="isEdit"
-                      @input="onVendorSearch"
-                      @focus="showVendorDrop = true"
-                      @blur="onVendorBlur"
+                      @input="onPartnerSearch"
+                      @focus="showPartnerDrop = true"
+                      @blur="onPartnerBlur"
                     />
                     <svg class="acc-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                    <ul v-if="showVendorDrop && filteredVendors.length" class="acc-dropdown">
-                      <li v-for="v in filteredVendors" :key="v.id" class="acc-opt" @mousedown.prevent="selectVendor(v)">{{ v.name }}</li>
+                    <ul v-if="showPartnerDrop && filteredPartners.length" class="acc-dropdown">
+                      <li v-for="p in filteredPartners" :key="p.id" class="acc-opt" @mousedown.prevent="selectPartner(p)">{{ p.name }}</li>
                     </ul>
-                    <ul v-else-if="showVendorDrop && vendorSearch.length > 1 && !vendorLoading" class="acc-dropdown">
-                      <li class="acc-empty">Vendor tidak ditemukan</li>
+                    <ul v-else-if="showPartnerDrop && partnerSearch.length > 1 && !partnerLoading" class="acc-dropdown">
+                      <li class="acc-empty">Partner bisnis tidak ditemukan</li>
                     </ul>
                   </div>
                 </div>
@@ -199,7 +195,7 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Dibayarkan Dari <span class="req">*</span></label>
+                  <label>{{ accountLabel }} <span class="req">*</span></label>
                   <select v-model="form.financialAccount" class="form-input">
                     <option value="">Pilih</option>
                     <option v-for="a in financialAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
@@ -214,20 +210,16 @@
                   <label>No. Referensi</label>
                   <input v-model="form.referenceNo" class="form-input" placeholder="No. Referensi" />
                 </div>
-                <div class="form-group form-group--full">
-                  <label>Keterangan</label>
-                  <input v-model="form.description" class="form-input" placeholder="Keterangan" />
-                </div>
 
               </div>
 
               <div v-if="!isEdit && !savedPaymentId" class="info-box info-box--blue" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Simpan header terlebih dahulu, lalu buka tab <strong>Detail / Tambah Tagihan</strong> untuk menambahkan invoice vendor atau G/L Item.
+                Simpan header terlebih dahulu, lalu buka tab <strong>Detail / G/L Item</strong> untuk menambahkan baris G/L Item.
               </div>
               <div v-if="savedPaymentId && !isEdit" class="info-box info-box--green" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                Header tersimpan. Buka tab <strong>Detail / Tambah Tagihan</strong> untuk melanjutkan — pilih mode <strong>Invoice / Order</strong> atau <strong>G/L Item</strong>.
+                Header tersimpan. Buka tab <strong>Detail / G/L Item</strong> untuk melanjutkan.
               </div>
             </div>
 
@@ -236,7 +228,7 @@
 
               <div class="pay-detail-summary">
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">No. Dokumen Pembayaran</span>
+                  <span class="pay-ds-label">No. Dokumen</span>
                   <span class="pay-ds-val mono">{{ form.documentNo || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
@@ -248,198 +240,96 @@
                   <span class="pay-ds-val">IDR</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Bayar Ke</span>
-                  <span class="pay-ds-val">{{ vendorSearch || '—' }}</span>
+                  <span class="pay-ds-label">{{ partnerLabel }}</span>
+                  <span class="pay-ds-val">{{ partnerSearch || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
                   <span class="pay-ds-label">Metode Pembayaran</span>
                   <span class="pay-ds-val">{{ selectedPaymentMethodName }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Tanggal Pembayaran</span>
+                  <span class="pay-ds-label">Tanggal</span>
                   <span class="pay-ds-val">{{ form.paymentDate || '—' }}</span>
                 </div>
                 <div class="pay-ds-item">
-                  <span class="pay-ds-label">Dibayarkan Dari</span>
+                  <span class="pay-ds-label">{{ accountLabel }}</span>
                   <span class="pay-ds-val">{{ selectedFinAccName }}</span>
                 </div>
                 <div class="pay-ds-item pay-ds-item--amount">
-                  <span class="pay-ds-label">Pembayaran Aktual</span>
-                  <span class="pay-ds-val pay-ds-val--amount">{{ formatCurrency(detailMode === 'glitem' ? totalGLAmount : totalSelectedAmount) }}</span>
-                </div>
-                <div class="pay-ds-item">
-                  <span class="pay-ds-label">Pembayaran Diharapkan</span>
-                  <span class="pay-ds-val">{{ detailMode === 'glitem' ? '—' : formatCurrency(totalOutstandingAmount) }}</span>
+                  <span class="pay-ds-label">Total Jumlah</span>
+                  <span class="pay-ds-val pay-ds-val--amount">{{ formatCurrency(totalGLAmount) }}</span>
                 </div>
               </div>
 
-              <!-- Mode toggle -->
-              <div class="detail-mode-toggle">
-                <button :class="['mode-btn', detailMode === 'invoice' ? 'mode-btn--active' : '']" @click="switchDetailMode('invoice')">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  Invoice / Order
-                </button>
-                <button :class="['mode-btn', detailMode === 'glitem' ? 'mode-btn--active' : '']" @click="switchDetailMode('glitem')">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                  G/L Item
+              <div class="section-divider" style="margin-top:16px">
+                <span>G/L Item Lines</span>
+                <button class="btn-add-line" @click="addGLLine" :disabled="glItemsLoading">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                  Tambah Detail
                 </button>
               </div>
 
-              <!-- ── Invoice mode ── -->
-              <template v-if="detailMode === 'invoice'">
-                <div class="section-divider" style="margin-top:16px">
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                    <span>Vendor Invoice</span>
-                  </div>
-                </div>
+              <div v-if="glItemsLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
 
-                <div class="pay-detail-filter">
-                  <button class="btn-add-line" @click="loadOutstandingInvoices" :disabled="invoiceLoading || !form.businessPartner" style="margin-left:8px">
-                    <span v-if="invoiceLoading" class="spinner spinner--dark"></span>
-                    <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.22-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
-                    {{ invoiceLoading ? 'Memuat...' : (invoicesLoaded ? 'Segarkan' : 'Muat') }}
+              <div v-else class="table-wrap" style="margin-bottom:0">
+                <table class="table">
+                  <thead><tr>
+                    <th>G/L Item <span class="req">*</span></th>
+                    <th style="min-width:280px">Keterangan</th>
+                    <th style="text-align:right;min-width:150px">Jumlah <span class="req">*</span></th>
+                    <th style="width:44px"></th>
+                  </tr></thead>
+                  <tbody>
+                    <tr v-if="glItemLines.length === 0">
+                      <td colspan="4" class="td-empty" style="font-style:italic;color:var(--text-muted)">Belum ada Detail. Klik "Tambah Detail".</td>
+                    </tr>
+                    <tr v-else v-for="(line, idx) in glItemLines" :key="line._key" class="tr-data">
+                      <td style="padding:6px 12px;min-width:200px">
+                        <select
+                          v-model="line.glItemId"
+                          class="form-input"
+                          style="height:34px;font-size:12.5px"
+                          @change="line.glItemName = glItems.find(g => g.id === line.glItemId)?.name || ''"
+                        >
+                          <option value="">— Pilih G/L Item —</option>
+                          <option v-for="g in glItems" :key="g.id" :value="g.id">{{ g.name }}</option>
+                        </select>
+                      </td>
+                      <td style="padding:6px 12px">
+                        <input v-model="line.description" class="form-input" style="height:34px;font-size:12.5px" placeholder="Keterangan..." />
+                      </td>
+                      <td style="padding:6px 12px;text-align:right">
+                        <input
+                          type="number" min="0" step="1"
+                          v-model.number="line.amount"
+                          class="form-input actual-pay-input"
+                          style="width:140px"
+                          @focus="$event.target.select()"
+                        />
+                      </td>
+                      <td style="padding:6px 8px;text-align:center">
+                        <button @click="removeGLLine(idx)" style="background:none;border:none;cursor:pointer;color:var(--danger);display:flex;align-items:center;padding:4px">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="pay-detail-footer">
+                <div class="totals-block" style="margin-top:0">
+                  <div class="totals-row"><span>Jumlah Detail</span><span>{{ glItemLines.filter(l => l.glItemId && l.amount > 0).length }} Detail valid</span></div>
+                  <div class="totals-row totals-row--grand"><span>Total {{ pageTitle }}</span><span>{{ formatCurrency(totalGLAmount) }}</span></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+                  <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
+                  <button class="btn btn--primary" :disabled="paying || totalGLAmount <= 0" @click="processPayment">
+                    <span v-if="paying" class="spinner"></span>
+                    {{ paying ? 'Memproses...' : 'Selesai' }}
                   </button>
                 </div>
-
-                <div v-if="invoiceCheckMsg" :class="['info-box', invoiceCheckMsg.type === 'error' ? 'info-box--red' : invoiceCheckMsg.type === 'warn' ? 'info-box--yellow' : 'info-box--green']" style="margin-bottom:12px">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  {{ invoiceCheckMsg.text }}
-                </div>
-
-                <div class="table-wrap" style="margin-bottom:0">
-                  <table class="table">
-                    <thead><tr>
-                      <th style="width:40px;text-align:center">
-                        <input type="checkbox" v-model="selectAllInvoices" @change="toggleAllInvoices" :disabled="outstandingInvoices.length === 0" />
-                      </th>
-                      <th>No. Invoice</th>
-                      <th>Vendor</th>
-                      <th>Tgl. Invoice</th>
-                      <th style="text-align:right">Jumlah</th>
-                      <th style="text-align:right">Outstanding</th>
-                      <th style="text-align:right;min-width:140px">Pembayaran Aktual</th>
-                    </tr></thead>
-                    <tbody>
-                      <tr v-if="invoiceLoading">
-                        <td colspan="7" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td>
-                      </tr>
-                      <tr v-else-if="!invoicesLoaded">
-                        <td colspan="7" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load" untuk melihat tagihan vendor outstanding.</td>
-                      </tr>
-                      <tr v-else-if="outstandingInvoices.length === 0">
-                        <td colspan="7" class="td-empty">No items to show.</td>
-                      </tr>
-                      <tr v-else v-for="inv in outstandingInvoices" :key="inv.id" class="tr-data" :class="{ 'tr-selected': inv.selected }">
-                        <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onInvoiceSelect(inv)" /></td>
-                        <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
-                        <td class="td-secondary">{{ vendorSearch }}</td>
-                        <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
-                        <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
-                        <td class="td-secondary" style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
-                        <td style="text-align:right;padding:6px 16px">
-                          <input
-                            v-if="inv.selected"
-                            type="number" min="0" :max="inv.outstandingAmount" step="1"
-                            class="form-input actual-pay-input"
-                            v-model.number="inv.actualPayment"
-                            @input="clampActualPayment(inv)"
-                            @focus="$event.target.select()"
-                          />
-                          <span v-else class="td-secondary">—</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="pay-detail-footer">
-                  <div class="totals-block" style="margin-top:0">
-                    <div class="totals-row"><span>Dipilih</span><span>{{ selectedInvoices.length }} invoice</span></div>
-                    <div class="totals-row totals-row--grand"><span>Total Pembayaran</span><span>{{ formatCurrency(totalSelectedAmount) }}</span></div>
-                  </div>
-                  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-                    <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
-                    <button class="btn btn--primary" :disabled="paying || selectedInvoices.length === 0" @click="processPayment">
-                      <span v-if="paying" class="spinner"></span>
-                      {{ paying ? 'Memproses...' : 'Selesai' }}
-                    </button>
-                  </div>
-                </div>
-              </template>
-
-              <!-- ── GL Item mode ── -->
-              <template v-else-if="detailMode === 'glitem'">
-                <div class="section-divider" style="margin-top:16px">
-                  <span>G/L Item Lines</span>
-                  <button class="btn-add-line" @click="addGLLine" :disabled="glItemsLoading">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                    Tambah Detail
-                  </button>
-                </div>
-
-                <div v-if="glItemsLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
-
-                <div v-else class="table-wrap" style="margin-bottom:0">
-                  <table class="table">
-                    <thead><tr>
-                      <th>G/L Item <span class="req">*</span></th>
-                      <th style="min-width:280px">Keterangan</th>
-                      <th style="text-align:right;min-width:150px">Jumlah <span class="req">*</span></th>
-                      <th style="width:44px"></th>
-                    </tr></thead>
-                    <tbody>
-                      <tr v-if="glItemLines.length === 0">
-                        <td colspan="4" class="td-empty" style="font-style:italic;color:var(--text-muted)">Belum ada Detail. Klik "Tambah Detail".</td>
-                      </tr>
-                      <tr v-else v-for="(line, idx) in glItemLines" :key="line._key" class="tr-data">
-                        <td style="padding:6px 12px;min-width:200px">
-                          <select
-                            v-model="line.glItemId"
-                            class="form-input"
-                            style="height:34px;font-size:12.5px"
-                            @change="line.glItemName = glItems.find(g => g.id === line.glItemId)?.name || ''"
-                          >
-                            <option value="">— Pilih G/L Item —</option>
-                            <option v-for="g in glItems" :key="g.id" :value="g.id">{{ g.name }}</option>
-                          </select>
-                        </td>
-                        <td style="padding:6px 12px">
-                          <input v-model="line.description" class="form-input" style="height:34px;font-size:12.5px" placeholder="Keterangan..." />
-                        </td>
-                        <td style="padding:6px 12px;text-align:right">
-                          <input
-                            type="number" min="0" step="1"
-                            v-model.number="line.amount"
-                            class="form-input actual-pay-input"
-                            style="width:140px"
-                            @focus="$event.target.select()"
-                          />
-                        </td>
-                        <td style="padding:6px 8px;text-align:center">
-                          <button @click="removeGLLine(idx)" style="background:none;border:none;cursor:pointer;color:var(--danger);display:flex;align-items:center;padding:4px">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div class="pay-detail-footer">
-                  <div class="totals-block" style="margin-top:0">
-                    <div class="totals-row"><span>Jumlah Detail</span><span>{{ glItemLines.filter(l => l.glItemId && l.amount > 0).length }} Detail valid</span></div>
-                    <div class="totals-row totals-row--grand"><span>Total Pembayaran</span><span>{{ formatCurrency(totalGLAmount) }}</span></div>
-                  </div>
-                  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-                    <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
-                    <button class="btn btn--primary" :disabled="paying || totalGLAmount <= 0" @click="processPayment">
-                      <span v-if="paying" class="spinner"></span>
-                      {{ paying ? 'Memproses...' : 'Selesai' }}
-                    </button>
-                  </div>
-                </div>
-              </template>
+              </div>
 
             </div>
 
@@ -458,7 +348,7 @@
               {{ saving ? 'Menyimpan...' : (isEdit ? 'Update' : 'Simpan Header') }}
             </button>
             <button v-if="activeFormTab === 'header' && (savedPaymentId || isEdit)" class="btn btn--secondary" @click="switchToDetailTab">
-              Lanjut: Tambah Tagihan →
+              Lanjut: Tambah Detail →
             </button>
           </div>
         </div>
@@ -476,11 +366,11 @@
               <div class="modal-breadcrumb">
                 <span>Dashboard</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span>Pengeluaran Pembayaran</span>
+                <span>{{ pageTitle }}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                <span class="bc-active">Lihat Pembayaran</span>
+                <span class="bc-active">Lihat {{ pageTitle }}</span>
               </div>
-              <div class="modal-title">Pembayaran — {{ viewRow?.documentNo }}</div>
+              <div class="modal-title">{{ pageTitle }} — {{ viewRow?.documentNo }}</div>
             </div>
             <button class="modal-close" @click="showViewModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -494,17 +384,13 @@
               <span :class="['pay-statusbar-val pay-statusbar-val--status', payStatusClass(viewRow?.status)]">{{ payStatusLabel(viewRow?.status) }}</span>
             </span>
             <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit yang Dihasilkan:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.generatedCredit ?? 0) }}</span></span>
-            <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Kredit Terpakai:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.usedCredit ?? 0) }}</span></span>
-            <span class="pay-statusbar-sep">|</span>
-            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Write-off:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.writeOffAmt ?? 0) }}</span></span>
+            <span class="pay-statusbar-item"><span class="pay-statusbar-label">Jumlah:</span><span class="pay-statusbar-val">{{ formatCurrency(viewRow?.amount ?? 0) }}</span></span>
           </div>
 
           <!-- Tabs -->
           <div class="modal-tabs">
-            <button :class="['modal-tab', viewTab === 'header' ? 'modal-tab--active' : '']" @click="viewTab = 'header'">Header</button>
             <button :class="['modal-tab', viewTab === 'lines' ? 'modal-tab--active' : '']" @click="viewTab = 'lines'">Detail</button>
+            <button :class="['modal-tab', viewTab === 'header' ? 'modal-tab--active' : '']" @click="viewTab = 'header'">Header</button>
             <button :class="['modal-tab', viewTab === 'accounting' ? 'modal-tab--active' : '']" @click="switchToAccounting">Accounting</button>
           </div>
 
@@ -513,31 +399,25 @@
             <!-- ── Lines Tab ── -->
             <div v-if="viewTab === 'lines'">
               <div class="section-divider" style="margin-top:0">
-                <span>Detail Pembayaran</span>
+                <span>Detail G/L Item</span>
               </div>
 
               <div v-if="viewLinesLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
               <div v-else class="table-wrap" style="margin-bottom:0">
                 <table class="table">
                   <thead><tr>
-                    <th>No. Invoice</th>
-                    <th>Tgl. Invoice</th>
-                    <th>Tgl. Jatuh Tempo</th>
-                    <th style="text-align:right">Jumlah Invoice</th>
-                    <th style="text-align:right">Jumlah Diharapkan</th>
-                    <th style="text-align:right">Jumlah Dibayar</th>
-                    <th>Vendor</th>
+                    <th>G/L Item</th>
+                    <th>Keterangan</th>
+                    <th>Partner Bisnis</th>
+                    <th style="text-align:right">Jumlah</th>
                   </tr></thead>
                   <tbody>
-                    <tr v-if="viewLines.length === 0"><td colspan="7" class="td-empty">Tidak ada data.</td></tr>
+                    <tr v-if="viewLines.length === 0"><td colspan="4" class="td-empty">Tidak ada data.</td></tr>
                     <tr v-else v-for="line in viewLines" :key="line.id" class="tr-data">
-                      <td><span class="code-badge">{{ line.documentNo || '—' }}</span></td>
-                      <td class="td-secondary">{{ formatDate(line.invoiceDate) }}</td>
-                      <td class="td-secondary">{{ formatDate(line.dueDate) }}</td>
-                      <td class="td-secondary" style="text-align:right">{{ formatCurrency(line.grandTotalAmount) }}</td>
-                      <td class="td-secondary" style="text-align:right">{{ formatCurrency(line.expectedAmount ?? line.grandTotalAmount) }}</td>
-                      <td style="text-align:right;font-weight:600;color:#dc2626">{{ formatCurrency(line.amount) }}</td>
-                      <td class="td-secondary">{{ line.businessPartnerName || bpName(viewRow) }}</td>
+                      <td>{{ parseIdentifier(line.glItemName) }}</td>
+                      <td class="td-secondary">{{ line.description || '—' }}</td>
+                      <td class="td-secondary">{{ parseIdentifier(line.businessPartnerName) || bpName(viewRow) }}</td>
+                      <td style="text-align:right;font-weight:600;color:var(--text-primary)">{{ formatCurrency(line.amount) }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -545,7 +425,7 @@
 
               <div v-if="viewLines.length > 0" class="totals-block">
                 <div class="totals-row totals-row--grand">
-                  <span>Total Dibayar</span>
+                  <span>Total</span>
                   <span>{{ formatCurrency(viewLines.reduce((s,l) => s+(Number(l.amount)||0), 0)) }}</span>
                 </div>
               </div>
@@ -555,15 +435,15 @@
             <div v-if="viewTab === 'header'">
               <div class="detail-grid" style="margin-top:8px">
                 <div class="detail-item"><span class="detail-label">No. Dokumen</span><span class="detail-value mono">{{ viewRow.documentNo }}</span></div>
-                <div class="detail-item"><span class="detail-label">Tanggal Pembayaran</span><span class="detail-value">{{ formatDate(viewRow.paymentDate) }}</span></div>
+                <div class="detail-item"><span class="detail-label">Tanggal</span><span class="detail-value">{{ formatDate(viewRow.paymentDate) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Status</span><span :class="['status-pill', payStatusClass(viewRow.status)]">{{ payStatusLabel(viewRow.status) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Bayar Ke (Vendor)</span><span class="detail-value">{{ bpName(viewRow) }}</span></div>
+                <div class="detail-item"><span class="detail-label">{{ partnerLabel }}</span><span class="detail-value">{{ bpName(viewRow) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Metode Pembayaran</span><span class="detail-value">{{ parseIdentifier(viewRow['paymentMethod$_identifier']) }}</span></div>
-                <div class="detail-item"><span class="detail-label">Dibayarkan Dari</span><span class="detail-value">{{ parseIdentifier(viewRow['account$_identifier']) }}</span></div>
+                <div class="detail-item"><span class="detail-label">{{ accountLabel }}</span><span class="detail-value">{{ parseIdentifier(viewRow['account$_identifier']) }}</span></div>
                 <div class="detail-item"><span class="detail-label">Mata Uang</span><span class="detail-value">IDR</span></div>
                 <div class="detail-item"><span class="detail-label">Jumlah</span><span class="detail-value" style="font-weight:700">{{ formatCurrency(viewRow.amount) }}</span></div>
                 <div class="detail-item"><span class="detail-label">No. Referensi</span><span class="detail-value">{{ viewRow.referenceNo || '—' }}</span></div>
-                <div class="detail-item detail-item--full"><span class="detail-label">Keterangan</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
+                <div class="detail-item detail-item--full"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
               </div>
             </div>
 
@@ -658,13 +538,13 @@
       <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal--sm">
           <div class="modal-header">
-            <div class="modal-title">Hapus Pembayaran</div>
+            <div class="modal-title">Hapus {{ pageTitle }}</div>
             <button class="modal-close" @click="showDeleteModal = false">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="modal-body">
-            <p class="delete-text">Yakin ingin menghapus pembayaran <strong>{{ deleteTarget?.documentNo }}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
+            <p class="delete-text">Apakah Anda yakin ingin menghapus <strong>{{ deleteTarget?.documentNo }}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
             <div v-if="deleteError" class="form-api-error" style="margin-top:10px">{{ deleteError }}</div>
           </div>
           <div class="modal-footer">
@@ -693,32 +573,39 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   fetchAllPayments,
   createPaymentHeader,
   updatePaymentHeader,
   deletePaymentHeader,
-  searchVendors,
-  fetchOutstandingInvoices,
-  fetchPaymentLines,
-  fetchPaymentDetail,
-  addPaymentScheduleDetail,
-  addGLItemPaymentDetail,
-  finalizePaymentAmount,
+  searchBusinessPartners,
   fetchFinancialAccounts,
   fetchPaymentMethods,
   fetchGLItemsForPayment,
+  fetchPaymentDetail,
+  addGLItemPaymentDetail,
+  finalizePaymentAmount,
   createFinaccTransaction,
-  updatePaymentSchedulePaid,
-  updateInvoicePaymentComplete,
-  fetchPaymentScheduleById,
+  fetchPaymentLines,
+  fetchAccountingFacts,
   DEFAULT_ORGANIZATION,
   DEFAULT_CURRENCY,
   DEFAULT_FIN_ACCOUNT_ID,
   DEFAULT_PAYMETHOD_ID,
-  fetchAccountingFacts,
-} from '@/services/paymentOut.js'
+} from '@/services/cashbank.js'
+
+// ── props: 'in' (Cashbank Masuk / receipt) atau 'out' (Cashbank Keluar / payment)
+const props = defineProps({
+  type: { type: String, default: 'in' }, // 'in' | 'out'
+})
+const isReceipt = computed(() => props.type !== 'out')
+
+const pageTitle          = computed(() => isReceipt.value ? 'Kas/Bank Masuk' : 'Kas/Bank Keluar')
+const docTypeLabel       = computed(() => isReceipt.value ? 'AR Receipt' : 'AP Payment')
+const partnerLabel       = computed(() => isReceipt.value ? 'Diterima Dari (Opsional)' : 'Bayar Ke (Opsional)')
+const accountLabel       = computed(() => isReceipt.value ? 'Disimpan Ke' : 'Dibayarkan Dari')
+const accountColumnLabel = computed(() => isReceipt.value ? 'Disimpan Ke' : 'Dibayarkan Dari')
 
 // ── directive
 const vClickOutside = {
@@ -760,69 +647,48 @@ const saving         = ref(false)
 const formError      = ref('')
 
 const emptyForm = () => ({
-  documentNo:      '',
-  paymentDate:     today(),
-  businessPartner: '',
-  paymentMethod:   DEFAULT_PAYMETHOD_ID,
+  documentNo:       '',
+  paymentDate:      today(),
+  businessPartner:  '',
+  paymentMethod:    DEFAULT_PAYMETHOD_ID,
   financialAccount: DEFAULT_FIN_ACCOUNT_ID,
-  referenceNo:     '',
-  description:     '',
-  status:          'RPAP',
-  amount:          0,
+  referenceNo:      '',
+  description:      'GL Item',
+  status:           'RPAP',
+  amount:           0,
 })
 const form = ref(emptyForm())
 
-// ── vendor search
-const vendorSearch    = ref('')
-const filteredVendors = ref([])
-const showVendorDrop  = ref(false)
-const vendorLoading   = ref(false)
-let   vendorTimer     = null
+// ── partner search (opsional)
+const partnerSearch    = ref('')
+const filteredPartners = ref([])
+const showPartnerDrop  = ref(false)
+const partnerLoading   = ref(false)
+let   partnerTimer     = null
 
 // ── detail tab
-const outstandingInvoices = ref([])
-const invoiceLoading      = ref(false)
-const invoicesLoaded      = ref(false)
-const invoiceCheckMsg     = ref(null)
-const selectAllInvoices   = ref(false)
-const paying              = ref(false)
-
-// ── detail tab mode: 'invoice' | 'glitem'
-const detailMode = ref('invoice')
+const paying = ref(false)
 
 // ── GL Item lines
-const glItems         = ref([])   // master list from API
-const glItemsLoaded   = ref(false)
-const glItemsLoading  = ref(false)
-const glItemLines     = ref([])   // rows user adds
+const glItems        = ref([])
+const glItemsLoaded  = ref(false)
+const glItemsLoading = ref(false)
+const glItemLines    = ref([])
 
 function emptyGLItemLine() {
   return { _key: Date.now() + Math.random(), glItemId: '', glItemName: '', amount: 0, description: '' }
 }
-
-// reset when switching mode
-function switchDetailMode(mode) {
-  detailMode.value = mode
-  if (mode === 'glitem' && !glItemsLoaded.value) loadGLItems()
-}
-
 async function loadGLItems() {
   glItemsLoading.value = true
   try {
-    glItems.value     = await fetchGLItemsForPayment()
+    glItems.value       = await fetchGLItemsForPayment()
     glItemsLoaded.value = true
   } catch (e) {
-    console.warn('[PaymentOut] loadGLItems failed:', e.message)
+    console.warn('[Cashbank] loadGLItems failed:', e.message)
   } finally { glItemsLoading.value = false }
 }
-
-function addGLLine() {
-  glItemLines.value.push(emptyGLItemLine())
-}
-function removeGLLine(idx) {
-  glItemLines.value.splice(idx, 1)
-}
-
+function addGLLine() { glItemLines.value.push(emptyGLItemLine()) }
+function removeGLLine(idx) { glItemLines.value.splice(idx, 1) }
 const totalGLAmount = computed(() => glItemLines.value.reduce((s, l) => s + (Number(l.amount) || 0), 0))
 
 // ── view modal
@@ -848,8 +714,8 @@ const toast = ref({ show: false, type: 'success', message: '' })
 
 // ── computed
 const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)))
-const rangeStart = computed(() => rows.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
-const rangeEnd   = computed(() => (currentPage.value - 1) * pageSize.value + rows.value.length)
+const rangeStart  = computed(() => rows.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
+const rangeEnd    = computed(() => (currentPage.value - 1) * pageSize.value + rows.value.length)
 const pageNumbers = computed(() => {
   const tp = totalPages.value, cp = currentPage.value, pages = []
   if (tp <= 1) return [1]
@@ -861,9 +727,6 @@ const pageNumbers = computed(() => {
   pages.push(tp)
   return pages
 })
-const selectedInvoices       = computed(() => outstandingInvoices.value.filter(i => i.selected))
-const totalSelectedAmount    = computed(() => selectedInvoices.value.reduce((s, i) => s + (Number(i.actualPayment ?? i.outstandingAmount) || 0), 0))
-const totalOutstandingAmount = computed(() => outstandingInvoices.value.reduce((s, i) => s + (Number(i.outstandingAmount) || 0), 0))
 const selectedPaymentMethodName = computed(() => {
   const m = paymentMethods.value.find(m => m.id === form.value.paymentMethod)
   return m?.name || 'Transfer'
@@ -875,7 +738,6 @@ const selectedFinAccName = computed(() => {
 
 // ── helpers
 function today() { return new Date().toISOString().slice(0, 10) }
-
 function formatDate(v) {
   if (!v) return '—'
   return new Date(v).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -896,21 +758,15 @@ function parseIdentifier(id) {
   return sepIdx >= 0 ? id.slice(sepIdx + 3) : id
 }
 function payStatusClass(s) {
-  const map = {
-    RPAP: 'status-awaiting',
-    RPPC: 'status-complete',
-    RDNC: 'status-complete',
-    RPVD: 'status-void',
-    RPAE: 'status-error',
-  }
+  const map = { RPAP: 'status-awaiting', RPPC: 'status-complete', RDNC: 'status-complete', RPVD: 'status-void', RPAE: 'status-error' }
   return map[s] || 'status-draft'
 }
 function payStatusLabel(s) {
   const map = {
-    RPAP: 'Menunggu Pembayaran',
-    RPPC: 'Pembayaran Dilakukan',
+    RPAP: 'Menunggu Diproses',
+    RPPC: 'Selesai Diproses',
     RDNC: 'Disetor Belum Kliring',
-    RPVD: 'Pembayaran Dibatalkan',
+    RPVD: 'Dibatalkan',
     RPAE: 'Menunggu Eksekusi',
   }
   return map[s] || s || '—'
@@ -925,7 +781,7 @@ async function loadRows() {
   loading.value = true; error.value = ''
   try {
     const startRow = (currentPage.value - 1) * pageSize.value
-    const res = await fetchAllPayments({ startRow, pageSize: pageSize.value, searchKey: searchQuery.value })
+    const res = await fetchAllPayments({ startRow, pageSize: pageSize.value, searchKey: searchQuery.value, receipt: isReceipt.value })
     rows.value = res.data ?? []
     const tr = res.totalRows ?? res.total ?? res.count ?? null
     if (tr !== null && !isNaN(Number(tr))) {
@@ -936,7 +792,7 @@ async function loadRows() {
     }
     if (rows.value.length === 0 && currentPage.value > 1) {
       currentPage.value = 1
-      const res2 = await fetchAllPayments({ startRow: 0, pageSize: pageSize.value, searchKey: searchQuery.value })
+      const res2 = await fetchAllPayments({ startRow: 0, pageSize: pageSize.value, searchKey: searchQuery.value, receipt: isReceipt.value })
       rows.value = res2.data ?? []
       const tr2 = res2.totalRows ?? res2.total ?? res2.count ?? null
       totalRows.value = tr2 !== null && !isNaN(Number(tr2)) ? Number(tr2) : rows.value.length
@@ -979,27 +835,24 @@ function toggleDropdown(id, e) {
 }
 function closeDropdown() { openDropdown.value = null }
 
-// ── vendor search
-function onVendorSearch() {
-  showVendorDrop.value = true
-  clearTimeout(vendorTimer)
-  if (vendorSearch.value.length < 2) { filteredVendors.value = []; return }
-  vendorLoading.value = true
-  vendorTimer = setTimeout(async () => {
-    try { filteredVendors.value = await searchVendors(vendorSearch.value) }
-    catch { filteredVendors.value = [] }
-    finally { vendorLoading.value = false }
+// ── partner search (opsional)
+function onPartnerSearch() {
+  showPartnerDrop.value = true
+  clearTimeout(partnerTimer)
+  if (partnerSearch.value.length < 2) { filteredPartners.value = []; return }
+  partnerLoading.value = true
+  partnerTimer = setTimeout(async () => {
+    try { filteredPartners.value = await searchBusinessPartners(partnerSearch.value, isReceipt.value) }
+    catch { filteredPartners.value = [] }
+    finally { partnerLoading.value = false }
   }, 300)
 }
-function onVendorBlur() { setTimeout(() => { showVendorDrop.value = false }, 200) }
-function selectVendor(v) {
-  form.value.businessPartner = v.id
-  vendorSearch.value = v.name
-  showVendorDrop.value = false
-  filteredVendors.value = []
-  outstandingInvoices.value = []
-  invoiceCheckMsg.value = null
-  invoicesLoaded.value = false
+function onPartnerBlur() { setTimeout(() => { showPartnerDrop.value = false }, 200) }
+function selectPartner(p) {
+  form.value.businessPartner = p.id
+  partnerSearch.value = p.name
+  showPartnerDrop.value = false
+  filteredPartners.value = []
 }
 
 // ── open modals
@@ -1007,9 +860,7 @@ function openCreateModal() {
   isEdit.value = false; editId.value = null; savedPaymentId.value = null
   activeFormTab.value = 'header'; formError.value = ''
   form.value = emptyForm()
-  vendorSearch.value = ''; filteredVendors.value = []
-  outstandingInvoices.value = []; invoicesLoaded.value = false; invoiceCheckMsg.value = null
-  detailMode.value = 'invoice'
+  partnerSearch.value = ''; filteredPartners.value = []
   glItemLines.value = [emptyGLItemLine()]
   showFormModal.value = true
 }
@@ -1018,28 +869,26 @@ function openEditModal(r) {
   isEdit.value = true; editId.value = r.id; savedPaymentId.value = r.id
   activeFormTab.value = 'header'; formError.value = ''
   form.value = {
-    documentNo:      r.documentNo || '',
-    paymentDate:     r.paymentDate?.slice(0, 10) || today(),
-    businessPartner: typeof r.businessPartner === 'object' ? r.businessPartner?.id : r.businessPartner,
-    paymentMethod:   typeof r.paymentMethod === 'object' ? r.paymentMethod?.id : (r.paymentMethod || DEFAULT_PAYMETHOD_ID),
+    documentNo:       r.documentNo || '',
+    paymentDate:      r.paymentDate?.slice(0, 10) || today(),
+    businessPartner:  typeof r.businessPartner === 'object' ? r.businessPartner?.id : r.businessPartner,
+    paymentMethod:    typeof r.paymentMethod === 'object' ? r.paymentMethod?.id : (r.paymentMethod || DEFAULT_PAYMETHOD_ID),
     financialAccount: typeof r.financialAccount === 'object' ? r.financialAccount?.id : (r.financialAccount || DEFAULT_FIN_ACCOUNT_ID),
-    referenceNo:     r.referenceNo || '',
-    description:     r.description || '',
-    status:          r.status || 'RPAP',
-    amount:          r.amount || 0,
+    referenceNo:      r.referenceNo || '',
+    description:      r.description || 'GL Item',
+    status:           r.status || 'RPAP',
+    amount:           r.amount || 0,
   }
   const bpIdentifier = r['businessPartner$_identifier'] || ''
   const sepIdx = bpIdentifier.indexOf(' - ')
-  vendorSearch.value = sepIdx >= 0 ? bpIdentifier.slice(sepIdx + 3) : bpIdentifier
-  outstandingInvoices.value = []; invoiceCheckMsg.value = null; invoicesLoaded.value = false
-  detailMode.value = 'invoice'
+  partnerSearch.value = sepIdx >= 0 ? bpIdentifier.slice(sepIdx + 3) : bpIdentifier
   glItemLines.value = [emptyGLItemLine()]
   showFormModal.value = true
 }
 
 function openViewModal(r) {
   viewRow.value = { ...r }
-  viewTab.value = 'header'
+  viewTab.value = 'lines'
   viewLines.value = []; viewLinesLoading.value = false
   accountingFacts.value = []; accountingError.value = ''
   showViewModal.value = true
@@ -1067,18 +916,17 @@ async function loadViewLines(paymentId) {
 // ── save header
 async function saveHeader() {
   formError.value = ''
-  if (!form.value.businessPartner) { formError.value = 'Vendor (Pay To) wajib diisi.'; return }
-  if (!form.value.paymentDate)     { formError.value = 'Payment Date wajib diisi.'; return }
-  if (!form.value.paymentMethod)   { formError.value = 'Payment Method wajib diisi.'; return }
-  if (!form.value.financialAccount){ formError.value = 'Paid From wajib diisi.'; return }
+  if (!form.value.paymentDate)      { formError.value = 'Tanggal wajib diisi.'; return }
+  if (!form.value.paymentMethod)    { formError.value = 'Metode Pembayaran wajib diisi.'; return }
+  if (!form.value.financialAccount) { formError.value = accountLabel.value + ' wajib diisi.'; return }
 
   saving.value = true
   try {
     if (isEdit.value) {
       await updatePaymentHeader(editId.value, form.value)
-      showToast('Payment header berhasil diupdate.')
+      showToast('Header berhasil diupdate.')
     } else {
-      const result = await createPaymentHeader(form.value)
+      const result = await createPaymentHeader(form.value, isReceipt.value)
       savedPaymentId.value = result.id
       form.value.documentNo = result.documentNo || ''
       showToast('Header tersimpan. Lanjutkan ke tab Detail.')
@@ -1092,49 +940,7 @@ async function saveHeader() {
 function switchToDetailTab() {
   if (!savedPaymentId.value && !isEdit.value) { formError.value = 'Simpan header terlebih dahulu.'; return }
   formError.value = ''; activeFormTab.value = 'detail'
-  if (detailMode.value === 'invoice' && form.value.businessPartner && !invoicesLoaded.value) loadOutstandingInvoices()
-  if (detailMode.value === 'glitem' && !glItemsLoaded.value) loadGLItems()
-}
-
-// ── load outstanding vendor invoices
-async function loadOutstandingInvoices() {
-  if (!form.value.businessPartner) {
-    invoiceCheckMsg.value = { type: 'error', text: 'Pilih vendor terlebih dahulu.' }
-    return
-  }
-  invoiceLoading.value = true; invoiceCheckMsg.value = null
-  outstandingInvoices.value = []; invoicesLoaded.value = false; selectAllInvoices.value = false
-  try {
-    const data = await fetchOutstandingInvoices(form.value.businessPartner)
-    data.sort((a, b) => (a.invoiceDate || '') < (b.invoiceDate || '') ? -1 : 1)
-    outstandingInvoices.value = data
-      .filter(r => (Number(r.outstandingAmount) || 0) > 0)
-      .map(r => ({ ...r, selected: false }))
-    invoicesLoaded.value = true
-    if (outstandingInvoices.value.length === 0) {
-      invoiceCheckMsg.value = { type: 'warn', text: 'Tidak ada tagihan outstanding untuk vendor ini.' }
-    }
-  } catch (e) {
-    invoiceCheckMsg.value = { type: 'error', text: e.message || 'Gagal memuat data.' }
-  } finally { invoiceLoading.value = false }
-}
-
-function toggleAllInvoices() {
-  outstandingInvoices.value.forEach(i => {
-    i.selected = selectAllInvoices.value
-    if (i.selected && i.actualPayment == null) i.actualPayment = Number(i.outstandingAmount) || 0
-    if (!i.selected) i.actualPayment = null
-  })
-}
-function onInvoiceSelect(inv) {
-  if (inv.selected && inv.actualPayment == null) inv.actualPayment = Number(inv.outstandingAmount) || 0
-  if (!inv.selected) inv.actualPayment = null
-  selectAllInvoices.value = outstandingInvoices.value.length > 0 && outstandingInvoices.value.every(i => i.selected)
-}
-function clampActualPayment(inv) {
-  const max = Number(inv.outstandingAmount) || 0
-  if (inv.actualPayment < 0) inv.actualPayment = 0
-  if (inv.actualPayment > max) inv.actualPayment = max
+  if (!glItemsLoaded.value) loadGLItems()
 }
 
 // ── process payment
@@ -1145,139 +951,62 @@ async function processPayment() {
   const bpId      = typeof form.value.businessPartner === 'object' ? form.value.businessPartner?.id : form.value.businessPartner
   const orgId     = DEFAULT_ORGANIZATION
   const finAccId  = form.value.financialAccount || DEFAULT_FIN_ACCOUNT_ID
-  const payMethId = form.value.paymentMethod    || DEFAULT_PAYMETHOD_ID
   const payDate   = form.value.paymentDate
 
   try {
-    // ── GL ITEM mode ──────────────────────────────────
-    if (detailMode.value === 'glitem') {
-      const validLines = glItemLines.value.filter(l => l.glItemId && Number(l.amount) > 0)
-      if (validLines.length === 0) { formError.value = 'Tambahkan minimal 1 Detail GL Item dengan jumlah > 0.'; paying.value = false; return }
-
-      const payDetail   = await fetchPaymentDetail(paymentId)
-      const payDetailId = payDetail?.id || null
-
-      for (const line of validLines) {
-        await addGLItemPaymentDetail(
-          payDetailId,
-          line.glItemId,
-          Number(line.amount),
-          bpId,
-          orgId,
-          line.description || null,
-          paymentId,
-        )
-      }
-
-      const totalAmt       = validLines.reduce((s, l) => s + Number(l.amount), 0)
-      const glItemNames    = validLines.filter(l => l.glItemName).map(l => l.glItemName)
-      const autoDescription = glItemNames.length ? `GL Item: ${glItemNames.join(', ')}` : undefined
-
-      await updatePaymentHeader(paymentId, {
-        ...form.value,
-        amount:           totalAmt,
-        status:           'RPPC',
-        processed:        true,
-        processProcedure: 'P',
-        description:      autoDescription || form.value.description,
-      }).catch(e => console.warn('[processPayment] Update header gagal:', e.message))
-
-      form.value.amount = totalAmt
-      form.value.status = 'RPPC'
-      if (autoDescription) form.value.description = autoDescription
-
-      await finalizePaymentAmount(paymentId, totalAmt)
-        .catch(e => console.warn('[processPayment] finalizePaymentAmount gagal:', e.message))
-
-      await createFinaccTransaction({
-        paymentId,
-        financialAccountId: finAccId,
-        paymentDate:        payDate,
-        amount:             totalAmt,
-        businessPartnerId:  bpId,
-        organizationId:     orgId,
-        currencyId:         DEFAULT_CURRENCY,
-        description:        autoDescription,
-      }).catch(e => console.warn('[processPayment] FIN_Finacc_Transaction gagal:', e.message))
-
-      showFormModal.value = false
-      savedPaymentId.value = null
-      showToast('Payment GL Item berhasil diproses!')
-      await loadRows()
-      return
-    }
-
-    // ── INVOICE mode ──────────────────────────────────
-    if (selectedInvoices.value.length === 0) { formError.value = 'Pilih minimal 1 invoice.'; paying.value = false; return }
+    const validLines = glItemLines.value.filter(l => l.glItemId && Number(l.amount) > 0)
+    if (validLines.length === 0) { formError.value = 'Tambahkan minimal 1 Detail G/L Item dengan jumlah > 0.'; paying.value = false; return }
 
     const payDetail   = await fetchPaymentDetail(paymentId)
     const payDetailId = payDetail?.id || null
 
-    for (const inv of selectedInvoices.value) {
-      const actualAmt = Number(inv.actualPayment ?? inv.outstandingAmount) || 0
-
-      // 1. Buat FIN_Payment_ScheduleDetail
-      await addPaymentScheduleDetail(
-        payDetailId, inv.scheduleId || null, inv.id,
-        actualAmt, bpId, orgId, finAccId, payMethId, paymentId,
+    for (const line of validLines) {
+      await addGLItemPaymentDetail(
+        payDetailId,
+        line.glItemId,
+        Number(line.amount),
+        bpId || null,
+        orgId,
+        line.description || null,
+        paymentId,
       )
-
-      // 2. Update FIN_Payment_Schedule
-      if (inv.scheduleId) {
-        const sched          = await fetchPaymentScheduleById(inv.scheduleId).catch(() => null)
-        const currentPaid    = Number(sched?.paidAmount) || 0
-        const expectedAmt    = Number(sched?.amount ?? inv.grandTotalAmount) || 0
-        const newPaid        = currentPaid + actualAmt
-        const newOutstanding = Math.max(0, expectedAmt - newPaid)
-        await updatePaymentSchedulePaid(inv.scheduleId, actualAmt, currentPaid, expectedAmt)
-
-        // 3. Update Invoice paymentComplete
-        if (inv.id) {
-          const grandTotal = Number(inv.grandTotalAmount) || expectedAmt
-          await updateInvoicePaymentComplete(inv.id, newOutstanding <= 0, newPaid, grandTotal)
-        }
-      }
     }
 
-    const totalAmt = selectedInvoices.value.reduce((s, i) => s + (Number(i.actualPayment ?? i.outstandingAmount) || 0), 0)
+    const totalAmt        = validLines.reduce((s, l) => s + Number(l.amount), 0)
+    const glItemNames     = validLines.filter(l => l.glItemName).map(l => l.glItemName)
+    const autoDescription = glItemNames.length ? `GL Item: ${glItemNames.join(', ')}` : 'GL Item'
 
-    // 4. Auto description
-    const invoiceNos = selectedInvoices.value.filter(i => i.documentNo).map(i => i.documentNo)
-    const autoDescription = invoiceNos.length ? `Invoice No.: ${invoiceNos.join(', ')}` : undefined
-
-    // 5. Update payment header: amount + status RPPC + description
     await updatePaymentHeader(paymentId, {
       ...form.value,
       amount:           totalAmt,
-      status:           'RPPC',   // Payment Made (AP)
+      status:           isReceipt.value ? 'RDNC' : 'RPPC',
       processed:        true,
       processProcedure: 'P',
-      description:      autoDescription || form.value.description,
+      description:      autoDescription,
     }).catch(e => console.warn('[processPayment] Update header gagal:', e.message))
 
     form.value.amount = totalAmt
-    form.value.status = 'RPPC'
-    if (autoDescription) form.value.description = autoDescription
+    form.value.status = isReceipt.value ? 'RDNC' : 'RPPC'
+    form.value.description = autoDescription
 
-    // 6. finalizePaymentAmount
-    await finalizePaymentAmount(paymentId, totalAmt)
+    await finalizePaymentAmount(paymentId, totalAmt, isReceipt.value)
       .catch(e => console.warn('[processPayment] finalizePaymentAmount gagal:', e.message))
 
-    // 7. POST FIN_Finacc_Transaction
     await createFinaccTransaction({
       paymentId,
       financialAccountId: finAccId,
       paymentDate:        payDate,
       amount:             totalAmt,
-      businessPartnerId:  bpId,
+      businessPartnerId:  bpId || null,
       organizationId:     orgId,
       currencyId:         DEFAULT_CURRENCY,
       description:        autoDescription,
+      receipt:            isReceipt.value,
     }).catch(e => console.warn('[processPayment] FIN_Finacc_Transaction gagal:', e.message))
 
     showFormModal.value = false
     savedPaymentId.value = null
-    showToast('Payment berhasil diproses!')
+    showToast(`${pageTitle.value} berhasil diproses!`)
     await loadRows()
   } catch (e) {
     formError.value = e.message
@@ -1303,12 +1032,18 @@ async function doDelete() {
   try {
     await deletePaymentHeader(deleteTarget.value.id)
     showDeleteModal.value = false
-    showToast('Payment berhasil dihapus.')
+    showToast(`${pageTitle.value} berhasil dihapus.`)
     await loadRows()
   } catch (e) {
     deleteError.value = e.message || 'Gagal menghapus.'
   } finally { deleting.value = false }
 }
+
+// ── reset & reload when switching between Cashbank In/Out (kalau digabung 1 route nanti)
+watch(() => props.type, () => {
+  currentPage.value = 1; searchQuery.value = ''
+  loadRows()
+})
 
 onMounted(() => { loadRows(); loadLookups() })
 </script>
@@ -1358,8 +1093,6 @@ onMounted(() => { loadRows(); loadLookups() })
 .table tbody tr td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .tr-data:hover { background: var(--surface2); }
 .tr-data:last-child td { border-bottom: none; }
-.tr-selected td { background: #eff6ff !important; }
-.tr-selected:hover td { background: #dbeafe !important; }
 
 .code-badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; color: var(--text-secondary); white-space: nowrap; }
 .td-secondary { color: var(--text-secondary); font-size: 13px; }
@@ -1393,7 +1126,6 @@ onMounted(() => { loadRows(); loadLookups() })
 .loading-dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
 
-.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
 .table-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; background: var(--bg); flex-wrap: wrap; }
 .table-footer .pagination { padding: 0; }
 .footer-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
@@ -1401,6 +1133,7 @@ onMounted(() => { loadRows(); loadLookups() })
 .page-size select { font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--text-primary); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,.1); background: var(--surface); cursor: pointer; outline: none; }
 .page-size select:focus { border-color: var(--accent); }
 .total-info { font-size: 13px; color: var(--text-secondary); }
+.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
 .page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); }
 .page-btn--text { width: auto; padding: 0 12px; }
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
@@ -1439,7 +1172,6 @@ onMounted(() => { loadRows(); loadLookups() })
 .pay-ds-val.mono { font-family: var(--font-mono); font-size: 12px; }
 .pay-ds-val--amount { font-weight: 700; font-size: 15px; color: #dc2626; }
 
-.pay-detail-filter { display: flex; align-items: center; gap: 10px; margin: 12px 0 8px; }
 .pay-detail-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
 
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
@@ -1516,9 +1248,4 @@ onMounted(() => { loadRows(); loadLookups() })
 .acc-totals-row { background: var(--surface2); border-top: 2px solid var(--border); }
 .acc-totals-row td { border-bottom: none !important; }
 .td-muted { color: var(--text-muted); }
-
-.detail-mode-toggle { display: flex; gap: 6px; margin-top: 16px; }
-.mode-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--text-secondary); cursor: pointer; font-family: var(--font); transition: all .15s; }
-.mode-btn:hover:not(.mode-btn--active) { background: var(--border); }
-.mode-btn--active { background: var(--accent); color: #fff; border-color: var(--accent); }
 </style>

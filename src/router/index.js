@@ -29,6 +29,7 @@ import RequisitionToOrderView from '@/views/RequisitionToOrderView.vue'
 import GoodsReceiptView from '@/views/GoodReceipt.vue'
 import EnrollmentView from '@/views/Enrollment.vue'  // ← NEW
 import GLItemView from '@/views/GLItem.vue'
+import CashbankView from '@/views/Cashbank.vue'
 
 const routes = [
   { path: '/', redirect: '/customer' },
@@ -63,6 +64,8 @@ const routes = [
   { path: '/goods-receipt', component: GoodsReceiptView },
   { path: '/enrollment', component: EnrollmentView },  // ← NEW
   { path: '/gl-item', component: GLItemView },
+  { path: '/cashbank-in', component: CashbankView, props: { type: 'in' } },
+  { path: '/cashbank-out', component: CashbankView, props: { type: 'out' } },
 ]
 
 const router = createRouter({

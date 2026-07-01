@@ -27,7 +27,7 @@
               <th>Tanggal Pembayaran</th>
               <th>Pelanggan</th>
               <th>Jumlah</th>
-              <th>Setor Ke</th>
+              <th>Dibayarkan Ke</th>
               <th>Status</th>
               <th class="th-action">Tindakan</th>
             </tr></thead>
@@ -69,18 +69,33 @@
           </table>
         </div>
 
-        <!-- ══ PAGINATION ══ -->
-        <div v-if="totalPages > 1 || currentPage > 1" class="pagination">
-          <button class="page-btn" :disabled="currentPage === 1 || loading" @click="goPage(currentPage - 1)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <template v-for="p in pageNumbers" :key="String(p) + '-' + currentPage">
-            <span v-if="p === '...'" class="page-ellipsis">…</span>
-            <button v-else :class="['page-btn', Number(p) === currentPage ? 'page-btn--active' : '']" :disabled="loading" @click="goPage(Number(p))">{{ p }}</button>
-          </template>
-          <button class="page-btn" :disabled="currentPage >= totalPages || loading" @click="goPage(currentPage + 1)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+        <!-- ══ TABLE FOOTER: PAGE SIZE + PAGINATION ══ -->
+        <div class="table-footer">
+          <div class="footer-left">
+            <label class="page-size">
+              Tampilkan
+              <select :value="pageSize" @change="changePageSize($event.target.value)">
+                <option v-for="opt in pageSizeOptions" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              per halaman
+            </label>
+            <span class="total-info">Menampilkan {{ rangeStart }} sampai {{ rangeEnd }} dari {{ totalRows.toLocaleString('id-ID') }} data</span>
+          </div>
+
+          <div class="pagination">
+            <button class="page-btn page-btn--text" :disabled="currentPage === 1 || loading" @click="goPage(1)">Awal</button>
+            <button class="page-btn" :disabled="currentPage === 1 || loading" @click="goPage(currentPage - 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <template v-for="p in pageNumbers" :key="String(p) + '-' + currentPage">
+              <span v-if="p === '...'" class="page-ellipsis">…</span>
+              <button v-else :class="['page-btn', Number(p) === currentPage ? 'page-btn--active' : '']" :disabled="loading" @click="goPage(Number(p))">{{ p }}</button>
+            </template>
+            <button class="page-btn" :disabled="currentPage >= totalPages || loading" @click="goPage(currentPage + 1)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="page-btn page-btn--text" :disabled="currentPage >= totalPages || loading" @click="goPage(totalPages)">Akhir</button>
+          </div>
         </div>
 
       </div>
@@ -127,7 +142,7 @@
           <!-- Tabs -->
           <div class="modal-tabs">
             <button :class="['modal-tab', activeFormTab === 'header' ? 'modal-tab--active' : '']" @click="activeFormTab = 'header'">Header</button>
-            <button :class="['modal-tab', activeFormTab === 'detail' ? 'modal-tab--active' : '']" @click="switchToDetailTab" :disabled="!savedPaymentId && !isEdit">Detail / Add Invoice</button>
+            <button :class="['modal-tab', activeFormTab === 'detail' ? 'modal-tab--active' : '']" @click="switchToDetailTab" :disabled="!savedPaymentId && !isEdit">Detail / Tambah Penerimaan</button>
           </div>
 
           <!-- Body -->
@@ -208,11 +223,11 @@
 
               <div v-if="!isEdit && !savedPaymentId" class="info-box info-box--blue" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Simpan header terlebih dahulu, lalu buka tab <strong>Detail / Add Invoice</strong> untuk menambahkan invoice.
+                Simpan header terlebih dahulu, lalu buka tab <strong>Detail / Tambah Penerimaan</strong> untuk menambahkan invoice/order atau G/L Item.
               </div>
               <div v-if="savedPaymentId && !isEdit" class="info-box info-box--green" style="margin-top:16px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                Header tersimpan. Buka tab <strong>Detail / Tambah Faktur</strong> untuk melanjutkan pembayaran invoice.
+                Header tersimpan. Buka tab <strong>Detail / Tambah Penerimaan</strong> untuk melanjutkan — pilih mode <strong>Pesanan / Faktur</strong> atau <strong>G/L Item</strong>.
               </div>
             </div>
 
@@ -250,97 +265,186 @@
                 </div>
                 <div class="pay-ds-item pay-ds-item--amount">
                   <span class="pay-ds-label">Pembayaran Aktual </span>
-                  <span class="pay-ds-val pay-ds-val--amount">{{ formatCurrency(totalSelectedAmount) }}</span>
+                  <span class="pay-ds-val pay-ds-val--amount">{{ formatCurrency(detailMode === 'glitem' ? totalGLAmount : totalSelectedAmount) }}</span>
                 </div>
                 <div class="pay-ds-item">
                   <span class="pay-ds-label">Pembayaran Tertunda</span>
-                  <span class="pay-ds-val">{{ formatCurrency(totalOutstandingAmount) }}</span>
+                  <span class="pay-ds-val">{{ detailMode === 'glitem' ? '—' : formatCurrency(totalOutstandingAmount) }}</span>
                 </div>
               </div>
 
-              <div class="section-divider" style="margin-top:16px">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  <span>Pesanan / Faktur</span>
-                </div>
-              </div>
-
-              <div class="pay-detail-filter">
-                <button class="btn-add-line" @click="loadOutstandingInvoices" :disabled="invoiceLoading || !form.businessPartner" style="margin-left:8px">
-                  <span v-if="invoiceLoading" class="spinner spinner--dark"></span>
-                  <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.22-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
-                  {{ invoiceLoading ? 'Loading...' : (invoicesLoaded ? 'Refresh' : 'Load') }}
+              <!-- Mode toggle -->
+              <div class="detail-mode-toggle">
+                <button :class="['mode-btn', detailMode === 'invoice' ? 'mode-btn--active' : '']" @click="switchDetailMode('invoice')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Pesanan / Faktur
+                </button>
+                <button :class="['mode-btn', detailMode === 'glitem' ? 'mode-btn--active' : '']" @click="switchDetailMode('glitem')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                  G/L Item
                 </button>
               </div>
 
-              <div v-if="invoiceCheckMsg" :class="['info-box', invoiceCheckMsg.type === 'error' ? 'info-box--red' : invoiceCheckMsg.type === 'warn' ? 'info-box--yellow' : 'info-box--green']" style="margin-bottom:12px">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                {{ invoiceCheckMsg.text }}
-              </div>
-
-              <div class="table-wrap" style="margin-bottom:0">
-                <table class="table">
-                  <thead><tr>
-                    <th style="width:40px;text-align:center">
-                      <input type="checkbox" v-model="selectAllInvoices" @change="toggleAllInvoices" :disabled="outstandingInvoices.length === 0" />
-                    </th>
-                    <th>No. Pesanan</th>
-                    <th>No. Faktur</th>
-                    <th>Type</th>
-                    <th>Partner Bisnis</th>
-                    <th>Tanggal</th>
-                    <th style="text-align:right">Jumlah</th>
-                    <th style="text-align:right">Tertunda</th>
-                    <th style="text-align:right;min-width:140px">Pembayaran Aktual</th>
-                  </tr></thead>
-                  <tbody>
-                    <tr v-if="invoiceLoading">
-                      <td colspan="9" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td>
-                    </tr>
-                    <tr v-else-if="!invoicesLoaded">
-                      <td colspan="9" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load" untuk melihat tagihan outstanding.</td>
-                    </tr>
-                    <tr v-else-if="outstandingInvoices.length === 0">
-                      <td colspan="9" class="td-empty">No items to show.</td>
-                    </tr>
-                    <tr v-else v-for="inv in outstandingInvoices" :key="inv.id + (inv._type||'')" class="tr-data" :class="{ 'tr-selected': inv.selected }">
-                      <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onInvoiceSelect(inv)" /></td>
-                      <td class="td-secondary">{{ inv.orderReference || '—' }}</td>
-                      <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
-                      <td class="td-secondary"><span :class="['type-badge', inv._type === 'order' ? 'type-badge--order' : 'type-badge--invoice']">{{ inv._type === 'order' ? 'Order' : 'Invoice' }}</span></td>
-                      <td class="td-secondary">{{ customerSearch }}</td>
-                      <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
-                      <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
-                      <td class="td-secondary" style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
-                      <td style="text-align:right;padding:6px 16px">
-                        <input
-                          v-if="inv.selected"
-                          type="number" min="0" :max="inv.outstandingAmount" step="1"
-                          class="form-input form-input--sm actual-pay-input"
-                          v-model.number="inv.actualPayment"
-                          @input="clampActualPayment(inv)"
-                          @focus="$event.target.select()"
-                        />
-                        <span v-else class="td-secondary">—</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="pay-detail-footer">
-                <div class="totals-block" style="margin-top:0">
-                  <div class="totals-row"><span>Selected</span><span>{{ selectedInvoices.length }} invoice(s)</span></div>
-                  <div class="totals-row totals-row--grand"><span>Total Pembayaran</span><span>{{ formatCurrency(totalSelectedAmount) }}</span></div>
+              <!-- ── Invoice / Order mode ── -->
+              <template v-if="detailMode === 'invoice'">
+                <div class="section-divider" style="margin-top:16px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    <span>Pesanan / Faktur</span>
+                  </div>
                 </div>
-                <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-                  <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
-                  <button class="btn btn--primary" :disabled="paying || selectedInvoices.length === 0" @click="processPayment">
-                    <span v-if="paying" class="spinner"></span>
-                    {{ paying ? 'Dalam Proses...' : 'Selesai' }}
+
+                <div class="pay-detail-filter">
+                  <button class="btn-add-line" @click="loadOutstandingInvoices" :disabled="invoiceLoading || !form.businessPartner" style="margin-left:8px">
+                    <span v-if="invoiceLoading" class="spinner spinner--dark"></span>
+                    <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.22-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
+                    {{ invoiceLoading ? 'Loading...' : (invoicesLoaded ? 'Refresh' : 'Load') }}
                   </button>
                 </div>
-              </div>
+
+                <div v-if="invoiceCheckMsg" :class="['info-box', invoiceCheckMsg.type === 'error' ? 'info-box--red' : invoiceCheckMsg.type === 'warn' ? 'info-box--yellow' : 'info-box--green']" style="margin-bottom:12px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {{ invoiceCheckMsg.text }}
+                </div>
+
+                <div class="table-wrap" style="margin-bottom:0">
+                  <table class="table">
+                    <thead><tr>
+                      <th style="width:40px;text-align:center">
+                        <input type="checkbox" v-model="selectAllInvoices" @change="toggleAllInvoices" :disabled="outstandingInvoices.length === 0" />
+                      </th>
+                      <th>No. Pesanan</th>
+                      <th>No. Faktur</th>
+                      <th>Type</th>
+                      <th>Partner Bisnis</th>
+                      <th>Tanggal</th>
+                      <th style="text-align:right">Jumlah</th>
+                      <th style="text-align:right">Tertunda</th>
+                      <th style="text-align:right;min-width:140px">Pembayaran Aktual</th>
+                    </tr></thead>
+                    <tbody>
+                      <tr v-if="invoiceLoading">
+                        <td colspan="9" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></td>
+                      </tr>
+                      <tr v-else-if="!invoicesLoaded">
+                        <td colspan="9" class="td-empty" style="color:var(--text-muted);font-style:italic">Klik "Load" untuk melihat tagihan outstanding.</td>
+                      </tr>
+                      <tr v-else-if="outstandingInvoices.length === 0">
+                        <td colspan="9" class="td-empty">No items to show.</td>
+                      </tr>
+                      <tr v-else v-for="inv in outstandingInvoices" :key="inv.id + (inv._type||'')" class="tr-data" :class="{ 'tr-selected': inv.selected }">
+                        <td style="text-align:center"><input type="checkbox" v-model="inv.selected" @change="onInvoiceSelect(inv)" /></td>
+                        <td class="td-secondary">{{ inv.orderReference || '—' }}</td>
+                        <td><span class="code-badge">{{ inv.documentNo || '—' }}</span></td>
+                        <td class="td-secondary"><span :class="['type-badge', inv._type === 'order' ? 'type-badge--order' : 'type-badge--invoice']">{{ inv._type === 'order' ? 'Order' : 'Invoice' }}</span></td>
+                        <td class="td-secondary">{{ customerSearch }}</td>
+                        <td class="td-secondary">{{ formatDate(inv.invoiceDate) }}</td>
+                        <td class="td-secondary" style="text-align:right">{{ formatCurrency(inv.grandTotalAmount) }}</td>
+                        <td class="td-secondary" style="text-align:right;font-weight:600;color:var(--danger)">{{ formatCurrency(inv.outstandingAmount) }}</td>
+                        <td style="text-align:right;padding:6px 16px">
+                          <input
+                            v-if="inv.selected"
+                            type="number" min="0" :max="inv.outstandingAmount" step="1"
+                            class="form-input form-input--sm actual-pay-input"
+                            v-model.number="inv.actualPayment"
+                            @input="clampActualPayment(inv)"
+                            @focus="$event.target.select()"
+                          />
+                          <span v-else class="td-secondary">—</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="pay-detail-footer">
+                  <div class="totals-block" style="margin-top:0">
+                    <div class="totals-row"><span>Selected</span><span>{{ selectedInvoices.length }} invoice(s)</span></div>
+                    <div class="totals-row totals-row--grand"><span>Total Pembayaran</span><span>{{ formatCurrency(totalSelectedAmount) }}</span></div>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+                    <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
+                    <button class="btn btn--primary" :disabled="paying || selectedInvoices.length === 0" @click="processPayment">
+                      <span v-if="paying" class="spinner"></span>
+                      {{ paying ? 'Dalam Proses...' : 'Selesai' }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <!-- ── GL Item mode ── -->
+              <template v-else-if="detailMode === 'glitem'">
+                <div class="section-divider" style="margin-top:16px">
+                  <span>G/L Item Lines</span>
+                  <button class="btn-add-line" @click="addGLLine" :disabled="glItemsLoading">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                    Tambah Detail
+                  </button>
+                </div>
+
+                <div v-if="glItemsLoading" class="td-empty"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+
+                <div v-else class="table-wrap" style="margin-bottom:0">
+                  <table class="table">
+                    <thead><tr>
+                      <th>G/L Item <span class="req">*</span></th>
+                      <th style="min-width:280px">Keterangan</th>
+                      <th style="text-align:right;min-width:150px">Jumlah <span class="req">*</span></th>
+                      <th style="width:44px"></th>
+                    </tr></thead>
+                    <tbody>
+                      <tr v-if="glItemLines.length === 0">
+                        <td colspan="4" class="td-empty" style="font-style:italic;color:var(--text-muted)">Belum ada Detail. Klik "Tambah Detail".</td>
+                      </tr>
+                      <tr v-else v-for="(line, idx) in glItemLines" :key="line._key" class="tr-data">
+                        <td style="padding:6px 12px;min-width:200px">
+                          <select
+                            v-model="line.glItemId"
+                            class="form-input"
+                            style="height:34px;font-size:12.5px"
+                            @change="line.glItemName = glItems.find(g => g.id === line.glItemId)?.name || ''"
+                          >
+                            <option value="">— Pilih G/L Item —</option>
+                            <option v-for="g in glItems" :key="g.id" :value="g.id">{{ g.name }}</option>
+                          </select>
+                        </td>
+                        <td style="padding:6px 12px">
+                          <input v-model="line.description" class="form-input" style="height:34px;font-size:12.5px" placeholder="Keterangan..." />
+                        </td>
+                        <td style="padding:6px 12px;text-align:right">
+                          <input
+                            type="number" min="0" step="1"
+                            v-model.number="line.amount"
+                            class="form-input actual-pay-input"
+                            style="width:140px"
+                            @focus="$event.target.select()"
+                          />
+                        </td>
+                        <td style="padding:6px 8px;text-align:center">
+                          <button @click="removeGLLine(idx)" style="background:none;border:none;cursor:pointer;color:var(--danger);display:flex;align-items:center;padding:4px">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="pay-detail-footer">
+                  <div class="totals-block" style="margin-top:0">
+                    <div class="totals-row"><span>Jumlah Detail</span><span>{{ glItemLines.filter(l => l.glItemId && l.amount > 0).length }} Detail valid</span></div>
+                    <div class="totals-row totals-row--grand"><span>Total Pembayaran</span><span>{{ formatCurrency(totalGLAmount) }}</span></div>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+                    <button class="btn btn--ghost" @click="closeFormModal">Batal</button>
+                    <button class="btn btn--primary" :disabled="paying || totalGLAmount <= 0" @click="processPayment">
+                      <span v-if="paying" class="spinner"></span>
+                      {{ paying ? 'Dalam Proses...' : 'Selesai' }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+
             </div>
 
             <!-- API Error -->
@@ -405,6 +509,7 @@
           <div class="modal-tabs">
             <button :class="['modal-tab', viewTab === 'lines' ? 'modal-tab--active' : '']" @click="viewTab = 'lines'">Detail</button>
             <button :class="['modal-tab', viewTab === 'header' ? 'modal-tab--active' : '']" @click="viewTab = 'header'">Header</button>
+            <button :class="['modal-tab', viewTab === 'accounting' ? 'modal-tab--active' : '']" @click="switchToAccounting">Accounting</button>
           </div>
 
           <div class="modal-body" v-if="viewRow">
@@ -467,6 +572,82 @@
                 <div class="detail-item"><span class="detail-label">Jumlah</span><span class="detail-value" style="font-weight:700">{{ formatCurrency(viewRow.amount) }}</span></div>
                 <div class="detail-item"><span class="detail-label">No. Referensi</span><span class="detail-value">{{ viewRow.referenceNo || '—' }}</span></div>
                 <div class="detail-item detail-item--full"><span class="detail-label">Deskripsi</span><span class="detail-value">{{ viewRow.description || '—' }}</span></div>
+              </div>
+            </div>
+
+            <!-- ── Accounting Tab ── -->
+            <div v-if="viewTab === 'accounting'">
+              <div v-if="accountingLoading" class="td-empty" style="padding:40px">
+                <div class="loading-dots"><span></span><span></span><span></span></div>
+              </div>
+              <div v-else-if="accountingError" class="form-api-error" style="margin-top:0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{ accountingError }}
+              </div>
+              <div v-else>
+                <div v-if="accountingFacts.length === 0" class="td-empty" style="padding:40px">Tidak ada entri akuntansi yang ditemukan.</div>
+                <div v-else>
+                  <div class="acc-summary-grid">
+                    <div class="acc-summary-item">
+                      <span class="acc-summary-label">Tanggal</span>
+                      <span class="acc-summary-value">{{ formatDate(viewRow.paymentDate) }}</span>
+                    </div>
+                    <div class="acc-summary-item">
+                      <span class="acc-summary-label">No. Dokumen</span>
+                      <span class="acc-summary-value">{{ accountingFacts[0]?.['journalEntry$_identifier'] || viewRow.documentNo || '—' }}</span>
+                    </div>
+                    <div class="acc-summary-item">
+                      <span class="acc-summary-label">Total Debet</span>
+                      <span class="acc-summary-value acc-summary-value--debit">{{ formatCurrency(accountingFacts.reduce((s, f) => s + (f.debit || 0), 0)) }}</span>
+                    </div>
+                    <div class="acc-summary-item">
+                      <span class="acc-summary-label">Total Kredit</span>
+                      <span class="acc-summary-value acc-summary-value--credit">{{ formatCurrency(accountingFacts.reduce((s, f) => s + (f.credit || 0), 0)) }}</span>
+                    </div>
+                  </div>
+                  <div class="table-wrap" style="margin-bottom:0">
+                    <table class="table">
+                      <thead><tr>
+                        <th>COA</th>
+                        <th>Nama</th>
+                        <th>Deskripsi</th>
+                        <th>Periode</th>
+                        <th style="text-align:right">Debit</th>
+                        <th style="text-align:right">Kredit</th>
+                        <th>Tipe</th>
+                      </tr></thead>
+                      <tbody>
+                        <tr v-for="fact in accountingFacts" :key="fact.id" class="tr-data">
+                          <td><span class="acc-code">{{ fact.value || fact['account$_identifier']?.split(' - ')[0] || '—' }}</span></td>
+                          <td class="td-secondary">{{ fact.accountingEntryDescription || fact['account$_identifier']?.split(' - ').slice(1).join(' - ') || '—' }}</td>
+                          <td class="td-secondary" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ fact.description || '—' }}</td>
+                          <td class="td-secondary">{{ fact['period$_identifier'] || '—' }}</td>
+                          <td class="td-secondary" style="text-align:right;font-variant-numeric:tabular-nums">
+                            <span v-if="fact.debit > 0" class="acc-debit">{{ formatCurrency(fact.debit) }}</span>
+                            <span v-else class="td-muted">—</span>
+                          </td>
+                          <td class="td-secondary" style="text-align:right;font-variant-numeric:tabular-nums">
+                            <span v-if="fact.credit > 0" class="acc-credit">{{ formatCurrency(fact.credit) }}</span>
+                            <span v-else class="td-muted">—</span>
+                          </td>
+                          <td>
+                            <span :class="['acc-type-badge', fact.postingType === 'A' ? 'acc-type--actual' : 'acc-type--other']">
+                              {{ fact.postingType === 'A' ? 'Actual' : (fact.postingType || '—') }}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr class="acc-totals-row">
+                          <td colspan="4" style="text-align:right;font-size:12px;font-weight:600;color:var(--text-muted);padding:10px 16px">TOTAL</td>
+                          <td style="text-align:right;padding:10px 16px;font-weight:700;color:var(--text-primary)">{{ formatCurrency(accountingFacts.reduce((s, f) => s + (f.debit || 0), 0)) }}</td>
+                          <td style="text-align:right;padding:10px 16px;font-weight:700;color:var(--text-primary)">{{ formatCurrency(accountingFacts.reduce((s, f) => s + (f.credit || 0), 0)) }}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -544,6 +725,9 @@ import {
   DEFAULT_FIN_ACCOUNT_ID,
   DEFAULT_PAYMETHOD_ID,
   resolveFinancialAccountFromSchedules,
+  fetchAccountingFacts,
+  fetchGLItemsForPayment,
+  addGLItemPaymentDetail,
 } from '@/services/paymentIn.js'
 
 // ── directive
@@ -555,13 +739,15 @@ const vClickOutside = {
   unmounted(el) { document.removeEventListener('click', el._handler, true) },
 }
 
-const PAGE_SIZE = 20
+const PAGE_SIZE_DEFAULT = 20
+const pageSizeOptions = [10, 20, 50, 100]
 
 // ── table state
 const rows        = ref([])
 const loading     = ref(false)
 const error       = ref('')
 const currentPage = ref(1)
+const pageSize    = ref(PAGE_SIZE_DEFAULT)
 const totalRows   = ref(0)
 const searchQuery = ref('')
 let   searchTimer = null
@@ -612,6 +798,44 @@ const invoiceCheckMsg    = ref(null)
 const selectAllInvoices  = ref(false)
 const paying             = ref(false)
 
+// ── detail tab mode: 'invoice' | 'glitem'
+const detailMode = ref('invoice')
+
+// ── GL Item lines
+const glItems        = ref([])   // master list from API
+const glItemsLoaded  = ref(false)
+const glItemsLoading = ref(false)
+const glItemLines    = ref([])   // rows user adds
+
+function emptyGLItemLine() {
+  return { _key: Date.now() + Math.random(), glItemId: '', glItemName: '', amount: 0, description: '' }
+}
+
+// reset when switching mode
+function switchDetailMode(mode) {
+  detailMode.value = mode
+  if (mode === 'glitem' && !glItemsLoaded.value) loadGLItems()
+}
+
+async function loadGLItems() {
+  glItemsLoading.value = true
+  try {
+    glItems.value       = await fetchGLItemsForPayment()
+    glItemsLoaded.value = true
+  } catch (e) {
+    console.warn('[PaymentIn] loadGLItems failed:', e.message)
+  } finally { glItemsLoading.value = false }
+}
+
+function addGLLine() {
+  glItemLines.value.push(emptyGLItemLine())
+}
+function removeGLLine(idx) {
+  glItemLines.value.splice(idx, 1)
+}
+
+const totalGLAmount = computed(() => glItemLines.value.reduce((s, l) => s + (Number(l.amount) || 0), 0))
+
 // ── view modal
 const showViewModal    = ref(false)
 const viewRow          = ref(null)
@@ -619,6 +843,11 @@ const viewTab          = ref('lines')
 const viewLines        = ref([])
 const viewLinesLoading = ref(false)
 const viewError        = ref('')
+
+// ── accounting tab (view modal)
+const accountingFacts   = ref([])
+const accountingLoading = ref(false)
+const accountingError   = ref('')
 
 // ── add detail (from view modal)
 const showAddDetail             = ref(false)
@@ -638,7 +867,9 @@ const deleteError     = ref('')
 const toast = ref({ show: false, type: 'success', message: '' })
 
 // ── computed
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / PAGE_SIZE)))
+const totalPages = computed(() => Math.max(1, Math.ceil(totalRows.value / pageSize.value)))
+const rangeStart = computed(() => rows.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
+const rangeEnd   = computed(() => (currentPage.value - 1) * pageSize.value + rows.value.length)
 const pageNumbers = computed(() => {
   const tp = totalPages.value, cp = currentPage.value, pages = []
   if (tp <= 1) return [1]
@@ -703,8 +934,8 @@ function showToast(msg, type = 'success') {
 async function loadRows() {
   loading.value = true; error.value = ''
   try {
-    const startRow = (currentPage.value - 1) * PAGE_SIZE
-    const res = await fetchAllPayments({ startRow, pageSize: PAGE_SIZE, searchKey: searchQuery.value })
+    const startRow = (currentPage.value - 1) * pageSize.value
+    const res = await fetchAllPayments({ startRow, pageSize: pageSize.value, searchKey: searchQuery.value })
     rows.value = res.data ?? []
     // Openbravo bisa kembalikan totalRows di berbagai tempat
     const tr = res.totalRows ?? res.total ?? res.count ?? null
@@ -713,7 +944,7 @@ async function loadRows() {
     } else {
       // Fallback: kalau data penuh satu halaman, kemungkinan ada halaman berikutnya
       const fetched = rows.value.length
-      if (fetched === PAGE_SIZE) {
+      if (fetched === pageSize.value) {
         totalRows.value = startRow + fetched + 1
       } else {
         totalRows.value = startRow + fetched
@@ -722,7 +953,7 @@ async function loadRows() {
     // Kalau halaman saat ini kosong tapi bukan halaman 1, balik ke halaman 1
     if (rows.value.length === 0 && currentPage.value > 1) {
       currentPage.value = 1
-      const res2 = await fetchAllPayments({ startRow: 0, pageSize: PAGE_SIZE, searchKey: searchQuery.value })
+      const res2 = await fetchAllPayments({ startRow: 0, pageSize: pageSize.value, searchKey: searchQuery.value })
       rows.value = res2.data ?? []
       const tr2 = res2.totalRows ?? res2.total ?? res2.count ?? null
       totalRows.value = tr2 !== null && !isNaN(Number(tr2)) ? Number(tr2) : rows.value.length
@@ -751,6 +982,11 @@ async function goPage(p) {
   }
 }
 function onSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage.value = 1; loadRows() }, 400) }
+function changePageSize(size) {
+  pageSize.value = Number(size)
+  currentPage.value = 1
+  loadRows()
+}
 
 // ── dropdown
 function toggleDropdown(id, e) {
@@ -791,6 +1027,8 @@ function openCreateModal() {
   form.value = emptyForm()
   customerSearch.value = ''; filteredCustomers.value = []
   outstandingInvoices.value = []; invoicesLoaded.value = false; invoiceCheckMsg.value = null
+  detailMode.value = 'invoice'
+  glItemLines.value = [emptyGLItemLine()]
   showFormModal.value = true
 }
 
@@ -813,6 +1051,8 @@ function openEditModal(r) {
   const sepIdx = bpIdentifier.indexOf(' - ')
   customerSearch.value = sepIdx >= 0 ? bpIdentifier.slice(sepIdx + 3) : bpIdentifier
   outstandingInvoices.value = []; invoiceCheckMsg.value = null; invoicesLoaded.value = false
+  detailMode.value = 'invoice'
+  glItemLines.value = [emptyGLItemLine()]
   showFormModal.value = true
 }
 
@@ -823,8 +1063,20 @@ function openViewModal(r) {
   showAddDetail.value = false
   addDetailInvoices.value = []; addDetailSelectAll.value = false
   viewError.value = ''
+  accountingFacts.value = []; accountingError.value = ''
   showViewModal.value = true
   loadViewLines(r.id)
+}
+
+async function switchToAccounting() {
+  viewTab.value = 'accounting'
+  if (accountingFacts.value.length > 0 || accountingLoading.value) return
+  accountingLoading.value = true; accountingError.value = ''
+  try {
+    accountingFacts.value = await fetchAccountingFacts(viewRow.value.id)
+  } catch (e) {
+    accountingError.value = e.message || 'Gagal memuat data akuntansi.'
+  } finally { accountingLoading.value = false }
 }
 
 async function loadViewLines(paymentId) {
@@ -1016,7 +1268,8 @@ async function saveHeader() {
 function switchToDetailTab() {
   if (!savedPaymentId.value && !isEdit.value) { formError.value = 'Simpan header terlebih dahulu.'; return }
   formError.value = ''; activeFormTab.value = 'detail'
-  if (form.value.businessPartner && !invoicesLoaded.value) loadOutstandingInvoices()
+  if (detailMode.value === 'invoice' && form.value.businessPartner && !invoicesLoaded.value) loadOutstandingInvoices()
+  if (detailMode.value === 'glitem' && !glItemsLoaded.value) loadGLItems()
 }
 
 // ── load outstanding invoices
@@ -1067,7 +1320,6 @@ function clampActualPayment(inv) {
 
 // ── process payment (dari form modal tab detail)
 async function processPayment() {
-  if (selectedInvoices.value.length === 0) return
   formError.value = ''; paying.value = true
 
   const paymentId = savedPaymentId.value || editId.value
@@ -1078,6 +1330,67 @@ async function processPayment() {
   const payDate   = form.value.paymentDate
 
   try {
+    // ── GL ITEM mode ──────────────────────────────────
+    if (detailMode.value === 'glitem') {
+      const validLines = glItemLines.value.filter(l => l.glItemId && Number(l.amount) > 0)
+      if (validLines.length === 0) { formError.value = 'Tambahkan minimal 1 Detail GL Item dengan jumlah > 0.'; paying.value = false; return }
+
+      const payDetail   = await fetchPaymentDetail(paymentId)
+      const payDetailId = payDetail?.id || null
+
+      for (const line of validLines) {
+        await addGLItemPaymentDetail(
+          payDetailId,
+          line.glItemId,
+          Number(line.amount),
+          bpId,
+          orgId,
+          line.description || null,
+          paymentId,
+        )
+      }
+
+      const totalAmt        = validLines.reduce((s, l) => s + Number(l.amount), 0)
+      const glItemNames     = validLines.filter(l => l.glItemName).map(l => l.glItemName)
+      const autoDescription = glItemNames.length ? `GL Item: ${glItemNames.join(', ')}` : undefined
+
+      await updatePaymentHeader(paymentId, {
+        ...form.value,
+        amount:           totalAmt,
+        status:           'RDNC',
+        processed:        true,
+        processProcedure: 'P',
+        description:      autoDescription || form.value.description,
+      }).catch(e => console.warn('[processPayment] Update header gagal:', e.message))
+
+      form.value.amount = totalAmt
+      form.value.status = 'RDNC'
+      if (autoDescription) form.value.description = autoDescription
+
+      await finalizePaymentAmount(paymentId, totalAmt)
+        .catch(e => console.warn('[processPayment] finalizePaymentAmount gagal:', e.message))
+
+      await createFinaccTransaction({
+        paymentId,
+        financialAccountId: finAccId,
+        paymentDate:        payDate,
+        amount:             totalAmt,
+        businessPartnerId:  bpId,
+        organizationId:     orgId,
+        currencyId:         DEFAULT_CURRENCY,
+        description:        autoDescription,
+      }).catch(e => console.warn('[processPayment] FIN_Finacc_Transaction gagal:', e.message))
+
+      showFormModal.value = false
+      savedPaymentId.value = null
+      showToast('Payment GL Item berhasil diproses!')
+      await loadRows()
+      return
+    }
+
+    // ── INVOICE / ORDER mode ──────────────────────────
+    if (selectedInvoices.value.length === 0) { formError.value = 'Pilih minimal 1 invoice/order.'; paying.value = false; return }
+
     const payDetail = await fetchPaymentDetail(paymentId)
     // FIX #9: jika paymentDetail tidak berhasil dibuat, gunakan null agar
     // addPaymentScheduleDetail fallback ke finPayment langsung
@@ -1278,7 +1591,15 @@ onMounted(() => { loadRows(); loadLookups() })
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
 
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 14px 20px; background: var(--bg); }
+.table-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; background: var(--bg); flex-wrap: wrap; }
+.table-footer .pagination { padding: 0; }
+.footer-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.page-size { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.page-size select { font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--text-primary); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,.1); background: var(--surface); cursor: pointer; outline: none; }
+.page-size select:focus { border-color: var(--accent); }
+.total-info { font-size: 13px; color: var(--text-secondary); }
 .page-btn { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; font-family: var(--font); }
+.page-btn--text { width: auto; padding: 0 12px; }
 .page-btn:hover:not(:disabled):not(.page-btn--active) { color: var(--text-primary); background: rgba(0,0,0,.05); }
 .page-btn--active { background: #fff !important; color: #1e293b !important; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.15), 0 0 0 1px rgba(0,0,0,.07); }
 .page-btn:disabled { opacity: .3; cursor: not-allowed; }
@@ -1385,4 +1706,26 @@ onMounted(() => { loadRows(); loadLookups() })
 
 /* Actual Payment inline input */
 .actual-pay-input { width: 120px; text-align: right; padding: 0 8px; }
+
+/* Accounting */
+.acc-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+.acc-summary-item { display: flex; flex-direction: column; gap: 4px; }
+.acc-summary-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+.acc-summary-value { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.acc-summary-value--debit  { color: #2563eb; }
+.acc-summary-value--credit { color: #16a34a; }
+.acc-code { font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; color: var(--text-primary); }
+.acc-debit  { color: #2563eb; font-weight: 600; }
+.acc-credit { color: #16a34a; font-weight: 600; }
+.acc-type-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.acc-type--actual { background: #eff6ff; color: #1d4ed8; }
+.acc-type--other  { background: var(--surface2); color: var(--text-muted); }
+.acc-totals-row { background: var(--surface2); border-top: 2px solid var(--border); }
+.acc-totals-row td { border-bottom: none !important; }
+.td-muted { color: var(--text-muted); }
+
+.detail-mode-toggle { display: flex; gap: 6px; margin-top: 16px; }
+.mode-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--text-secondary); cursor: pointer; font-family: var(--font); transition: all .15s; }
+.mode-btn:hover:not(.mode-btn--active) { background: var(--border); }
+.mode-btn--active { background: var(--accent); color: #fff; border-color: var(--accent); }
 </style>

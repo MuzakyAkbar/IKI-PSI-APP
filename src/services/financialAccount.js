@@ -44,7 +44,7 @@ export async function fetchFinancialAccounts() {
     params: {
       _startRow: 0,
       _endRow:   100,
-      _orderBy:  'e.name asc',
+      _orderBy:  'name asc',
       _noCount:  false,
     },
   })
@@ -58,6 +58,52 @@ export async function fetchFinancialAccountById(id) {
   const res = await api.get(`${FIN_ACC_BASE}/${id}`)
   const raw = res.data?.response?.data
   return Array.isArray(raw) ? raw[0] : raw
+}
+
+/**
+ * Create financial account baru.
+ * Payload minimal yang wajib diisi Openbravo:
+ *   name, type, currency (id), organization (id), initialBalance
+ *
+ * @param {object} payload
+ */
+export async function createFinancialAccount(payload) {
+  const res = await api.post(FIN_ACC_BASE, {
+    data: payload,
+  })
+  const raw = res.data?.response?.data
+  return Array.isArray(raw) ? raw[0] : raw
+}
+
+// ════════════════════════════════════════════════════
+// CURRENCY — untuk dropdown form
+// ════════════════════════════════════════════════════
+const CURRENCY_BASE = '/org.openbravo.service.json.jsonrest/Currency'
+
+export async function fetchCurrencies() {
+  const res = await api.get(CURRENCY_BASE, {
+    params: {
+      _startRow: 0,
+      _endRow:   100,
+      _orderBy:  'iSOCode asc',
+      _noCount:  false,
+    },
+  })
+  return res.data?.response?.data ?? []
+}
+
+export async function fetchOrganizations() {
+  const res = await api.get(ORG_BASE, {
+    params: {
+      _startRow: 0,
+      _endRow:   100,
+      _orderBy:  'name asc',
+      _noCount:  false,
+    },
+  })
+  // Filter client-side: buang org tipe GP (Group) dan org '*' (id '0')
+  const data = res.data?.response?.data ?? []
+  return data.filter(o => o.type !== 'GP' && o.id !== '0')
 }
 
 // ════════════════════════════════════════════════════
